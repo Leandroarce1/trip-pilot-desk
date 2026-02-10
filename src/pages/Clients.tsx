@@ -1,51 +1,38 @@
 import { useState } from "react";
-import { Plus, Search, Phone, Mail } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
-import { mockClients } from "@/data/mockData";
+import { useData } from "@/contexts/DataContext";
 import { Client } from "@/types/crm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const Clients = () => {
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const { clients, addClient } = useData();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" as Client["status"] });
 
-  const filtered = clients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = clients.filter((c) => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "all" || c.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
 
   const handleAdd = () => {
-    if (!form.name || !form.phone) {
-      toast.error("Nome e telefone são obrigatórios");
-      return;
-    }
-    const newClient: Client = {
-      ...form,
-      id: String(Date.now()),
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setClients([newClient, ...clients]);
+    if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
+    addClient(form);
     setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" });
     setOpen(false);
     toast.success("Cliente cadastrado!");
@@ -60,14 +47,10 @@ const Clients = () => {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Novo Cliente
-            </Button>
+            <Button><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Novo Cliente</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -94,15 +77,22 @@ const Clients = () => {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome ou e-mail..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Buscar por nome ou e-mail..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="lead">Lead</SelectItem>
+            <SelectItem value="negotiation">Em negociação</SelectItem>
+            <SelectItem value="sold">Vendido</SelectItem>
+            <SelectItem value="postSale">Pós-venda</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -116,11 +106,12 @@ const Clients = () => {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Documento</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell">Cadastro</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate(`/clientes/${c.id}`)}>
                   <td className="px-4 py-3 font-medium">{c.name}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <div className="flex flex-col gap-1">
@@ -131,6 +122,11 @@ const Clients = () => {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.document}</td>
                   <td className="px-4 py-3"><StatusBadge variant={c.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{c.createdAt}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,57 +1,58 @@
 import { useState } from "react";
-import { Plus, Search, Plane } from "lucide-react";
-import { mockFlights, mockClients } from "@/data/mockData";
+import { Plus, Search, Plane, Edit2, Trash2 } from "lucide-react";
+import { useData } from "@/contexts/DataContext";
 import { Flight } from "@/types/crm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
+const emptyForm = { clientId: "", airline: "", flightNumber: "", origin: "", destination: "", departureDate: "", departureTime: "" };
+
 const Flights = () => {
-  const [flights, setFlights] = useState<Flight[]>(mockFlights);
+  const { flights, clients, addFlight, updateFlight, deleteFlight } = useData();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ clientId: "", airline: "", flightNumber: "", origin: "", destination: "", departureDate: "", departureTime: "" });
+  const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const filtered = flights.filter(
     (f) => f.clientName.toLowerCase().includes(search.toLowerCase()) || f.flightNumber.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleAdd = () => {
-    if (!form.clientId || !form.flightNumber || !form.departureDate) {
-      toast.error("Preencha os campos obrigatórios");
-      return;
-    }
-    const client = mockClients.find((c) => c.id === form.clientId);
-    const newFlight: Flight = {
-      id: String(Date.now()),
-      clientId: form.clientId,
-      clientName: client?.name || "",
-      airline: form.airline,
-      flightNumber: form.flightNumber,
-      origin: form.origin,
-      destination: form.destination,
-      departureDate: form.departureDate,
-      departureTime: form.departureTime,
-      checkinAlert: true,
-    };
-    setFlights([newFlight, ...flights]);
-    setForm({ clientId: "", airline: "", flightNumber: "", origin: "", destination: "", departureDate: "", departureTime: "" });
-    setOpen(false);
-    toast.success("Voo registrado!");
-  };
 
   const isCheckinSoon = (f: Flight) => {
     const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
     const now = new Date();
     const diff = dep.getTime() - now.getTime();
     return diff > 0 && diff <= 48 * 60 * 60 * 1000;
+  };
+
+  const handleSubmit = () => {
+    if (!form.clientId || !form.flightNumber || !form.departureDate) { toast.error("Preencha os campos obrigatórios"); return; }
+    if (editingFlight) {
+      updateFlight({ ...editingFlight, ...form, clientName: clients.find((c) => c.id === form.clientId)?.name || "" });
+      toast.success("Voo atualizado!");
+    } else {
+      addFlight({ ...form, checkinAlert: true });
+      toast.success("Voo registrado!");
+    }
+    setForm(emptyForm);
+    setEditingFlight(null);
+    setOpen(false);
+  };
+
+  const openEdit = (f: Flight) => {
+    setEditingFlight(f);
+    setForm({ clientId: f.clientId, airline: f.airline, flightNumber: f.flightNumber, origin: f.origin, destination: f.destination, departureDate: f.departureDate, departureTime: f.departureTime });
+    setOpen(true);
+  };
+
+  const handleClose = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) { setEditingFlight(null); setForm(emptyForm); }
   };
 
   return (
@@ -61,20 +62,18 @@ const Flights = () => {
           <h1 className="text-2xl font-bold">Voos</h1>
           <p className="text-sm text-muted-foreground">{flights.length} voos registrados</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" /> Novo Voo</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Registrar Voo</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingFlight ? "Editar Voo" : "Registrar Voo"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <div>
                 <Label>Cliente *</Label>
                 <Select value={form.clientId} onValueChange={(v) => setForm({ ...form, clientId: v })}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {mockClients.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                  </SelectContent>
+                  <SelectContent>{clients.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -89,7 +88,7 @@ const Flights = () => {
                 <div><Label>Data *</Label><Input type="date" value={form.departureDate} onChange={(e) => setForm({ ...form, departureDate: e.target.value })} /></div>
                 <div><Label>Horário</Label><Input type="time" value={form.departureTime} onChange={(e) => setForm({ ...form, departureTime: e.target.value })} /></div>
               </div>
-              <Button onClick={handleAdd} className="w-full">Registrar Voo</Button>
+              <Button onClick={handleSubmit} className="w-full">{editingFlight ? "Salvar" : "Registrar Voo"}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -110,6 +109,7 @@ const Flights = () => {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Rota</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Data/Hora</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Status</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -121,9 +121,7 @@ const Flights = () => {
                     <span className="font-mono font-medium">{f.flightNumber}</span>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="flex items-center gap-1">
-                      {f.origin} <Plane className="h-3 w-3 text-muted-foreground" /> {f.destination}
-                    </span>
+                    <span className="flex items-center gap-1">{f.origin} <Plane className="h-3 w-3 text-muted-foreground" /> {f.destination}</span>
                   </td>
                   <td className="px-4 py-3">{f.departureDate} {f.departureTime}</td>
                   <td className="px-4 py-3 hidden md:table-cell">
@@ -132,6 +130,23 @@ const Flights = () => {
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(f)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>Excluir voo?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => { deleteFlight(f.id); toast.success("Voo excluído!"); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               ))}
