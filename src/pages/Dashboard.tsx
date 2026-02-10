@@ -1,27 +1,28 @@
 import { Plane, Users, FileText, DollarSign, AlertTriangle, Clock } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
-import { mockClients, mockFlights, mockQuotes, mockTransactions } from "@/data/mockData";
-
-function getCheckinAlerts() {
-  const now = new Date();
-  const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-  return mockFlights.filter((f) => {
-    const dep = new Date(`${f.departureDate}T${f.departureTime}`);
-    return dep >= now && dep <= in48h;
-  });
-}
+import { useData } from "@/contexts/DataContext";
 
 const Dashboard = () => {
-  const checkinAlerts = getCheckinAlerts();
-  const upcomingFlights = mockFlights
-    .filter((f) => new Date(`${f.departureDate}T${f.departureTime}`) >= new Date())
+  const { clients, flights, quotes, transactions } = useData();
+
+  const now = new Date();
+  const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+  const checkinAlerts = flights.filter((f) => {
+    const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
+    return dep >= now && dep <= in48h;
+  });
+
+  const upcomingFlights = flights
+    .filter((f) => new Date(`${f.departureDate}T${f.departureTime || "00:00"}`) >= now)
     .sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime())
     .slice(0, 5);
 
-  const pendingPayments = mockTransactions.filter((t) => t.status === "pending");
-  const monthIncome = mockTransactions.filter((t) => t.type === "income" && t.date.startsWith("2026-02")).reduce((s, t) => s + t.value, 0);
-  const monthExpense = mockTransactions.filter((t) => t.type === "expense" && t.date.startsWith("2026-02")).reduce((s, t) => s + t.value, 0);
+  const pendingPayments = transactions.filter((t) => t.status === "pending");
+  const currentMonth = now.toISOString().slice(0, 7);
+  const monthIncome = transactions.filter((t) => t.type === "income" && t.date.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0);
+  const monthExpense = transactions.filter((t) => t.type === "expense" && t.date.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0);
 
   return (
     <div className="space-y-6">
@@ -30,7 +31,6 @@ const Dashboard = () => {
         <p className="text-sm text-muted-foreground">Visão geral da sua agência</p>
       </div>
 
-      {/* Alerts */}
       {checkinAlerts.length > 0 && (
         <div className="rounded-xl border border-warning/30 bg-warning/5 p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -55,16 +55,14 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Clientes" value={mockClients.length} icon={Users} description="Total cadastrados" />
-        <StatCard title="Cotações Ativas" value={mockQuotes.filter((q) => q.status === "sent").length} icon={FileText} variant="info" description="Aguardando resposta" />
+        <StatCard title="Clientes" value={clients.length} icon={Users} description="Total cadastrados" />
+        <StatCard title="Cotações Ativas" value={quotes.filter((q) => q.status === "sent").length} icon={FileText} variant="info" description="Aguardando resposta" />
         <StatCard title="Receita do Mês" value={`R$ ${monthIncome.toLocaleString("pt-BR")}`} icon={DollarSign} variant="success" description={`Despesas: R$ ${monthExpense.toLocaleString("pt-BR")}`} />
         <StatCard title="Pagamentos Pendentes" value={pendingPayments.length} icon={Clock} variant="warning" description={`R$ ${pendingPayments.reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR")}`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Upcoming flights */}
         <div className="rounded-xl border bg-card p-5">
           <h3 className="mb-4 text-sm font-semibold text-foreground">Próximos Voos</h3>
           {upcomingFlights.length === 0 ? (
@@ -87,7 +85,6 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Pending payments */}
         <div className="rounded-xl border bg-card p-5">
           <h3 className="mb-4 text-sm font-semibold text-foreground">Pagamentos Pendentes</h3>
           {pendingPayments.length === 0 ? (
