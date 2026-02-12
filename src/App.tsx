@@ -11,6 +11,10 @@ import ClientDetail from "./pages/ClientDetail";
 import Quotes from "./pages/Quotes";
 import Flights from "./pages/Flights";
 import Financial from "./pages/Financial";
+import Packages from "./pages/Packages";
+import PackageDetail from "./pages/PackageDetail";
+import BookingPage from "./pages/BookingPage";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,8 +32,12 @@ const App = () => (
               <Route path="/clientes" element={<Clients />} />
               <Route path="/clientes/:id" element={<ClientDetail />} />
               <Route path="/cotacoes" element={<Quotes />} />
+              <Route path="/pacotes" element={<Packages />} />
+              <Route path="/pacotes/:id" element={<PackageDetail />} />
               <Route path="/voos" element={<Flights />} />
               <Route path="/financeiro" element={<Financial />} />
+              <Route path="/alertas" element={<Notifications />} />
+              <Route path="/reserva/:quoteId" element={<BookingPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

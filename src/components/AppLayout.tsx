@@ -9,20 +9,32 @@ import {
   Menu,
   X,
   Globe,
+  Package,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useData } from "@/contexts/DataContext";
 
 const navItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Clientes", path: "/clientes", icon: Users },
   { title: "Cotações", path: "/cotacoes", icon: FileText },
+  { title: "Pacotes", path: "/pacotes", icon: Package },
   { title: "Voos", path: "/voos", icon: Plane },
   { title: "Financeiro", path: "/financeiro", icon: DollarSign },
+  { title: "Alertas", path: "/alertas", icon: Bell },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { notifications } = useData();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Don't show sidebar on booking page
+  if (location.pathname.startsWith("/reserva/")) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -76,6 +88,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <item.icon className="h-4.5 w-4.5" />
                 {item.title}
+                {item.path === "/alertas" && unreadCount > 0 && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground">
+                    {unreadCount}
+                  </span>
+                )}
               </NavLink>
             );
           })}
@@ -97,6 +114,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="ml-auto flex items-center gap-3">
+            <NavLink to="/alertas" className="relative text-muted-foreground hover:text-foreground">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              )}
+            </NavLink>
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
               <span className="text-xs font-bold text-primary-foreground">A</span>
             </div>
