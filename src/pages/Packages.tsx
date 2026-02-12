@@ -104,10 +104,10 @@ const Packages = () => {
                 <>
                   <div>
                     <Label>Cotação vinculada</Label>
-                    <Select value={form.quoteId} onValueChange={(v) => setForm({ ...form, quoteId: v })}>
+                    <Select value={form.quoteId || "none"} onValueChange={(v) => setForm({ ...form, quoteId: v === "none" ? "" : v })}>
                       <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma</SelectItem>
+                        <SelectItem value="none">Nenhuma</SelectItem>
                         {clientQuotes.map((q) => (<SelectItem key={q.id} value={q.id}>{q.destination} - R$ {q.value.toLocaleString("pt-BR")}</SelectItem>))}
                       </SelectContent>
                     </Select>
