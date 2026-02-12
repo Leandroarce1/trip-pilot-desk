@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
-import { Client, Quote, Flight, Transaction } from "@/types/crm";
-import { mockClients, mockQuotes, mockFlights, mockTransactions } from "@/data/mockData";
+import { Client, Quote, Flight, Transaction, TravelPackage, Notification } from "@/types/crm";
+import { mockClients, mockQuotes, mockFlights, mockTransactions, mockPackages, mockNotifications } from "@/data/mockData";
 
 interface DataContextType {
   clients: Client[];
   quotes: Quote[];
   flights: Flight[];
   transactions: Transaction[];
+  packages: TravelPackage[];
+  notifications: Notification[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => void;
   updateClient: (c: Client) => void;
   deleteClient: (id: string) => void;
@@ -19,6 +21,11 @@ interface DataContextType {
   addTransaction: (t: Omit<Transaction, "id">) => void;
   updateTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
+  addPackage: (p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => void;
+  updatePackage: (p: TravelPackage) => void;
+  deletePackage: (id: string) => void;
+  markNotificationRead: (id: string) => void;
+  addNotification: (n: Omit<Notification, "id">) => void;
   getClientName: (clientId: string) => string;
 }
 
@@ -29,6 +36,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [quotes, setQuotes] = useState<Quote[]>(mockQuotes);
   const [flights, setFlights] = useState<Flight[]>(mockFlights);
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [packages, setPackages] = useState<TravelPackage[]>(mockPackages);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
 
   const getClientName = useCallback((clientId: string) => {
     return clients.find((c) => c.id === clientId)?.name || "";
@@ -84,13 +93,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions((prev) => prev.filter((x) => x.id !== id));
   }, []);
 
+  const addPackage = useCallback((p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => {
+    const clientName = clients.find((c) => c.id === p.clientId)?.name || "";
+    setPackages((prev) => [{ ...p, id: String(Date.now()), clientName, createdAt: new Date().toISOString().split("T")[0] }, ...prev]);
+  }, [clients]);
+
+  const updatePackage = useCallback((p: TravelPackage) => {
+    setPackages((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+  }, []);
+
+  const deletePackage = useCallback((id: string) => {
+    setPackages((prev) => prev.filter((x) => x.id !== id));
+  }, []);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }, []);
+
+  const addNotification = useCallback((n: Omit<Notification, "id">) => {
+    setNotifications((prev) => [{ ...n, id: String(Date.now()) }, ...prev]);
+  }, []);
+
   return (
     <DataContext.Provider value={{
-      clients, quotes, flights, transactions,
+      clients, quotes, flights, transactions, packages, notifications,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
       addTransaction, updateTransaction, deleteTransaction,
+      addPackage, updatePackage, deletePackage,
+      markNotificationRead, addNotification,
       getClientName,
     }}>
       {children}
