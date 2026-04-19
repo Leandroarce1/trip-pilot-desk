@@ -4,6 +4,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { fmtDate, fmtDateTime } from "@/lib/format";
 
 const iconMap = {
   checkin: Plane,
@@ -57,7 +58,7 @@ const Notifications = () => {
                 <div className="rounded-lg bg-info/15 p-2"><Plane className="h-4 w-4 text-info" /></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">Check-in: {f.clientName}</p>
-                  <p className="text-xs text-muted-foreground">{f.flightNumber} · {f.origin} → {f.destination} · {f.departureDate} {f.departureTime}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{f.flightNumber} · {f.origin} → {f.destination} · {fmtDate(f.departureDate)} {f.departureTime}</p>
                 </div>
                 <span className="text-[10px] font-semibold text-info bg-info/15 rounded-full px-2 py-0.5">48H</span>
               </div>
@@ -99,7 +100,7 @@ const Notifications = () => {
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-sm", !n.read ? "font-semibold" : "font-medium")}>{n.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{n.message}</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">{n.date}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 tabular-nums">{fmtDateTime(n.date)}</p>
                   </div>
                   {!n.read && (
                     <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { fmtDate } from "@/lib/format";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "sent" as Quote["status"] };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
@@ -169,7 +170,7 @@ const Quotes = () => {
               <StatusBadge variant={q.status} />
             </div>
             <div className="text-sm text-muted-foreground">
-              {q.startDate && q.endDate && <p className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" />{q.startDate} → {q.endDate}</p>}
+              {q.startDate && q.endDate && <p className="flex items-center gap-1 tabular-nums"><CalendarIcon className="h-3 w-3" />{fmtDate(q.startDate)} → {fmtDate(q.endDate)}</p>}
               {q.description && <p className="mt-1">{q.description}</p>}
               {q.itinerary && q.itinerary.length > 0 && (
                 <p className="mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{q.itinerary.length} dia(s) no roteiro</p>
