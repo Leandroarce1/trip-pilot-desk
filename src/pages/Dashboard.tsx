@@ -2,36 +2,48 @@ import { useNavigate } from "react-router-dom";
 import {
   Plane, Users, FileText, DollarSign, TrendingUp, AlertTriangle,
   Clock, CalendarDays, Plus, ArrowUpRight, ArrowDownRight, CreditCard,
-  MapPin, ChevronRight
+  MapPin, ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
+import { fmtCurrency, fmtDate } from "@/lib/format";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { clients, flights, quotes, transactions } = useData();
+  const { clients, flights, quotes, packages } = useData();
 
   const now = new Date();
   const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
   const in5d = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const currentMonth = now.toISOString().slice(0, 7);
 
-  // KPIs
-  const monthIncome = transactions
-    .filter((t) => t.type === "income" && t.date.startsWith(currentMonth))
-    .reduce((s, t) => s + t.value, 0);
-  const monthExpense = transactions
-    .filter((t) => t.type === "expense" && t.date.startsWith(currentMonth))
-    .reduce((s, t) => s + t.value, 0);
-  const profit = monthIncome - monthExpense;
-  const pendingPayments = transactions.filter((t) => t.status === "pending");
-  const pendingTotal = pendingPayments.reduce((s, t) => s + t.value, 0);
-  const activeClients = clients.filter((c) => c.status !== "lead").length;
+  // ----- KPIs based on RESERVATIONS (single source of truth) -----
+  const monthConfirmed = packages.filter(
+    (p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(currentMonth),
+  );
+  const monthRevenue = monthConfirmed.reduce((s, p) => s + p.totalValue, 0);
+  const monthCommission = monthConfirmed.reduce((s, p) => s + (p.totalValue * p.commissionPercent) / 100, 0);
+
+  const pendingPayments = packages.filter((p) => p.paymentStatus === "pending" && p.reservationStatus !== "cancelled");
+  const pendingTotal = pendingPayments.reduce((s, p) => s + p.totalValue, 0);
+
+  const upcomingReservations = packages.filter((p) => {
+    if (p.reservationStatus === "cancelled") return false;
+    const dep = new Date(p.departureDate);
+    return dep >= now && dep <= in30d;
+  });
+
+  // Active clients = at least 1 non-cancelled reservation
+  const activeClientIds = new Set(
+    packages.filter((p) => p.reservationStatus !== "cancelled").map((p) => p.clientId),
+  );
 
   const upcomingFlights = flights
     .filter((f) => new Date(`${f.departureDate}T${f.departureTime || "00:00"}`) >= now)
@@ -47,34 +59,34 @@ const Dashboard = () => {
     return dep <= in5d;
   });
 
-  // "Esta semana" — próximos 7 dias
-  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const weekFlights = upcomingFlights.filter((f) => {
-    const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
-    return dep <= in7d;
+  const weekReservations = packages.filter((p) => {
+    if (p.reservationStatus === "cancelled") return false;
+    const dep = new Date(p.departureDate);
+    return dep >= now && dep <= in7d;
   });
 
-  // Chart data — last 4 months
+  // Revenue/commission chart — last 4 months from confirmed reservations
   const chartData = Array.from({ length: 4 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (3 - i), 1);
     const key = d.toISOString().slice(0, 7);
     const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-    const income = transactions.filter((t) => t.type === "income" && t.date.startsWith(key)).reduce((s, t) => s + t.value, 0);
-    const expense = transactions.filter((t) => t.type === "expense" && t.date.startsWith(key)).reduce((s, t) => s + t.value, 0);
-    return { label: label.charAt(0).toUpperCase() + label.slice(1), Receita: income, Despesa: expense };
+    const monthPkgs = packages.filter(
+      (p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(key),
+    );
+    const Receita = monthPkgs.reduce((s, p) => s + p.totalValue, 0);
+    const Comissao = monthPkgs.reduce((s, p) => s + (p.totalValue * p.commissionPercent) / 100, 0);
+    return { label: label.charAt(0).toUpperCase() + label.slice(1), Receita, Comissao };
   });
 
   const recentClients = [...clients].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
   const recentQuotes = [...quotes].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
 
-  const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR")}`;
-
   const kpis = [
-    { title: "Faturamento", value: fmt(monthIncome), icon: DollarSign, sub: "Este mês", trend: monthIncome > 0 ? "up" : "neutral" as const },
-    { title: "Lucro Estimado", value: fmt(profit), icon: TrendingUp, sub: `Margem ${monthIncome ? Math.round((profit / monthIncome) * 100) : 0}%`, trend: profit > 0 ? "up" : "down" as const },
-    { title: "Pgtos Pendentes", value: fmt(pendingTotal), icon: CreditCard, sub: `${pendingPayments.length} pendente(s)`, trend: pendingPayments.length > 0 ? "alert" : "neutral" as const },
-    { title: "Próximas Viagens", value: upcomingFlights.length, icon: Plane, sub: `${nearFlights.length} em 5 dias`, trend: nearFlights.length > 0 ? "alert" : "neutral" as const },
-    { title: "Clientes Ativos", value: activeClients, icon: Users, sub: `${clients.length} total`, trend: "neutral" as const },
+    { title: "Faturamento", value: fmtCurrency(monthRevenue), icon: DollarSign, sub: "Reservas confirmadas no mês", trend: monthRevenue > 0 ? "up" : "neutral" as const },
+    { title: "Lucro Estimado", value: fmtCurrency(monthCommission), icon: TrendingUp, sub: `${monthConfirmed.length} reserva(s) confirmada(s)`, trend: monthCommission > 0 ? "up" : "neutral" as const },
+    { title: "Pgtos Pendentes", value: fmtCurrency(pendingTotal), icon: CreditCard, sub: `${pendingPayments.length} reserva(s) pendente(s)`, trend: pendingPayments.length > 0 ? "alert" : "neutral" as const },
+    { title: "Próximas Viagens", value: upcomingReservations.length, icon: Plane, sub: "Embarque nos próximos 30 dias", trend: upcomingReservations.length > 0 ? "alert" : "neutral" as const },
+    { title: "Clientes Ativos", value: activeClientIds.size, icon: Users, sub: `${clients.length} no total`, trend: "neutral" as const },
   ];
 
   return (
@@ -104,7 +116,7 @@ const Dashboard = () => {
           <h2 className="mt-2 text-2xl font-semibold text-navy-foreground">Próximas viagens esta semana</h2>
           <div className="mt-5 flex flex-wrap items-end gap-x-10 gap-y-3">
             <div>
-              <p className="text-4xl font-bold tabular-nums leading-none">{weekFlights.length}</p>
+              <p className="text-4xl font-bold tabular-nums leading-none">{weekReservations.length}</p>
               <p className="text-xs text-[hsl(var(--primary-soft))] mt-2">embarques nos próximos 7 dias</p>
             </div>
             {checkinAlerts.length > 0 && (
@@ -114,7 +126,7 @@ const Dashboard = () => {
               </div>
             )}
             <div className="border-l border-white/15 pl-10">
-              <p className="text-4xl font-bold tabular-nums leading-none">{fmt(monthIncome)}</p>
+              <p className="text-4xl font-bold tabular-nums leading-none">{fmtCurrency(monthRevenue)}</p>
               <p className="text-xs text-[hsl(var(--primary-soft))] mt-2">faturamento do mês</p>
             </div>
           </div>
@@ -133,7 +145,7 @@ const Dashboard = () => {
               {checkinAlerts.map((f) => (
                 <div key={f.id} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{f.clientName} • {f.flightNumber}</span>
-                  <span className="font-medium">{f.origin} → {f.destination} · {f.departureDate} {f.departureTime}</span>
+                  <span className="font-medium tabular-nums">{f.origin} → {f.destination} · {fmtDate(f.departureDate)} {f.departureTime}</span>
                 </div>
               ))}
             </div>
@@ -162,9 +174,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Middle Section: Events + Chart */}
+      {/* Middle Section */}
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* Events Timeline */}
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -173,7 +184,6 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Upcoming Departures */}
             {upcomingFlights.slice(0, 4).map((f) => {
               const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
               const isUrgent = dep <= in48h;
@@ -196,7 +206,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums">{f.departureDate}</p>
+                    <p className="text-sm font-semibold tabular-nums">{fmtDate(f.departureDate)}</p>
                     <p className="text-xs text-muted-foreground">{f.departureTime}</p>
                   </div>
                   {isUrgent && (
@@ -208,17 +218,18 @@ const Dashboard = () => {
               );
             })}
 
-            {/* Pending Payments in timeline */}
-            {pendingPayments.slice(0, 3).map((t) => (
-              <div key={t.id} className="flex items-center gap-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+            {pendingPayments.slice(0, 3).map((p) => (
+              <div key={p.id} className="flex items-center gap-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
                 <div className="rounded-lg bg-destructive/10 p-2">
                   <CreditCard className="h-4 w-4 text-destructive" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.description}</p>
-                  <p className="text-xs text-muted-foreground">Pagamento pendente · {t.date}</p>
+                  <p className="text-sm font-medium truncate">Pagamento pendente — {p.clientName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.destinationCity}, {p.destinationCountry} · embarque {fmtDate(p.departureDate)}
+                  </p>
                 </div>
-                <p className="text-sm font-semibold text-destructive tabular-nums shrink-0">{fmt(t.value)}</p>
+                <p className="text-sm font-semibold text-destructive tabular-nums shrink-0">{fmtCurrency(p.totalValue)}</p>
               </div>
             ))}
 
@@ -233,7 +244,7 @@ const Dashboard = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              Resumo Financeiro
+              Receita vs. Comissão
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -244,40 +255,30 @@ const Dashboard = () => {
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
                   <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number) => [fmt(value)]}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                    formatter={(value: number) => [fmtCurrency(value)]}
                   />
                   <Bar dataKey="Receita" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="Despesa" fill="hsl(var(--primary-soft))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Comissao" fill="hsl(var(--primary-soft))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-lg bg-success/10 p-2.5">
-                <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-sm font-bold text-success">{fmt(monthIncome)}</p>
-              </div>
-              <div className="rounded-lg bg-destructive/10 p-2.5">
-                <p className="text-xs text-muted-foreground">Saídas</p>
-                <p className="text-sm font-bold text-destructive">{fmt(monthExpense)}</p>
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-center">
               <div className="rounded-lg bg-primary/10 p-2.5">
-                <p className="text-xs text-muted-foreground">Lucro</p>
-                <p className="text-sm font-bold text-primary">{fmt(profit)}</p>
+                <p className="text-xs text-muted-foreground">Faturamento mês</p>
+                <p className="text-sm font-bold text-primary">{fmtCurrency(monthRevenue)}</p>
+              </div>
+              <div className="rounded-lg bg-success/10 p-2.5">
+                <p className="text-xs text-muted-foreground">Comissão mês</p>
+                <p className="text-sm font-bold text-success">{fmtCurrency(monthCommission)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Bottom Section: Recent + Quick Actions */}
+      {/* Bottom Section */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Clients */}
         <Card>
           <CardHeader className="pb-3 flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -297,7 +298,7 @@ const Dashboard = () => {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.createdAt}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{fmtDate(c.createdAt)}</p>
                 </div>
                 <StatusBadge variant={c.status} />
               </div>
@@ -305,7 +306,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Recent Quotes */}
         <Card>
           <CardHeader className="pb-3 flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -321,7 +321,7 @@ const Dashboard = () => {
               <div key={q.id} className="flex items-center justify-between rounded-lg border p-2.5">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{q.destination}</p>
-                  <p className="text-xs text-muted-foreground">{q.clientName} · {fmt(q.value)}</p>
+                  <p className="text-xs text-muted-foreground">{q.clientName} · {fmtCurrency(q.value)}</p>
                 </div>
                 <StatusBadge variant={q.status} />
               </div>
@@ -329,18 +329,18 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — primary buttons for key flows */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2.5">
-            <Button variant="outline" className="h-auto py-3 flex-col gap-1.5 text-xs" onClick={() => navigate("/clientes")}>
-              <Plus className="h-4 w-4 text-primary" />
+            <Button className="h-auto py-3 flex-col gap-1.5 text-xs" onClick={() => navigate("/clientes")}>
+              <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
-            <Button variant="outline" className="h-auto py-3 flex-col gap-1.5 text-xs" onClick={() => navigate("/cotacoes")}>
-              <Plus className="h-4 w-4 text-primary" />
+            <Button className="h-auto py-3 flex-col gap-1.5 text-xs" onClick={() => navigate("/cotacoes")}>
+              <Plus className="h-4 w-4" />
               Nova Cotação
             </Button>
             <Button variant="outline" className="h-auto py-3 flex-col gap-1.5 text-xs" onClick={() => navigate("/voos")}>

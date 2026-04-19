@@ -3,6 +3,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MapPin, Calendar, DollarSign, CheckCircle, Clock, Plane } from "lucide-react";
+import { fmtDate } from "@/lib/format";
 
 const BookingPage = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -46,7 +47,7 @@ const BookingPage = () => {
               <div className="rounded-lg bg-primary/10 p-2"><Calendar className="h-4 w-4 text-primary" /></div>
               <div>
                 <p className="text-xs text-muted-foreground">Período</p>
-                <p className="text-sm font-semibold">{quote.startDate} a {quote.endDate}</p>
+                <p className="text-sm font-semibold tabular-nums">{fmtDate(quote.startDate)} a {fmtDate(quote.endDate)}</p>
               </div>
             </CardContent>
           </Card>
@@ -119,7 +120,7 @@ const BookingPage = () => {
                     <p className="text-xs text-muted-foreground">{f.origin} → {f.destination}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{f.departureDate}</p>
+                    <p className="text-sm font-medium tabular-nums">{fmtDate(f.departureDate)}</p>
                     <p className="text-xs text-muted-foreground">{f.departureTime}</p>
                   </div>
                 </div>

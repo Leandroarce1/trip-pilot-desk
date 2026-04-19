@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Search, Phone, Mail, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { Client } from "@/types/crm";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { fmtDate } from "@/lib/format";
 
 const Clients = () => {
   const { clients, addClient } = useData();
@@ -63,10 +64,7 @@ const Clients = () => {
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Client["status"] })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="lead">Lead</SelectItem>
-                    <SelectItem value="negotiation">Em negociação</SelectItem>
-                    <SelectItem value="sold">Vendido</SelectItem>
-                    <SelectItem value="postSale">Pós-venda</SelectItem>
+                    {clientStatusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -84,13 +82,10 @@ const Clients = () => {
           <Input placeholder="Buscar por nome ou e-mail..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="lead">Lead</SelectItem>
-            <SelectItem value="negotiation">Em negociação</SelectItem>
-            <SelectItem value="sold">Vendido</SelectItem>
-            <SelectItem value="postSale">Pós-venda</SelectItem>
+            {clientStatusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -121,7 +116,7 @@ const Clients = () => {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.document}</td>
                   <td className="px-4 py-3"><StatusBadge variant={c.status} /></td>
-                  <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{c.createdAt}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell tabular-nums">{fmtDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
                       <Eye className="h-4 w-4" />

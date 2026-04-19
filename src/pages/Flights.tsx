@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { fmtDate } from "@/lib/format";
 
 const emptyForm = { clientId: "", airline: "", flightNumber: "", origin: "", destination: "", departureDate: "", departureTime: "" };
 
@@ -123,7 +124,7 @@ const Flights = () => {
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <span className="flex items-center gap-1">{f.origin} <Plane className="h-3 w-3 text-muted-foreground" /> {f.destination}</span>
                   </td>
-                  <td className="px-4 py-3">{f.departureDate} {f.departureTime}</td>
+                  <td className="px-4 py-3 tabular-nums">{fmtDate(f.departureDate)} {f.departureTime}</td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     {isCheckinSoon(f) ? (
                       <span className="inline-flex items-center rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-medium text-warning">Check-in!</span>

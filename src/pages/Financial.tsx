@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { fmtDate } from "@/lib/format";
 
 const emptyForm = { type: "income" as Transaction["type"], description: "", value: "", date: "", status: "pending" as Transaction["status"], clientName: "" };
 
@@ -176,7 +177,7 @@ const Financial = () => {
                   </td>
                   <td className="px-4 py-3 font-medium">{t.description}</td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{t.clientName || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{t.date}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell tabular-nums">{fmtDate(t.date)}</td>
                   <td className="px-4 py-3 text-right font-semibold">R$ {t.value.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-3"><StatusBadge variant={t.status} /></td>
                   <td className="px-4 py-3 text-right">

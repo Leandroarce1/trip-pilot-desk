@@ -1,3 +1,50 @@
+export type ClientStatus = "lead" | "negotiation" | "sold" | "postSale" | "recurring";
+
+export type Gender = "male" | "female" | "unspecified";
+export type OriginChannel =
+  | "referral" | "instagram" | "google" | "whatsapp" | "in-person" | "other";
+export type TravelStyle =
+  | "beach" | "adventure" | "culture" | "cruise" | "honeymoon" | "family" | "business";
+export type FlightClass = "economy" | "business" | "first";
+export type SeatPreference = "window" | "aisle" | "none";
+
+export interface TravelerProfile {
+  birthDate?: string; // ISO yyyy-mm-dd
+  gender?: Gender;
+  nationality?: string;
+  cpf?: string;
+  profession?: string;
+  originChannel?: OriginChannel;
+}
+
+export interface TravelPreferences {
+  styles: TravelStyle[];
+  flightClass?: FlightClass;
+  favoriteAirline?: string;
+  seatPreference?: SeatPreference;
+  dietaryRestrictions?: string;
+  bucketList?: string;
+  generalNotes?: string;
+}
+
+export type ClientDocType = "passport" | "id" | "visa" | "insurance" | "other";
+
+export interface ClientDocument {
+  id: string;
+  type: ClientDocType;
+  number: string;
+  issuingCountry?: string;
+  issueDate?: string;
+  expiryDate?: string;
+}
+
+export interface MilesAccount {
+  program?: string;
+  accountNumber?: string;
+  balance?: number;
+  expiresAt?: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -5,8 +52,13 @@ export interface Client {
   email: string;
   document: string;
   notes: string;
-  status: "lead" | "negotiation" | "sold" | "postSale";
+  status: ClientStatus;
   createdAt: string;
+  // Extended profile (Phase 2)
+  profile?: TravelerProfile;
+  preferences?: TravelPreferences;
+  documents?: ClientDocument[];
+  miles?: MilesAccount;
 }
 
 export interface ItineraryDay {
@@ -53,6 +105,7 @@ export interface Transaction {
 }
 
 export type ReservationStatus = "quoting" | "pending" | "confirmed" | "cancelled";
+export type PaymentStatus = "pending" | "partial" | "paid";
 
 export type TripType = "air" | "package" | "cruise" | "road" | "hotel";
 
@@ -68,7 +121,7 @@ export interface ReservationDocument {
 }
 
 export interface ReservationHistoryEntry {
-  date: string; // ISO
+  date: string;
   action: string;
 }
 
@@ -77,30 +130,26 @@ export interface TravelPackage {
   name: string;
   clientId: string;
   clientName: string;
-  // Destination
   destinationCity: string;
   destinationCountry: string;
-  destinationFlag?: string; // emoji
-  // Dates
+  destinationFlag?: string;
   departureDate: string;
   returnDate: string;
-  // Trip
   tripType: TripType;
   supplier: string;
+  supplierId?: string;
   confirmationCode?: string;
-  // Financials
   totalValue: number;
   commissionPercent: number;
   passengers: Passenger[];
-  // Reservation status (new)
   reservationStatus: ReservationStatus;
-  // Linked records (kept for backwards compatibility)
+  paymentStatus: PaymentStatus;
   quoteId?: string;
   flightIds: string[];
   transactionIds: string[];
   documents: ReservationDocument[];
   history: ReservationHistoryEntry[];
-  /** @deprecated old high-level package status — keep optional for legacy */
+  /** @deprecated */
   status?: "planning" | "confirmed" | "traveling" | "completed";
   notes: string;
   createdAt: string;
@@ -114,4 +163,29 @@ export interface Notification {
   date: string;
   read: boolean;
   relatedId?: string;
+}
+
+// ---------- Suppliers (Phase 3) ----------
+export type SupplierCategory =
+  | "airline" | "hotel" | "operator" | "cruise" | "insurance"
+  | "carRental" | "transfer" | "other";
+
+export type SupplierPaymentTerm = "15" | "30" | "45" | "60";
+
+export interface Supplier {
+  id: string;
+  name: string;
+  category: SupplierCategory;
+  cnpj?: string;
+  website?: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  defaultCommission: number; // %
+  paymentTerm: SupplierPaymentTerm;
+  accessNotes?: string;
+  notes?: string;
+  rating: number; // 1-5
+  active: boolean;
+  createdAt: string;
 }

@@ -1,25 +1,32 @@
 import { cn } from "@/lib/utils";
 
-type StatusVariant = "lead" | "negotiation" | "sold" | "postSale" | "sent" | "approved" | "cancelled" | "paid" | "pending";
+type StatusVariant =
+  | "lead" | "negotiation" | "sold" | "postSale" | "recurring"
+  | "sent" | "approved" | "cancelled"
+  | "paid" | "pending";
 
-// FlowDestinos status palette — soft pastel surface + deep readable text
 const styles: Record<StatusVariant, string> = {
+  // Clients (FlowDestinos travel-agency vocabulary)
   lead: "bg-info-soft text-info-soft-foreground",
   negotiation: "bg-warning-soft text-warning-soft-foreground",
   sold: "bg-success-soft text-success-soft-foreground",
   postSale: "bg-secondary text-secondary-foreground",
+  recurring: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--navy))]",
+  // Quotes
   sent: "bg-info-soft text-info-soft-foreground",
   approved: "bg-success-soft text-success-soft-foreground",
   cancelled: "bg-error-soft text-error-soft-foreground",
+  // Payments
   paid: "bg-success-soft text-success-soft-foreground",
   pending: "bg-warning-soft text-warning-soft-foreground",
 };
 
 const labels: Record<StatusVariant, string> = {
-  lead: "Lead",
-  negotiation: "Em negociação",
-  sold: "Vendido",
+  lead: "Prospect",
+  negotiation: "Em cotação",
+  sold: "Cliente ativo",
   postSale: "Pós-venda",
+  recurring: "Cliente recorrente",
   sent: "Enviada",
   approved: "Aprovada",
   cancelled: "Cancelada",
@@ -39,3 +46,11 @@ export function StatusBadge({ variant }: { variant: StatusVariant }) {
     </span>
   );
 }
+
+export const clientStatusOptions: Array<{ value: StatusVariant; label: string }> = [
+  { value: "lead", label: "Prospect" },
+  { value: "negotiation", label: "Em cotação" },
+  { value: "sold", label: "Cliente ativo" },
+  { value: "recurring", label: "Cliente recorrente" },
+  { value: "postSale", label: "Pós-venda" },
+];
