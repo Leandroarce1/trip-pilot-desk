@@ -10,6 +10,7 @@ import {
   X,
   Package,
   Bell,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useData } from "@/contexts/DataContext";
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { title: "Cotações", path: "/cotacoes", icon: FileText, group: "operação" },
   { title: "Reservas", path: "/pacotes", icon: Package, group: "operação" },
   { title: "Voos", path: "/voos", icon: Plane, group: "operação" },
+  { title: "Fornecedores", path: "/fornecedores", icon: Building2, group: "operação" },
   { title: "Financeiro", path: "/financeiro", icon: DollarSign, group: "gestão" },
   { title: "Alertas", path: "/alertas", icon: Bell, group: "gestão" },
 ];

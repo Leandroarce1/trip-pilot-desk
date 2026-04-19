@@ -281,6 +281,7 @@ const Packages = () => {
         commissionPercent,
         passengers,
         reservationStatus: form.reservationStatus,
+        paymentStatus: "pending",
         flightIds: [],
         transactionIds: [],
         documents: [],
