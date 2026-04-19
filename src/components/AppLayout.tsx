@@ -8,21 +8,28 @@ import {
   DollarSign,
   Menu,
   X,
-  Globe,
   Package,
   Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useData } from "@/contexts/DataContext";
+import { Logo } from "@/components/Logo";
 
-const navItems = [
-  { title: "Dashboard", path: "/", icon: LayoutDashboard },
-  { title: "Clientes", path: "/clientes", icon: Users },
-  { title: "Cotações", path: "/cotacoes", icon: FileText },
-  { title: "Pacotes", path: "/pacotes", icon: Package },
-  { title: "Voos", path: "/voos", icon: Plane },
-  { title: "Financeiro", path: "/financeiro", icon: DollarSign },
-  { title: "Alertas", path: "/alertas", icon: Bell },
+type NavItem = {
+  title: string;
+  path: string;
+  icon: typeof LayoutDashboard;
+  group: "operação" | "gestão";
+};
+
+const navItems: NavItem[] = [
+  { title: "Dashboard", path: "/", icon: LayoutDashboard, group: "operação" },
+  { title: "Clientes", path: "/clientes", icon: Users, group: "operação" },
+  { title: "Cotações", path: "/cotacoes", icon: FileText, group: "operação" },
+  { title: "Reservas", path: "/pacotes", icon: Package, group: "operação" },
+  { title: "Voos", path: "/voos", icon: Plane, group: "operação" },
+  { title: "Financeiro", path: "/financeiro", icon: DollarSign, group: "gestão" },
+  { title: "Alertas", path: "/alertas", icon: Bell, group: "gestão" },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -31,17 +38,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { notifications } = useData();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Don't show sidebar on booking page
   if (location.pathname.startsWith("/reserva/")) {
     return <>{children}</>;
   }
 
+  const groups: Array<{ key: NavItem["group"]; label: string; items: NavItem[] }> = [
+    { key: "operação", label: "Operação", items: navItems.filter((i) => i.group === "operação") },
+    { key: "gestão", label: "Gestão", items: navItems.filter((i) => i.group === "gestão") },
+  ];
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-navy/40 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -50,86 +61,98 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Globe className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-sidebar-accent-foreground">TravelCRM</h1>
-            <p className="text-[10px] text-sidebar-foreground/60">Agência de Viagens</p>
-          </div>
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-5">
+          <Logo variant="dark" showTagline />
           <button
             onClick={() => setSidebarOpen(false)}
-            className="ml-auto lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            className="lg:hidden text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
+            aria-label="Fechar menu"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className="h-4.5 w-4.5" />
-                {item.title}
-                {item.path === "/alertas" && unreadCount > 0 && (
-                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
+        {/* Nav groups */}
+        <nav className="flex-1 space-y-6 px-3 py-5 overflow-y-auto">
+          {groups.map((group, idx) => (
+            <div key={group.key}>
+              {idx > 0 && <div className="mx-2 mb-4 h-px bg-sidebar-border" />}
+              <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-sidebar-foreground hover:bg-[hsl(var(--navy-hover))] hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">{item.title}</span>
+                      {item.path === "/alertas" && unreadCount > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sidebar-primary px-1.5 text-[10px] font-bold text-sidebar-primary-foreground">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
-          <p className="text-xs text-sidebar-foreground/50">© 2026 TravelCRM</p>
+          <p className="text-[10px] uppercase tracking-[0.1em] text-sidebar-foreground/50">
+            © 2026 FlowDestinos
+          </p>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/70 bg-card px-4 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Abrir menu"
           >
             <Menu className="h-5 w-5" />
           </button>
           <div className="ml-auto flex items-center gap-3">
-            <NavLink to="/alertas" className="relative text-muted-foreground hover:text-foreground">
+            <NavLink
+              to="/alertas"
+              className="relative text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Alertas"
+            >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                   {unreadCount}
                 </span>
               )}
             </NavLink>
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">A</span>
+            <div className="h-8 w-8 rounded-full bg-navy flex items-center justify-center">
+              <span className="text-xs font-bold text-navy-foreground">A</span>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>
     </div>
   );
