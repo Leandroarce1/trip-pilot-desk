@@ -39,7 +39,99 @@ export const mockTransactions: Transaction[] = [
 ];
 
 export const mockPackages: TravelPackage[] = [
-  { id: "1", name: "Cancún All-Inclusive", clientId: "1", clientName: "Maria Silva", quoteId: "1", flightIds: ["1", "2"], transactionIds: ["1"], status: "confirmed", notes: "Pacote completo com voos e hotel", createdAt: "2026-01-17" },
+  {
+    id: "1", name: "Cancún All-Inclusive", clientId: "1", clientName: "Maria Silva",
+    destinationCity: "Cancún", destinationCountry: "México", destinationFlag: "🇲🇽",
+    departureDate: "2026-03-15", returnDate: "2026-03-22",
+    tripType: "package", supplier: "CVC", confirmationCode: "CVC-CUN-998812",
+    totalValue: 8500, commissionPercent: 10,
+    passengers: [{ name: "Maria Silva", document: "123.456.789-00" }],
+    reservationStatus: "confirmed",
+    quoteId: "1", flightIds: ["1", "2"], transactionIds: ["1"],
+    documents: [{ type: "passport", label: "Passaporte Maria Silva", expiresAt: "2028-06-10" }],
+    history: [
+      { date: "2026-01-17T09:00", action: "Reserva criada" },
+      { date: "2026-01-18T11:30", action: "Pagamento confirmado" },
+      { date: "2026-01-20T14:15", action: "Status alterado para Confirmada" },
+    ],
+    notes: "Pacote completo com voos, hotel e transfers.", createdAt: "2026-01-17",
+  },
+  {
+    id: "2", name: "Lua de Mel Maldivas", clientId: "2", clientName: "João Santos",
+    destinationCity: "Malé", destinationCountry: "Maldivas", destinationFlag: "🇲🇻",
+    departureDate: "2026-04-10", returnDate: "2026-04-17",
+    tripType: "package", supplier: "Decolar", confirmationCode: "DEC-MLE-447721",
+    totalValue: 22000, commissionPercent: 12,
+    passengers: [
+      { name: "João Santos", document: "987.654.321-00" },
+      { name: "Marina Santos", document: "111.222.333-44" },
+    ],
+    reservationStatus: "pending",
+    flightIds: [], transactionIds: ["3"],
+    documents: [
+      { type: "passport", label: "Passaporte João Santos", expiresAt: "2027-02-20" },
+      { type: "passport", label: "Passaporte Marina Santos", expiresAt: "2026-12-05" },
+    ],
+    history: [
+      { date: "2026-01-21T10:00", action: "Reserva criada" },
+      { date: "2026-01-22T16:00", action: "Proposta enviada ao cliente" },
+    ],
+    notes: "Bangalô overwater, regime meia-pensão.", createdAt: "2026-01-21",
+  },
+  {
+    id: "3", name: "Paris Cultural", clientId: "3", clientName: "Ana Oliveira",
+    destinationCity: "Paris", destinationCountry: "França", destinationFlag: "🇫🇷",
+    departureDate: "2026-05-01", returnDate: "2026-05-08",
+    tripType: "air", supplier: "LATAM", confirmationCode: "LA-CDG-220045",
+    totalValue: 15000, commissionPercent: 8,
+    passengers: [{ name: "Ana Oliveira", document: "456.789.123-00" }],
+    reservationStatus: "quoting",
+    quoteId: "3", flightIds: [], transactionIds: [],
+    documents: [
+      { type: "passport", label: "Passaporte Ana Oliveira", expiresAt: "2030-09-15" },
+      { type: "visa", label: "Visto Schengen", expiresAt: "2026-04-25" },
+    ],
+    history: [{ date: "2026-02-02T09:30", action: "Reserva criada em cotação" }],
+    notes: "Aguardando confirmação do cliente.", createdAt: "2026-02-02",
+  },
+  {
+    id: "4", name: "Miami Business", clientId: "4", clientName: "Carlos Souza",
+    destinationCity: "Miami", destinationCountry: "EUA", destinationFlag: "🇺🇸",
+    departureDate: "2026-02-13", returnDate: "2026-02-19",
+    tripType: "air", supplier: "GOL", confirmationCode: "G3-MIA-557790",
+    totalValue: 6800, commissionPercent: 7,
+    passengers: [{ name: "Carlos Souza", document: "321.654.987-00" }],
+    reservationStatus: "confirmed",
+    flightIds: ["3"], transactionIds: [],
+    documents: [
+      { type: "passport", label: "Passaporte Carlos Souza", expiresAt: "2029-08-01" },
+      { type: "visa", label: "Visto B1/B2 EUA", expiresAt: "2031-03-22" },
+    ],
+    history: [
+      { date: "2026-01-30T08:00", action: "Reserva criada" },
+      { date: "2026-02-01T13:00", action: "Pagamento confirmado" },
+    ],
+    notes: "Viagem corporativa.", createdAt: "2026-01-30",
+  },
+  {
+    id: "5", name: "Orlando em Família", clientId: "5", clientName: "Beatriz Lima",
+    destinationCity: "Orlando", destinationCountry: "EUA", destinationFlag: "🇺🇸",
+    departureDate: "2026-07-10", returnDate: "2026-07-20",
+    tripType: "package", supplier: "CVC", confirmationCode: "CVC-MCO-883301",
+    totalValue: 32000, commissionPercent: 11,
+    passengers: [
+      { name: "Beatriz Lima", document: "654.321.987-00" },
+      { name: "Pedro Lima" }, { name: "Sofia Lima" }, { name: "Lucas Lima" },
+    ],
+    reservationStatus: "cancelled",
+    quoteId: "4", flightIds: [], transactionIds: ["5"],
+    documents: [],
+    history: [
+      { date: "2026-02-06T11:00", action: "Reserva criada" },
+      { date: "2026-02-09T15:00", action: "Cancelada pelo cliente" },
+    ],
+    notes: "Cliente reagendará para 2027.", createdAt: "2026-02-06",
+  },
 ];
 
 export const mockNotifications: Notification[] = [
