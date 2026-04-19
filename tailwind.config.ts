@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -22,6 +26,18 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          soft: "hsl(var(--primary-soft))",
+        },
+        navy: {
+          DEFAULT: "hsl(var(--navy))",
+          foreground: "hsl(var(--navy-foreground))",
+          hover: "hsl(var(--navy-hover))",
+          active: "hsl(var(--navy-active))",
+        },
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          foreground: "hsl(var(--gold-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -68,6 +84,20 @@ export default {
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
+          soft: "hsl(var(--info-soft))",
+          "soft-foreground": "hsl(var(--info-soft-foreground))",
+        },
+        "success-soft": {
+          DEFAULT: "hsl(var(--success-soft))",
+          foreground: "hsl(var(--success-soft-foreground))",
+        },
+        "warning-soft": {
+          DEFAULT: "hsl(var(--warning-soft))",
+          foreground: "hsl(var(--warning-soft-foreground))",
+        },
+        "error-soft": {
+          DEFAULT: "hsl(var(--error-soft))",
+          foreground: "hsl(var(--error-soft-foreground))",
         },
       },
       borderRadius: {
