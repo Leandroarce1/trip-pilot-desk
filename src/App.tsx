@@ -15,6 +15,8 @@ import Packages from "./pages/Packages";
 import PackageDetail from "./pages/PackageDetail";
 import BookingPage from "./pages/BookingPage";
 import Notifications from "./pages/Notifications";
+import Suppliers from "./pages/Suppliers";
+import SupplierDetail from "./pages/SupplierDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
               <Route path="/pacotes" element={<Packages />} />
               <Route path="/pacotes/:id" element={<PackageDetail />} />
               <Route path="/voos" element={<Flights />} />
+              <Route path="/fornecedores" element={<Suppliers />} />
+              <Route path="/fornecedores/:id" element={<SupplierDetail />} />
               <Route path="/financeiro" element={<Financial />} />
               <Route path="/alertas" element={<Notifications />} />
               <Route path="/reserva/:quoteId" element={<BookingPage />} />
