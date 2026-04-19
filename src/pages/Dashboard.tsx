@@ -47,6 +47,13 @@ const Dashboard = () => {
     return dep <= in5d;
   });
 
+  // "Esta semana" — próximos 7 dias
+  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const weekFlights = upcomingFlights.filter((f) => {
+    const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
+    return dep <= in7d;
+  });
+
   // Chart data — last 4 months
   const chartData = Array.from({ length: 4 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (3 - i), 1);
@@ -75,12 +82,43 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Centro de controle da sua agência</p>
+          <p className="label-caption mb-1">Visão geral</p>
+          <h1 className="text-3xl tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Centro de controle da sua agência</p>
         </div>
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p className="text-xs text-muted-foreground tabular-nums hidden sm:block">
           {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
+      </div>
+
+      {/* Featured navy widget */}
+      <div className="relative overflow-hidden rounded-2xl bg-navy text-navy-foreground p-6">
+        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-[hsl(var(--primary-soft))]/10 blur-2xl" aria-hidden />
+        <div className="absolute right-6 top-6 opacity-20" aria-hidden>
+          <Plane className="h-20 w-20 -rotate-12" />
+        </div>
+        <div className="relative">
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[hsl(var(--primary-soft))]">
+            Esta semana
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-navy-foreground">Próximas viagens esta semana</h2>
+          <div className="mt-5 flex flex-wrap items-end gap-x-10 gap-y-3">
+            <div>
+              <p className="text-4xl font-bold tabular-nums leading-none">{weekFlights.length}</p>
+              <p className="text-xs text-[hsl(var(--primary-soft))] mt-2">embarques nos próximos 7 dias</p>
+            </div>
+            {checkinAlerts.length > 0 && (
+              <div className="border-l border-white/15 pl-10">
+                <p className="text-4xl font-bold tabular-nums leading-none text-[hsl(var(--gold))]">{checkinAlerts.length}</p>
+                <p className="text-xs text-[hsl(var(--primary-soft))] mt-2">check-in(s) em até 48h</p>
+              </div>
+            )}
+            <div className="border-l border-white/15 pl-10">
+              <p className="text-4xl font-bold tabular-nums leading-none">{fmt(monthIncome)}</p>
+              <p className="text-xs text-[hsl(var(--primary-soft))] mt-2">faturamento do mês</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Check-in Alert Banner */}
@@ -108,17 +146,17 @@ const Dashboard = () => {
         {kpis.map((kpi) => (
           <Card key={kpi.title} className="relative overflow-hidden">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="rounded-lg bg-primary/10 p-2">
+              <div className="flex items-center justify-between mb-4">
+                <div className="rounded-lg bg-secondary p-2">
                   <kpi.icon className="h-4 w-4 text-primary" />
                 </div>
                 {kpi.trend === "up" && <ArrowUpRight className="h-4 w-4 text-success" />}
                 {kpi.trend === "down" && <ArrowDownRight className="h-4 w-4 text-destructive" />}
                 {kpi.trend === "alert" && <Clock className="h-4 w-4 text-warning" />}
               </div>
-              <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{kpi.title}</p>
-              <p className="text-[11px] text-muted-foreground/70 mt-0.5">{kpi.sub}</p>
+              <p className="text-[28px] font-bold tracking-tight text-navy leading-none">{kpi.value}</p>
+              <p className="label-caption mt-3">{kpi.title}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{kpi.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -214,8 +252,8 @@ const Dashboard = () => {
                     }}
                     formatter={(value: number) => [fmt(value)]}
                   />
-                  <Bar dataKey="Receita" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Despesa" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Receita" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Despesa" fill="hsl(var(--primary-soft))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
