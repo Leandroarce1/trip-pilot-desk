@@ -350,6 +350,56 @@ const Dashboard = () => {
   // Alertas financeiros: pagamentos pendentes
   const finAlerts = pendingPayments.slice(0, 3);
 
+  // ----- AÇÃO HOJE — 4 buckets prioritários -----
+  // 1) Clientes a responder hoje: leads + negociação
+  const toRespondToday = clients.filter((c) => c.status === "lead" || c.status === "negotiation");
+
+  // 2) Propostas vencendo: cotações 'sent' com endDate ≤ 7 dias
+  const expiringQuotes = quotes.filter((q) => {
+    if (q.status !== "sent") return false;
+    const end = new Date(q.endDate);
+    return end >= now && end <= in7d;
+  });
+
+  // 3) Pagamentos atrasados: pendentes com embarque já passado OU em ≤ 14 dias
+  const in14d = new Date(now.getTime() + 14 * 86400000);
+  const overduePayments = pendingPayments.filter((p) => {
+    const dep = new Date(p.departureDate);
+    return dep <= in14d;
+  });
+  const overdueTotal = overduePayments.reduce((s, p) => s + p.totalValue, 0);
+
+  // 4) Viagens em 48h
+  const trips48h = packages.filter((p) => {
+    if (p.reservationStatus === "cancelled") return false;
+    const dep = new Date(p.departureDate);
+    return dep >= now && dep <= in48h;
+  });
+
+  // ----- Follow-up enriquecido (tempo sem resposta + valor potencial) -----
+  const followUpsRich = clients
+    .filter((c) => c.status === "lead" || c.status === "negotiation")
+    .map((c) => {
+      const cQuotes = quotes.filter((q) => q.clientId === c.id);
+      const lastQuote = cQuotes.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      const refDate = lastQuote?.createdAt || c.createdAt;
+      const daysSilent = Math.max(0, Math.floor((now.getTime() - new Date(refDate).getTime()) / 86400000));
+      const potential = cQuotes.reduce((s, q) => Math.max(s, q.value), 0);
+      return { client: c, daysSilent, potential, lastQuote };
+    })
+    .sort((a, b) => (b.potential - a.potential) || (b.daysSilent - a.daysSilent))
+    .slice(0, 5);
+
+  // ----- Viagens próximas com status operacional (check-in / voucher / docs) -----
+  const nearTripsRich = nearTrips.map((p) => {
+    const days = Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000);
+    const hasFlights = p.flightIds && p.flightIds.length > 0;
+    const checkinReady = days <= 2 && hasFlights;
+    const voucherReady = p.reservationStatus === "confirmed" && !!p.confirmationCode;
+    const docsReady = p.documents && p.documents.length > 0;
+    return { pkg: p, days, checkinReady, voucherReady, docsReady };
+  });
+
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
     { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
