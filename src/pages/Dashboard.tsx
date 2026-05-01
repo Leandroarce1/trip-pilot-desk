@@ -5,7 +5,8 @@ import {
   Clock, Plus, ArrowUpRight, ArrowDownRight, CreditCard,
   MapPin, ChevronRight, Ticket, Target, UserPlus, Activity,
   Sparkles, Trophy, PieChart as PieIcon, MessageCircle, CheckCircle2,
-  PhoneCall, Mail, CalendarClock,
+  PhoneCall, Mail, CalendarClock, MessageSquare, ListTodo, ExternalLink,
+  FileCheck, ShieldCheck, Hourglass, Siren,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
