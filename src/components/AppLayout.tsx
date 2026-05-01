@@ -67,7 +67,7 @@ const sections: NavSection[] = [
       { title: "Recebimentos", path: "/financeiro?tab=receivables", icon: ArrowDownToLine },
       { title: "Pagamentos", path: "/financeiro?tab=payables", icon: ArrowUpFromLine },
       { title: "Comissões", path: "/financeiro?tab=commissions", icon: Percent },
-      { title: "Fluxo de caixa", path: "/financeiro", icon: Wallet },
+      { title: "Fluxo de caixa", path: "/financeiro?tab=cashflow", icon: Wallet },
     ],
   },
   {
