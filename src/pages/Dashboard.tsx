@@ -1037,16 +1037,32 @@ const Dashboard = () => {
                 {urgentTrips.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Nenhum embarque imediato.</p>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {urgentTrips.map((p) => {
                       const days = Math.max(0, Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000));
                       return (
-                        <li key={p.id}
-                          onClick={() => navigate(`/pacotes/${p.id}`)}
-                          className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                          <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
-                          <span className="truncate flex-1">{p.clientName}</span>
-                          <span className="text-[10.5px] text-navy-foreground/60 tabular-nums shrink-0">{days}d</span>
+                        <li key={p.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                          <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                            <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
+                            <span className="truncate flex-1 font-medium">{p.clientName}</span>
+                            <span className="text-[10px] font-bold tabular-nums text-warning shrink-0">{days}d</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                toast({ title: "Emissão solicitada", description: `Emissão de docs para ${p.clientName} adicionada à fila.` });
+                              }}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-warning/25 hover:bg-warning/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Solicitar emissão de docs">
+                              <Zap className="h-3 w-3" /> Emitir
+                            </button>
+                            <button
+                              onClick={() => navigate(`/pacotes/${p.id}`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Abrir reserva">
+                              <ExternalLink className="h-3 w-3" /> Abrir
+                            </button>
+                          </div>
                         </li>
                       );
                     })}
