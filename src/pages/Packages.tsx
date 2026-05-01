@@ -400,7 +400,35 @@ const Packages = () => {
 
               <div>
                 <Label className="label-caption">Fornecedor</Label>
-                <Input className="mt-1.5" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="LATAM, CVC, Decolar..." />
+                <Select
+                  value={form.supplierId || "__none__"}
+                  onValueChange={(v) => {
+                    if (v === "__none__") { setForm({ ...form, supplierId: "", supplier: "" }); return; }
+                    const s = suppliers.find((x) => x.id === v);
+                    setForm({
+                      ...form,
+                      supplierId: v,
+                      supplier: s?.name ?? "",
+                      commissionPercent: s?.defaultCommission ? String(s.defaultCommission) : form.commissionPercent,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nenhum / Avulso —</SelectItem>
+                    {suppliers.filter((s) => s.active).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!form.supplierId && (
+                  <Input
+                    className="mt-2"
+                    value={form.supplier}
+                    onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                    placeholder="Ou digite o nome (avulso)"
+                  />
+                )}
               </div>
               <div>
                 <Label className="label-caption">Localizador / confirmação</Label>
