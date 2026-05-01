@@ -85,6 +85,7 @@ type FormState = {
   departureDate: string;
   returnDate: string;
   tripType: TripType;
+  supplierId: string;
   supplier: string;
   confirmationCode: string;
   totalValue: string;
@@ -102,6 +103,7 @@ const emptyForm: FormState = {
   departureDate: "",
   returnDate: "",
   tripType: "package",
+  supplierId: "",
   supplier: "",
   confirmationCode: "",
   totalValue: "",
@@ -113,7 +115,7 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
-  const { packages, clients, addPackage, updatePackage, deletePackage } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction } = useData();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | ReservationStatus>("all");
@@ -212,6 +214,7 @@ const Packages = () => {
       departureDate: p.departureDate,
       returnDate: p.returnDate,
       tripType: p.tripType,
+      supplierId: p.supplierId || "",
       supplier: p.supplier,
       confirmationCode: p.confirmationCode || "",
       totalValue: String(p.totalValue),
@@ -223,7 +226,7 @@ const Packages = () => {
     setOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.clientId || !form.destinationCity || !form.departureDate || !form.returnDate) {
       toast.error("Preencha cliente, destino e datas");
       return;
@@ -232,6 +235,8 @@ const Packages = () => {
     const commissionPercent = Number(form.commissionPercent) || 0;
     const count = Math.max(1, Number(form.passengersCount) || 1);
     const client = clients.find((c) => c.id === form.clientId);
+    const supplier = suppliers.find((s) => s.id === form.supplierId);
+    const supplierName = supplier?.name || form.supplier;
 
     // Build passenger list (preserving existing names when editing)
     const existing = editing?.passengers ?? [];
@@ -242,7 +247,7 @@ const Packages = () => {
     const baseName = `${form.destinationCity} – ${client?.name ?? ""}`.trim();
 
     if (editing) {
-      updatePackage({
+      await updatePackage({
         ...editing,
         clientId: form.clientId,
         clientName: client?.name || editing.clientName,
@@ -252,7 +257,8 @@ const Packages = () => {
         departureDate: form.departureDate,
         returnDate: form.returnDate,
         tripType: form.tripType,
-        supplier: form.supplier,
+        supplierId: form.supplierId || undefined,
+        supplier: supplierName,
         confirmationCode: form.confirmationCode,
         totalValue,
         commissionPercent,
@@ -266,7 +272,7 @@ const Packages = () => {
       });
       toast.success("Reserva atualizada");
     } else {
-      addPackage({
+      await addPackage({
         name: baseName || "Nova reserva",
         clientId: form.clientId,
         destinationCity: form.destinationCity,
@@ -275,7 +281,8 @@ const Packages = () => {
         departureDate: form.departureDate,
         returnDate: form.returnDate,
         tripType: form.tripType,
-        supplier: form.supplier,
+        supplierId: form.supplierId || undefined,
+        supplier: supplierName,
         confirmationCode: form.confirmationCode,
         totalValue,
         commissionPercent,
@@ -288,7 +295,22 @@ const Packages = () => {
         history: [{ date: new Date().toISOString(), action: "Reserva criada" }],
         notes: form.notes,
       });
-      toast.success("Reserva criada");
+      // Auto-generate income transaction (pending) for the client
+      if (totalValue > 0) {
+        try {
+          await addTransaction({
+            type: "income",
+            description: `Venda: ${baseName || "Reserva"}`,
+            value: totalValue,
+            date: form.departureDate || new Date().toISOString().slice(0, 10),
+            status: "pending",
+            category: "sale",
+            clientId: form.clientId,
+            clientName: client?.name,
+          });
+        } catch { /* non-fatal */ }
+      }
+      toast.success("Reserva criada", { description: totalValue > 0 ? "Receita lançada no Financeiro." : undefined });
     }
     handleOpenChange(false);
   };
@@ -378,7 +400,35 @@ const Packages = () => {
 
               <div>
                 <Label className="label-caption">Fornecedor</Label>
-                <Input className="mt-1.5" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="LATAM, CVC, Decolar..." />
+                <Select
+                  value={form.supplierId || "__none__"}
+                  onValueChange={(v) => {
+                    if (v === "__none__") { setForm({ ...form, supplierId: "", supplier: "" }); return; }
+                    const s = suppliers.find((x) => x.id === v);
+                    setForm({
+                      ...form,
+                      supplierId: v,
+                      supplier: s?.name ?? "",
+                      commissionPercent: s?.defaultCommission ? String(s.defaultCommission) : form.commissionPercent,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nenhum / Avulso —</SelectItem>
+                    {suppliers.filter((s) => s.active).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!form.supplierId && (
+                  <Input
+                    className="mt-2"
+                    value={form.supplier}
+                    onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                    placeholder="Ou digite o nome (avulso)"
+                  />
+                )}
               </div>
               <div>
                 <Label className="label-caption">Localizador / confirmação</Label>

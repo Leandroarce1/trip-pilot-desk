@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  AreaChart, Area,
 } from "recharts";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -55,6 +56,7 @@ const Financial = () => {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [tab, setTab] = useState("overview");
+  const [commissionModal, setCommissionModal] = useState<{ open: boolean; packageId: string; packageName: string; clientId: string; pending: number; value: string; date: string }>({ open: false, packageId: "", packageName: "", clientId: "", pending: 0, value: "", date: today() });
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -67,6 +69,7 @@ const Financial = () => {
       payables: "expense",
       expense: "expense",
       commissions: "commissions",
+      cashflow: "cashflow",
     };
     if (tabParam && tabMap[tabParam]) setTab(tabMap[tabParam]);
   }, [searchParams]);
@@ -120,6 +123,51 @@ const Financial = () => {
     });
     return months;
   }, [transactions]);
+
+  // ---------- Fluxo de caixa (próximos 60 dias) ----------
+  const cashflowData = useMemo(() => {
+    const days: { date: string; label: string; entradas: number; saidas: number; saldo: number }[] = [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    // saldo inicial = soma de tudo já pago até hoje (income - expense)
+    let runningBalance = transactions
+      .filter((t) => t.status === "paid" && t.date <= start.toISOString().slice(0, 10))
+      .reduce((s, t) => s + (t.type === "income" ? t.value : -t.value), 0);
+
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      const dayTx = transactions.filter((t) => t.date === key && t.status === "pending");
+      // consideramos previsão: pendentes + atrasados acumulam no dia 0
+      const entradas = dayTx.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+      const saidas = dayTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.value, 0);
+
+      // Atrasados (pendentes com data passada) entram todos no dia 0
+      let extraIn = 0, extraOut = 0;
+      if (i === 0) {
+        const overdueTx = transactions.filter((t) => t.status === "pending" && t.date < key);
+        extraIn = overdueTx.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+        extraOut = overdueTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.value, 0);
+      }
+
+      const totalIn = entradas + extraIn;
+      const totalOut = saidas + extraOut;
+      runningBalance += totalIn - totalOut;
+      days.push({
+        date: key,
+        label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        entradas: totalIn,
+        saidas: totalOut,
+        saldo: runningBalance,
+      });
+    }
+    return days;
+  }, [transactions]);
+
+  const cashflowFinalBalance = cashflowData[cashflowData.length - 1]?.saldo ?? 0;
+  const cashflowTotalIn = cashflowData.reduce((s, d) => s + d.entradas, 0);
+  const cashflowTotalOut = cashflowData.reduce((s, d) => s + d.saidas, 0);
 
   // ---------- Filtros por aba ----------
   const filterFor = (typeOnly?: Transaction["type"]) =>
@@ -382,6 +430,7 @@ const Financial = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="cashflow">Fluxo de caixa</TabsTrigger>
           <TabsTrigger value="income">Recebimentos</TabsTrigger>
           <TabsTrigger value="expense">Pagamentos</TabsTrigger>
           <TabsTrigger value="commissions">Comissões</TabsTrigger>
@@ -495,13 +544,14 @@ const Financial = () => {
                             {c.fullyReceived ? (
                               <Badge variant="secondary" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Recebida</Badge>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => openNew({
-                                type: "income", category: "commission",
-                                description: `Comissão ${c.packageName}`,
-                                value: String(c.pending.toFixed(2)),
+                              <Button size="sm" variant="outline" onClick={() => setCommissionModal({
+                                open: true,
                                 packageId: c.packageId,
+                                packageName: c.packageName,
                                 clientId: packages.find((p) => p.id === c.packageId)?.clientId ?? "",
-                                status: "paid",
+                                pending: c.pending,
+                                value: c.pending.toFixed(2),
+                                date: today(),
                               })}>Registrar</Button>
                             )}
                           </td>
@@ -514,7 +564,110 @@ const Financial = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="cashflow" className="space-y-4 mt-6">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            <StatCard title="Entradas previstas (60d)" value={brl(cashflowTotalIn)} icon={TrendingUp} variant="success" />
+            <StatCard title="Saídas previstas (60d)" value={brl(cashflowTotalOut)} icon={TrendingDown} variant="warning" />
+            <StatCard title="Saldo projetado" value={brl(cashflowFinalBalance)} icon={Wallet} variant={cashflowFinalBalance >= 0 ? "info" : "default"} />
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Saldo acumulado — próximos 60 dias</CardTitle></CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={cashflowData}>
+                    <defs>
+                      <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="label" className="text-xs" interval={6} />
+                    <YAxis className="text-xs" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Area type="monotone" dataKey="saldo" stroke="hsl(var(--primary))" fill="url(#balGrad)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Movimentações por dia</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-card">
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Data</th>
+                      <th className="px-4 py-2 text-right font-medium text-success">Entradas</th>
+                      <th className="px-4 py-2 text-right font-medium text-destructive">Saídas</th>
+                      <th className="px-4 py-2 text-right font-medium text-muted-foreground">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cashflowData.filter((d) => d.entradas > 0 || d.saidas > 0).map((d) => (
+                      <tr key={d.date} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="px-4 py-2 tabular-nums">{fmtDate(d.date)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-success">{d.entradas > 0 ? `+ ${brl(d.entradas)}` : "—"}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-destructive">{d.saidas > 0 ? `− ${brl(d.saidas)}` : "—"}</td>
+                        <td className={`px-4 py-2 text-right tabular-nums font-semibold ${d.saldo >= 0 ? "" : "text-destructive"}`}>{brl(d.saldo)}</td>
+                      </tr>
+                    ))}
+                    {cashflowData.every((d) => d.entradas === 0 && d.saidas === 0) && (
+                      <tr><td colSpan={4} className="px-4 py-12 text-center text-muted-foreground">Nenhuma movimentação prevista nos próximos 60 dias.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Modal de comissão editável */}
+      <Dialog open={commissionModal.open} onOpenChange={(o) => setCommissionModal((m) => ({ ...m, open: o }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar comissão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg bg-muted/50 p-3 text-sm">
+              <div className="font-medium">{commissionModal.packageName}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Pendente: <span className="font-semibold text-amber-600">{brl(commissionModal.pending)}</span></div>
+            </div>
+            <div>
+              <Label>Valor recebido (R$) *</Label>
+              <Input type="number" step="0.01" value={commissionModal.value} onChange={(e) => setCommissionModal((m) => ({ ...m, value: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Data do recebimento</Label>
+              <Input type="date" value={commissionModal.date} onChange={(e) => setCommissionModal((m) => ({ ...m, date: e.target.value }))} />
+            </div>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                const v = Number(commissionModal.value);
+                if (!v || v <= 0) { toast.error("Informe um valor válido"); return; }
+                try {
+                  await addTransaction({
+                    type: "income",
+                    description: `Comissão ${commissionModal.packageName}`,
+                    value: v,
+                    date: commissionModal.date,
+                    status: "paid",
+                    category: "commission",
+                    clientId: commissionModal.clientId || undefined,
+                    packageId: commissionModal.packageId,
+                  });
+                  toast.success("Comissão registrada!");
+                  setCommissionModal((m) => ({ ...m, open: false }));
+                } catch (e: any) { toast.error("Erro", { description: e.message }); }
+              }}
+            >Confirmar recebimento</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
