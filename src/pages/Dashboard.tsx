@@ -178,17 +178,33 @@ const Dashboard = () => {
     })),
   ].slice(0, 6);
 
-  // ----- Top vendedores (single-admin: agrupar por fornecedor) -----
-  const supplierStats = useMemo(() => {
-    const map = new Map<string, { name: string; sales: number; revenue: number }>();
+  // ----- Top destinos vendidos (cidade + país) -----
+  const topDestinations = useMemo(() => {
+    const map = new Map<string, { name: string; country: string; flag?: string; sales: number; revenue: number }>();
     packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
-      const cur = map.get(p.supplier) || { name: p.supplier, sales: 0, revenue: 0 };
+      const key = `${p.destinationCity}|${p.destinationCountry}`;
+      const cur = map.get(key) || { name: p.destinationCity, country: p.destinationCountry, flag: p.destinationFlag, sales: 0, revenue: 0 };
       cur.sales += 1; cur.revenue += p.totalValue;
-      map.set(p.supplier, cur);
+      map.set(key, cur);
     });
     return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }, [packages]);
-  const supplierMaxRev = Math.max(...supplierStats.map((s) => s.revenue), 1);
+  const destMaxRev = Math.max(...topDestinations.map((s) => s.revenue), 1);
+
+  // ----- Vendas por categoria (tipo de viagem) -----
+  const categoryLabels: Record<string, string> = {
+    air: "Aéreo", package: "Pacote", cruise: "Cruzeiro", road: "Rodoviário", hotel: "Hotel",
+  };
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, { name: string; value: number }>();
+    packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
+      const label = categoryLabels[p.tripType] ?? p.tripType;
+      const cur = map.get(label) || { name: label, value: 0 };
+      cur.value += p.totalValue;
+      map.set(label, cur);
+    });
+    return [...map.values()].sort((a, b) => b.value - a.value);
+  }, [packages]);
 
   // ----- Receitas x Despesas (4 meses) -----
   const finChart = Array.from({ length: 4 }, (_, i) => {
