@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, TrendingUp, TrendingDown, DollarSign, Edit2, Trash2 } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -18,6 +19,13 @@ const emptyForm = { type: "income" as Transaction["type"], description: "", valu
 const Financial = () => {
   const { transactions, clients, addTransaction, updateTransaction, deleteTransaction } = useData();
   const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q) setSearch(q);
+  }, [searchParams]);
+
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [open, setOpen] = useState(false);
