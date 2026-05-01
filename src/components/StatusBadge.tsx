@@ -2,20 +2,22 @@ import { cn } from "@/lib/utils";
 
 type StatusVariant =
   | "lead" | "negotiation" | "sold" | "postSale" | "recurring"
-  | "sent" | "approved" | "cancelled"
+  | "draft" | "sent" | "approved" | "cancelled" | "lost"
   | "paid" | "pending";
 
 const styles: Record<StatusVariant, string> = {
-  // Clients (FlowDestinos travel-agency vocabulary)
+  // Clients
   lead: "bg-info-soft text-info-soft-foreground",
   negotiation: "bg-warning-soft text-warning-soft-foreground",
   sold: "bg-success-soft text-success-soft-foreground",
   postSale: "bg-secondary text-secondary-foreground",
   recurring: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--navy))]",
   // Quotes
+  draft: "bg-muted text-muted-foreground",
   sent: "bg-info-soft text-info-soft-foreground",
   approved: "bg-success-soft text-success-soft-foreground",
   cancelled: "bg-error-soft text-error-soft-foreground",
+  lost: "bg-error-soft text-error-soft-foreground",
   // Payments
   paid: "bg-success-soft text-success-soft-foreground",
   pending: "bg-warning-soft text-warning-soft-foreground",
@@ -27,9 +29,11 @@ const labels: Record<StatusVariant, string> = {
   sold: "Cliente ativo",
   postSale: "Pós-venda",
   recurring: "Cliente recorrente",
+  draft: "Rascunho",
   sent: "Enviada",
   approved: "Aprovada",
   cancelled: "Cancelada",
+  lost: "Perdida",
   paid: "Pago",
   pending: "Pendente",
 };

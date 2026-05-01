@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Quotes from "./pages/Quotes";
+import Pipeline from "./pages/Pipeline";
+import Opportunities from "./pages/Opportunities";
 import Flights from "./pages/Flights";
 import Financial from "./pages/Financial";
 import Packages from "./pages/Packages";
@@ -48,6 +50,8 @@ const App = () => (
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/clientes" element={<Clients />} />
                       <Route path="/clientes/:id" element={<ClientDetail />} />
+                      <Route path="/pipeline" element={<Pipeline />} />
+                      <Route path="/oportunidades" element={<Opportunities />} />
                       <Route path="/cotacoes" element={<Quotes />} />
                       <Route path="/pacotes" element={<Packages />} />
                       <Route path="/pacotes/:id" element={<PackageDetail />} />

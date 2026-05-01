@@ -38,8 +38,8 @@ const sections: NavSection[] = [
     key: "comercial",
     label: "Comercial",
     items: [
-      { title: "Leads", path: "/clientes?status=lead", icon: Target },
-      { title: "Oportunidades", path: "/clientes?status=negotiation", icon: Sparkles },
+      { title: "Pipeline", path: "/pipeline", icon: GitBranch },
+      { title: "Oportunidades", path: "/oportunidades", icon: Sparkles },
       { title: "Propostas", path: "/cotacoes", icon: FileText },
     ],
   },

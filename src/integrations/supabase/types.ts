@@ -295,6 +295,54 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          destination: string | null
+          estimated_value: number | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          position: number
+          probability: number | null
+          stage: Database["public"]["Enums"]["opportunity_stage"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          destination?: string | null
+          estimated_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          position?: number
+          probability?: number | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          destination?: string | null
+          estimated_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          position?: number
+          probability?: number | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       packages: {
         Row: {
           client_id: string | null
@@ -453,7 +501,10 @@ export type Database = {
           destination: string
           end_date: string | null
           id: string
+          items: Json | null
           itinerary: Json | null
+          margin_percent: number | null
+          opportunity_id: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["quote_status"]
           updated_at: string
@@ -467,7 +518,10 @@ export type Database = {
           destination: string
           end_date?: string | null
           id?: string
+          items?: Json | null
           itinerary?: Json | null
+          margin_percent?: number | null
+          opportunity_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           updated_at?: string
@@ -481,7 +535,10 @@ export type Database = {
           destination?: string
           end_date?: string | null
           id?: string
+          items?: Json | null
           itinerary?: Json | null
+          margin_percent?: number | null
+          opportunity_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           updated_at?: string
@@ -743,6 +800,12 @@ export type Database = {
       flight_class: "economy" | "business" | "first"
       gender_type: "male" | "female" | "unspecified"
       notification_type: "checkin" | "payment" | "departure" | "general"
+      opportunity_stage:
+        | "new"
+        | "contact"
+        | "proposal"
+        | "closed_won"
+        | "closed_lost"
       origin_channel:
         | "referral"
         | "instagram"
@@ -751,7 +814,7 @@ export type Database = {
         | "in-person"
         | "other"
       payment_status: "pending" | "partial" | "paid"
-      quote_status: "sent" | "approved" | "cancelled"
+      quote_status: "sent" | "approved" | "cancelled" | "draft" | "lost"
       reservation_status: "quoting" | "pending" | "confirmed" | "cancelled"
       seat_preference: "window" | "aisle" | "none"
       supplier_category:
@@ -906,6 +969,13 @@ export const Constants = {
       flight_class: ["economy", "business", "first"],
       gender_type: ["male", "female", "unspecified"],
       notification_type: ["checkin", "payment", "departure", "general"],
+      opportunity_stage: [
+        "new",
+        "contact",
+        "proposal",
+        "closed_won",
+        "closed_lost",
+      ],
       origin_channel: [
         "referral",
         "instagram",
@@ -915,7 +985,7 @@ export const Constants = {
         "other",
       ],
       payment_status: ["pending", "partial", "paid"],
-      quote_status: ["sent", "approved", "cancelled"],
+      quote_status: ["sent", "approved", "cancelled", "draft", "lost"],
       reservation_status: ["quoting", "pending", "confirmed", "cancelled"],
       seat_preference: ["window", "aisle", "none"],
       supplier_category: [

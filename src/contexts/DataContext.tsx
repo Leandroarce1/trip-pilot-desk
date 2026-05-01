@@ -5,6 +5,7 @@ import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
   TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
   Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
+  Opportunity, QuoteItem,
 } from "@/types/crm";
 
 // ---------- Mappers (snake_case <-> camelCase) ----------
@@ -49,6 +50,9 @@ const mapQuote = (r: any, clientName: string): Quote => ({
   status: r.status,
   createdAt: r.created_at?.slice(0, 10) ?? "",
   itinerary: (r.itinerary ?? []) as ItineraryDay[],
+  items: (r.items ?? []) as QuoteItem[],
+  marginPercent: Number(r.margin_percent ?? 0),
+  opportunityId: r.opportunity_id ?? undefined,
 });
 
 const quoteToRow = (q: Partial<Quote>, userId: string) => ({
@@ -61,6 +65,38 @@ const quoteToRow = (q: Partial<Quote>, userId: string) => ({
   description: q.description ?? "",
   status: q.status ?? "sent",
   itinerary: (q.itinerary ?? []) as any,
+  items: (q.items ?? []) as any,
+  margin_percent: q.marginPercent ?? 0,
+  opportunity_id: q.opportunityId || null,
+});
+
+// ---------- Opportunities mappers ----------
+const mapOpportunity = (r: any, clientName: string): Opportunity => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  clientName,
+  title: r.title ?? "",
+  destination: r.destination ?? "",
+  estimatedValue: Number(r.estimated_value ?? 0),
+  probability: Number(r.probability ?? 50),
+  expectedCloseDate: r.expected_close_date ?? undefined,
+  stage: r.stage,
+  position: Number(r.position ?? 0),
+  notes: r.notes ?? "",
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const opportunityToRow = (o: Partial<Opportunity>, userId: string) => ({
+  user_id: userId,
+  client_id: o.clientId || null,
+  title: o.title!,
+  destination: o.destination ?? "",
+  estimated_value: o.estimatedValue ?? 0,
+  probability: o.probability ?? 50,
+  expected_close_date: o.expectedCloseDate || null,
+  stage: o.stage ?? "new",
+  position: o.position ?? 0,
+  notes: o.notes ?? "",
 });
 
 const mapFlight = (r: any, clientName: string): Flight => ({
@@ -221,10 +257,11 @@ interface DataContextType {
   packages: TravelPackage[];
   notifications: Notification[];
   suppliers: Supplier[];
+  opportunities: Opportunity[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
-  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<void>;
+  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<Quote | void>;
   updateQuote: (q: Quote) => Promise<void>;
   deleteQuote: (id: string) => Promise<void>;
   addFlight: (f: Omit<Flight, "id" | "clientName">) => Promise<void>;
@@ -239,6 +276,9 @@ interface DataContextType {
   addSupplier: (s: Omit<Supplier, "id" | "createdAt">) => Promise<void>;
   updateSupplier: (s: Supplier) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
+  addOpportunity: (o: Omit<Opportunity, "id" | "createdAt" | "clientName">) => Promise<Opportunity | void>;
+  updateOpportunity: (o: Opportunity) => Promise<void>;
+  deleteOpportunity: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
@@ -257,6 +297,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [packages, setPackages] = useState<TravelPackage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
@@ -267,7 +308,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadAll = useCallback(async () => {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
-      setPackages([]); setNotifications([]); setSuppliers([]);
+      setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
       setLoading(false);
       return;
     }
@@ -275,7 +316,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
-      transactionsRes, packagesRes, notificationsRes,
+      transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -284,6 +325,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("transactions").select("*").order("date", { ascending: false }),
       supabase.from("packages").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("date", { ascending: false }),
+      supabase.from("opportunities").select("*").order("position", { ascending: true }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -296,6 +338,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions((transactionsRes.data ?? []).map((r: any) => mapTransaction(r, nameById.get(r.client_id))));
     setPackages((packagesRes.data ?? []).map((r: any) => mapPackage(r, nameById.get(r.client_id) ?? "")));
     setNotifications((notificationsRes.data ?? []).map(mapNotification));
+    setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
     setLoading(false);
   }, [user]);
 
@@ -323,11 +366,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   // ---------- CRUD: Quotes ----------
-  const addQuote = async (q: Omit<Quote, "id" | "createdAt" | "clientName">) => {
+  const addQuote = async (q: Omit<Quote, "id" | "createdAt" | "clientName">): Promise<Quote | void> => {
     if (!user) return;
     const { data, error } = await supabase.from("quotes").insert(quoteToRow(q, user.id)).select().single();
     if (error) throw error;
-    setQuotes((prev) => [mapQuote(data, getClientName(data.client_id)), ...prev]);
+    const mapped = mapQuote(data, getClientName(data.client_id));
+    setQuotes((prev) => [mapped, ...prev]);
+    return mapped;
   };
   const updateQuote = async (q: Quote) => {
     if (!user) return;
@@ -417,6 +462,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setSuppliers((prev) => prev.filter((x) => x.id !== id));
   };
 
+  // ---------- CRUD: Opportunities ----------
+  const addOpportunity = async (o: Omit<Opportunity, "id" | "createdAt" | "clientName">): Promise<Opportunity | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("opportunities").insert(opportunityToRow(o, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapOpportunity(data, getClientName(data.client_id));
+    setOpportunities((prev) => [...prev, mapped]);
+    return mapped;
+  };
+  const updateOpportunity = async (o: Opportunity) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("opportunities").update(opportunityToRow(o, user.id)).eq("id", o.id).select().single();
+    if (error) throw error;
+    setOpportunities((prev) => prev.map((x) => (x.id === o.id ? mapOpportunity(data, getClientName(data.client_id)) : x)));
+  };
+  const deleteOpportunity = async (id: string) => {
+    const { error } = await supabase.from("opportunities").delete().eq("id", id);
+    if (error) throw error;
+    setOpportunities((prev) => prev.filter((x) => x.id !== id));
+  };
+
   // ---------- Notifications ----------
   const markNotificationRead = async (id: string) => {
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
@@ -441,13 +507,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       loading,
-      clients, quotes, flights, transactions, packages, notifications, suppliers,
+      clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
       addTransaction, updateTransaction, deleteTransaction,
       addPackage, updatePackage, deletePackage,
       addSupplier, updateSupplier, deleteSupplier,
+      addOpportunity, updateOpportunity, deleteOpportunity,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
-import { Quote, ItineraryDay } from "@/types/crm";
+import { Quote, ItineraryDay, QuoteItem, QuoteStatus } from "@/types/crm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,8 +17,9 @@ import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
 import { NextStepBanner } from "@/components/NextStepBanner";
 
-const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "sent" as Quote["status"] };
+const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
+const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", quantity: 1, unitValue: 0, cost: 0 });
 
 const Quotes = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const Quotes = () => {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [items, setItems] = useState<QuoteItem[]>([]);
 
   const filtered = quotes.filter((q) => {
     const matchSearch = q.clientName.toLowerCase().includes(search.toLowerCase()) || q.destination.toLowerCase().includes(search.toLowerCase());
@@ -36,33 +38,64 @@ const Quotes = () => {
     return matchSearch && matchStatus;
   });
 
+  // Cálculos automáticos a partir dos itens
+  const itemsTotal = items.reduce((acc, it) => acc + it.quantity * it.unitValue, 0);
+  const itemsCost = items.reduce((acc, it) => acc + it.quantity * (it.cost ?? 0), 0);
+  const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
+  const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
+
   const handleSubmit = () => {
-    if (!form.clientId || !form.destination || !form.value) { toast.error("Preencha os campos obrigatórios"); return; }
+    if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
+    if (effectiveValue <= 0) { toast.error("Adicione itens ou informe um valor"); return; }
     const cleanItinerary = itinerary.filter((d) => d.title.trim() !== "");
+    const cleanItems = items.filter((i) => i.description.trim() !== "");
+    const payload = {
+      clientId: form.clientId,
+      destination: form.destination,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      value: effectiveValue,
+      description: form.description,
+      status: form.status,
+      marginPercent: cleanItems.length > 0 ? Number(computedMargin.toFixed(2)) : Number(form.marginPercent) || 0,
+      itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined,
+      items: cleanItems.length > 0 ? cleanItems : undefined,
+    };
     if (editingQuote) {
-      updateQuote({ ...editingQuote, ...form, value: Number(form.value), clientName: clients.find((c) => c.id === form.clientId)?.name || "", itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined });
-      toast.success("Cotação atualizada!");
+      updateQuote({ ...editingQuote, ...payload, clientName: clients.find((c) => c.id === form.clientId)?.name || "" });
+      toast.success("Proposta atualizada!");
     } else {
-      addQuote({ clientId: form.clientId, destination: form.destination, startDate: form.startDate, endDate: form.endDate, value: Number(form.value), description: form.description, status: form.status, itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined });
-      toast.success("Cotação criada!");
+      addQuote(payload);
+      toast.success("Proposta criada!");
     }
     setForm(emptyForm);
     setItinerary([]);
+    setItems([]);
     setEditingQuote(null);
     setOpen(false);
   };
 
   const openEdit = (q: Quote) => {
     setEditingQuote(q);
-    setForm({ clientId: q.clientId, destination: q.destination, startDate: q.startDate, endDate: q.endDate, value: String(q.value), description: q.description, status: q.status });
+    setForm({
+      clientId: q.clientId, destination: q.destination, startDate: q.startDate, endDate: q.endDate,
+      value: String(q.value), description: q.description, status: q.status,
+      marginPercent: String(q.marginPercent ?? 20),
+    });
     setItinerary(q.itinerary || []);
+    setItems(q.items || []);
     setOpen(true);
   };
 
   const handleClose = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); }
+    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); setItems([]); }
   };
+
+  const addItem = () => setItems((prev) => [...prev, newItem()]);
+  const updateItem = (id: string, patch: Partial<QuoteItem>) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id));
 
   const addDay = () => {
     setItinerary((prev) => [...prev, { day: prev.length + 1, title: "", description: "" }]);
@@ -145,18 +178,19 @@ const Quotes = () => {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Cotações</h1>
-          <p className="text-sm text-muted-foreground">{quotes.length} cotações</p>
+          <h1 className="text-2xl font-bold">Propostas</h1>
+          <p className="text-sm text-muted-foreground">{quotes.length} proposta(s)</p>
         </div>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Nova Cotação</Button>
+            <Button><Plus className="mr-2 h-4 w-4" /> Nova Proposta</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editingQuote ? "Editar Cotação" : "Nova Cotação"}</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{editingQuote ? "Editar Proposta" : "Nova Proposta"}</DialogTitle></DialogHeader>
             <Tabs defaultValue="info" className="pt-2">
               <TabsList className="w-full">
                 <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
+                <TabsTrigger value="items" className="flex-1">Itens</TabsTrigger>
                 <TabsTrigger value="itinerary" className="flex-1">Itinerário</TabsTrigger>
               </TabsList>
               <TabsContent value="info" className="space-y-4 mt-4">
@@ -172,21 +206,79 @@ const Quotes = () => {
                   <div><Label>Data ida</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
                   <div><Label>Data volta</Label><Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div><Label>Valor (R$) *</Label><Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <Label>Valor (R$){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
+                    <Input type="number" value={items.length > 0 ? itemsTotal : form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} disabled={items.length > 0} />
+                  </div>
+                  <div>
+                    <Label>Margem (%){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
+                    <Input type="number" value={items.length > 0 ? computedMargin.toFixed(1) : form.marginPercent} onChange={(e) => setForm({ ...form, marginPercent: e.target.value })} disabled={items.length > 0} />
+                  </div>
                   <div>
                     <Label>Status</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Quote["status"] })}>
+                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as QuoteStatus })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="draft">Rascunho</SelectItem>
                         <SelectItem value="sent">Enviada</SelectItem>
                         <SelectItem value="approved">Aprovada</SelectItem>
+                        <SelectItem value="lost">Perdida</SelectItem>
                         <SelectItem value="cancelled">Cancelada</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div><Label>Descrição do pacote</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+              </TabsContent>
+              <TabsContent value="items" className="space-y-3 mt-4">
+                <p className="text-xs text-muted-foreground">Detalhe os itens da proposta. O valor total e a margem são calculados automaticamente.</p>
+                {items.map((it) => (
+                  <div key={it.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="Descrição (ex: Hotel 5 noites)" value={it.description} onChange={(e) => updateItem(it.id, { description: e.target.value })} className="flex-1" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(it.id)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-[10px]">Qtd</Label>
+                        <Input type="number" value={it.quantity} onChange={(e) => updateItem(it.id, { quantity: Number(e.target.value) || 0 })} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Valor unit. (R$)</Label>
+                        <Input type="number" value={it.unitValue} onChange={(e) => updateItem(it.id, { unitValue: Number(e.target.value) || 0 })} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Custo unit. (R$)</Label>
+                        <Input type="number" value={it.cost ?? 0} onChange={(e) => updateItem(it.id, { cost: Number(e.target.value) || 0 })} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-right text-muted-foreground tabular-nums">
+                      Subtotal: R$ {(it.quantity * it.unitValue).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full" onClick={addItem}>
+                  <Plus className="mr-2 h-4 w-4" />Adicionar item
+                </Button>
+                {items.length > 0 && (
+                  <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Total</p>
+                      <p className="font-bold tabular-nums">R$ {itemsTotal.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
+                      <p className="font-bold tabular-nums">R$ {itemsCost.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Margem</p>
+                      <p className="font-bold tabular-nums text-success">{computedMargin.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="itinerary" className="space-y-4 mt-4">
                 <p className="text-xs text-muted-foreground">Adicione o roteiro dia a dia para compartilhar com o cliente.</p>
@@ -205,7 +297,7 @@ const Quotes = () => {
                 </Button>
               </TabsContent>
             </Tabs>
-            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Cotação"}</Button>
+            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Proposta"}</Button>
           </DialogContent>
         </Dialog>
       </div>
@@ -219,8 +311,10 @@ const Quotes = () => {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
             <SelectItem value="sent">Enviada</SelectItem>
             <SelectItem value="approved">Aprovada</SelectItem>
+            <SelectItem value="lost">Perdida</SelectItem>
             <SelectItem value="cancelled">Cancelada</SelectItem>
           </SelectContent>
         </Select>
@@ -245,7 +339,12 @@ const Quotes = () => {
             </div>
             <div className="border-t pt-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-lg font-bold text-foreground">R$ {q.value.toLocaleString("pt-BR")}</p>
+                <div>
+                  <p className="text-lg font-bold text-foreground tabular-nums">R$ {q.value.toLocaleString("pt-BR")}</p>
+                  {q.marginPercent !== undefined && q.marginPercent > 0 && (
+                    <p className="text-[10px] text-muted-foreground">Margem {q.marginPercent.toFixed(1)}%</p>
+                  )}
+                </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/reserva/${q.id}`)} title="Ver proposta"><Eye className="h-3.5 w-3.5" /></Button>
                   <Button variant="ghost" size="sm" onClick={() => openEdit(q)}><Edit2 className="h-3.5 w-3.5" /></Button>
@@ -254,16 +353,16 @@ const Quotes = () => {
                       <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
-                      <AlertDialogHeader><AlertDialogTitle>Excluir cotação?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogHeader><AlertDialogTitle>Excluir proposta?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => { deleteQuote(q.id); toast.success("Cotação excluída!"); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        <AlertDialogAction onClick={() => { deleteQuote(q.id); toast.success("Proposta excluída!"); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
               </div>
-              {q.status === "sent" && (
+              {(q.status === "sent" || q.status === "draft") && (
                 <Button
                   size="sm"
                   className="w-full bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
