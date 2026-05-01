@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, Phone, Mail, FileText, Plane, DollarSign, Edit2, Trash2,
-  User, Heart, ShieldCheck, Clock, Award, Plus,
+  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
