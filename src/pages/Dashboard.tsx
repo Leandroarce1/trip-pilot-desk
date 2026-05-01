@@ -14,51 +14,96 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from "recharts";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Flame, Zap, ArrowUp, TrendingDown } from "lucide-react";
 
 // ---------- Reusable inline components ----------
 
 type Trend = "up" | "down" | "neutral" | "alert";
 
 function KpiCard({
-  title, value, sub, icon: Icon, trend = "neutral", accent, onClick,
+  title, value, sub, icon: Icon, trend = "neutral", accent, onClick, deltaPct, spark,
 }: {
   title: string; value: string | number; sub?: string;
-  icon: typeof DollarSign; trend?: Trend; accent?: "primary" | "gold" | "success" | "warning" | "info";
+  icon: typeof DollarSign; trend?: Trend;
+  accent?: "primary" | "gold" | "success" | "warning" | "info";
   onClick?: () => void;
+  deltaPct?: number;
+  spark?: number[];
 }) {
   const accentMap = {
-    primary: "bg-primary/10 text-primary",
-    gold: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--gold))]",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/15 text-warning",
-    info: "bg-info-soft text-info-soft-foreground",
+    primary: { chip: "bg-primary/10 text-primary", glow: "from-primary/15", stroke: "hsl(var(--primary))" },
+    gold:    { chip: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--gold))]", glow: "from-[hsl(var(--gold))]/15", stroke: "hsl(var(--gold))" },
+    success: { chip: "bg-success/10 text-success", glow: "from-success/15", stroke: "hsl(var(--success))" },
+    warning: { chip: "bg-warning/15 text-warning", glow: "from-warning/15", stroke: "hsl(var(--warning))" },
+    info:    { chip: "bg-info-soft text-info-soft-foreground", glow: "from-info/15", stroke: "hsl(var(--info))" },
   } as const;
+  const a = accentMap[accent ?? "primary"];
+  const sparkData = (spark && spark.length ? spark : [2, 3, 2.5, 4, 3.5, 5, 4.5]).map((v, i) => ({ i, v }));
+  const deltaUp = (deltaPct ?? 0) >= 0;
+  const showDelta = typeof deltaPct === "number" && Number.isFinite(deltaPct);
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-4 text-left",
-        "transition-all hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
+        "group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 backdrop-blur-md p-5 text-left",
+        "min-h-[168px] flex flex-col justify-between",
+        "shadow-[0_1px_2px_rgba(11,31,58,0.04),0_4px_16px_-4px_rgba(11,31,58,0.06)]",
+        "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_8px_28px_-6px_rgba(11,31,58,0.18)] hover:border-primary/40 hover:bg-card/90",
         onClick ? "cursor-pointer" : "cursor-default",
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      <div className="relative flex items-start justify-between mb-3">
-        <div className={cn("rounded-lg p-2", accentMap[accent ?? "primary"])}>
-          <Icon className="h-4 w-4" />
+      {/* Accent glow on hover */}
+      <div className={cn("absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-to-br to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl pointer-events-none", a.glow)} />
+
+      {/* Top row: icon + delta badge */}
+      <div className="relative flex items-start justify-between">
+        <div className={cn("rounded-xl p-2.5 ring-1 ring-inset ring-white/40", a.chip)}>
+          <Icon className="h-5 w-5" />
         </div>
-        {trend === "up" && <ArrowUpRight className="h-3.5 w-3.5 text-success" />}
-        {trend === "down" && <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />}
-        {trend === "alert" && <Clock className="h-3.5 w-3.5 text-warning" />}
+        {showDelta ? (
+          <span className={cn(
+            "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10.5px] font-bold tabular-nums",
+            deltaUp ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
+          )}>
+            {deltaUp ? <ArrowUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+            {deltaUp ? "+" : ""}{deltaPct!.toFixed(0)}%
+          </span>
+        ) : trend === "alert" ? (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10.5px] font-bold">
+            <Clock className="h-2.5 w-2.5" /> agora
+          </span>
+        ) : null}
       </div>
-      <p className="relative text-[22px] font-bold tracking-tight text-navy leading-none tabular-nums">{value}</p>
-      <p className="relative label-caption mt-2.5">{title}</p>
-      {sub && <p className="relative text-[10.5px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+
+      {/* Value + label */}
+      <div className="relative">
+        <p className="text-[28px] font-bold tracking-tight text-navy leading-none tabular-nums">{value}</p>
+        <p className="label-caption mt-2.5">{title}</p>
+        {sub && <p className="text-[10.5px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+      </div>
+
+      {/* Sparkline */}
+      <div className="relative h-9 -mx-1 -mb-1 mt-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id={`spark-${a.stroke.replace(/[^a-z]/gi, "")}-${title.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={a.stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={a.stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="v" stroke={a.stroke} strokeWidth={1.75}
+              fill={`url(#spark-${a.stroke.replace(/[^a-z]/gi, "")}-${title.replace(/\s/g, "")})`}
+              isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </button>
   );
 }
@@ -243,38 +288,87 @@ const Dashboard = () => {
     return items.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 8);
   }, [packages, quotes, clients]);
 
-  // ----- IA Concierge insights -----
-  const aiInsights = [
-    upcomingDepartures.length > 0
-      ? `${upcomingDepartures.length} embarque(s) nos próximos 7 dias — confirme documentação dos passageiros.`
-      : "Nenhum embarque iminente — momento ideal para nutrir leads.",
-    pendingPayments.length > 0
-      ? `${pendingPayments.length} reserva(s) com pagamento pendente totalizando ${fmtCurrency(pendingTotal)}.`
-      : "Carteira em dia — sem pagamentos pendentes.",
-    newLeads >= 2
-      ? `${newLeads} novos leads no mês. Agende follow-up com os mais quentes.`
-      : "Considere ações de captação — leads novos abaixo da média.",
-    destStats[0] ? `Destino campeão do mês: ${destStats[0].flag ?? ""} ${destStats[0].name} (${fmtCurrency(destStats[0].value)}).` : "",
-  ].filter(Boolean);
+  // ----- Séries de 6 meses para sparklines + deltas -----
+  const monthKeys = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return d.toISOString().slice(0, 7);
+  });
+  const prevMonthKey = monthKeys[monthKeys.length - 2];
+
+  const series = useMemo(() => {
+    return {
+      sales: monthKeys.map((k) => packages.filter((p) => p.createdAt.startsWith(k)).length),
+      revenue: monthKeys.map((k) =>
+        packages.filter((p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(k))
+          .reduce((s, p) => s + p.totalValue, 0)),
+      tickets: monthKeys.map((k) => flights.filter((f) => f.departureDate.startsWith(k)).length),
+      pending: monthKeys.map((k) =>
+        packages.filter((p) => p.paymentStatus === "pending" && p.reservationStatus !== "cancelled" && p.createdAt.startsWith(k))
+          .reduce((s, p) => s + p.totalValue, 0)),
+      leads: monthKeys.map((k) => clients.filter((c) => c.status === "lead" && c.createdAt.startsWith(k)).length),
+      departures: monthKeys.map((k) =>
+        packages.filter((p) => p.reservationStatus !== "cancelled" && p.departureDate.startsWith(k)).length),
+    };
+  }, [packages, flights, clients, monthKeys.join(",")]);
+
+  const pct = (cur: number, prev: number) => {
+    if (prev === 0) return cur > 0 ? 100 : 0;
+    return ((cur - prev) / prev) * 100;
+  };
+
+  const prevRevenue = packages.filter((p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(prevMonthKey))
+    .reduce((s, p) => s + p.totalValue, 0);
+  const prevSales = packages.filter((p) => p.createdAt.startsWith(prevMonthKey)).length;
+  const prevTickets = flights.filter((f) => f.departureDate.startsWith(prevMonthKey)).length;
+  const prevLeads = clients.filter((c) => c.status === "lead" && c.createdAt.startsWith(prevMonthKey)).length;
+
+  // ----- IA Concierge — 4 painéis inteligentes -----
+  // Clientes quentes: leads/negotiation com cotação enviada nos últimos 14 dias
+  const cutoffHot = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
+  const hotClients = clients
+    .filter((c) => (c.status === "lead" || c.status === "negotiation"))
+    .map((c) => {
+      const recentQuotes = quotes.filter((q) => q.clientId === c.id && q.createdAt >= cutoffHot);
+      const score = recentQuotes.length * 2 + (c.status === "negotiation" ? 3 : 1);
+      return { client: c, score, lastQuote: recentQuotes[0] };
+    })
+    .filter((x) => x.score > 1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  // Viagens urgentes: embarque ≤ 7 dias
+  const urgentTrips = nearTrips.slice(0, 3);
+
+  // Upsell: clientes 'sold' ou 'recurring' sem reserva ativa nos próximos 60d
+  const in60d = new Date(now.getTime() + 60 * 86400000);
+  const upsellTargets = clients
+    .filter((c) => c.status === "sold" || c.status === "recurring" || c.status === "postSale")
+    .filter((c) => !packages.some((p) => p.clientId === c.id && new Date(p.departureDate) > now && new Date(p.departureDate) <= in60d))
+    .slice(0, 3);
+
+  // Alertas financeiros: pagamentos pendentes
+  const finAlerts = pendingPayments.slice(0, 3);
 
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
-    { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", trend: monthSales > 0 ? "up" : "neutral", onClick: () => navigate("/pacotes") },
-    { title: "Receita confirmada", value: fmtCurrency(monthRevenue), sub: `${monthConfirmed.length} confirmadas`, icon: DollarSign, accent: "success", trend: monthRevenue > 0 ? "up" : "neutral", onClick: () => navigate("/financeiro") },
-    { title: "Margem", value: `${margin.toFixed(1)}%`, sub: `Comissão ${fmtCurrency(monthCommission)}`, icon: TrendingUp, accent: "primary", trend: margin > 8 ? "up" : "neutral" },
-    { title: "Tickets emitidos", value: ticketsIssued, sub: "Voos no mês corrente", icon: Plane, accent: "info", trend: "neutral", onClick: () => navigate("/voos") },
-    { title: "Embarques próximos", value: upcomingDepartures.length, sub: "Próximos 7 dias", icon: CalendarClock, accent: "gold", trend: upcomingDepartures.length > 0 ? "alert" : "neutral", onClick: () => navigate("/pacotes") },
-    { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
-    { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", trend: newLeads > 0 ? "up" : "neutral", onClick: () => navigate("/clientes") },
-    { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", trend: conversion > 30 ? "up" : "neutral" },
+    { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
+    { title: "Receita confirmada", value: fmtCurrency(monthRevenue), sub: `${monthConfirmed.length} confirmadas`, icon: DollarSign, accent: "success", spark: series.revenue, deltaPct: pct(monthRevenue, prevRevenue), onClick: () => navigate("/financeiro") },
+    { title: "Margem", value: `${margin.toFixed(1)}%`, sub: `Comissão ${fmtCurrency(monthCommission)}`, icon: TrendingUp, accent: "primary", spark: series.revenue.map((v) => v * 0.1), trend: margin > 8 ? "up" : "neutral" },
+    { title: "Tickets emitidos", value: ticketsIssued, sub: "Voos no mês corrente", icon: Plane, accent: "info", spark: series.tickets, deltaPct: pct(ticketsIssued, prevTickets), onClick: () => navigate("/voos") },
+    { title: "Embarques próximos", value: upcomingDepartures.length, sub: "Próximos 7 dias", icon: CalendarClock, accent: "gold", spark: series.departures, trend: upcomingDepartures.length > 0 ? "alert" : "neutral", onClick: () => navigate("/pacotes") },
+    { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", spark: series.pending, trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
+    { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", spark: series.leads, deltaPct: pct(newLeads, prevLeads), onClick: () => navigate("/clientes") },
+    { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", spark: series.sales, trend: conversion > 30 ? "up" : "neutral" },
   ];
 
   return (
-    <div className="space-y-6 relative">
-      {/* Soft ambient background */}
+    <div className="space-y-7 relative">
+      {/* Premium ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-1/3 -left-40 h-96 w-96 rounded-full bg-[hsl(var(--gold))]/5 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/[0.03]" />
+        <div className="absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-primary/8 blur-[120px]" />
+        <div className="absolute top-1/2 -left-40 h-[24rem] w-[24rem] rounded-full bg-[hsl(var(--gold))]/8 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/3 h-[20rem] w-[20rem] rounded-full bg-[hsl(var(--primary-soft))]/5 blur-[100px]" />
       </div>
 
       {/* Header */}
@@ -298,8 +392,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 1) Header KPI cards */}
-      <section className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+      {/* 1) Header KPI cards — premium executive */}
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
         {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
       </section>
 
@@ -483,25 +577,126 @@ const Dashboard = () => {
           )}
         </PanelCard>
 
-        {/* IA Concierge — full width */}
-        <PanelCard title="IA Concierge" icon={Sparkles} className="lg:col-span-12">
-          <div className="rounded-xl bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--navy-active))] text-navy-foreground p-4 relative overflow-hidden">
-            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[hsl(var(--primary-soft))]/20 blur-2xl" aria-hidden />
-            <div className="absolute right-4 bottom-4 opacity-20" aria-hidden><Sparkles className="h-16 w-16" /></div>
-            <div className="relative grid gap-3 sm:grid-cols-2">
-              {aiInsights.map((t, i) => (
-                <div key={i} className="flex items-start gap-2.5 rounded-lg bg-white/5 border border-white/10 p-3 backdrop-blur-sm">
-                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--gold))] shrink-0 mt-0.5" />
-                  <p className="text-[12.5px] leading-relaxed text-navy-foreground/90">{t}</p>
+        {/* IA Concierge — painel inteligente em 4 cards */}
+        <PanelCard
+          title="IA Concierge"
+          icon={Sparkles}
+          className="lg:col-span-12"
+          action={<Badge variant="outline" className="border-[hsl(var(--gold))]/40 text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/5 text-[10.5px]">
+            <Sparkles className="h-3 w-3 mr-1" /> insights ao vivo
+          </Badge>}
+        >
+          <div className="relative rounded-2xl bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--navy-active))] text-navy-foreground p-5 overflow-hidden">
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[hsl(var(--primary-soft))]/25 blur-3xl" aria-hidden />
+            <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl" aria-hidden />
+
+            <div className="relative grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {/* Clientes quentes */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-destructive/20 text-destructive p-1.5"><Flame className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Clientes quentes</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{hotClients.length}</Badge>
                 </div>
-              ))}
+                {hotClients.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Nenhum lead em ebulição agora.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {hotClients.map(({ client }) => (
+                      <li key={client.id}
+                        onClick={() => navigate(`/clientes/${client.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                        <span className="truncate">{client.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Viagens urgentes */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-warning/25 text-warning p-1.5"><Zap className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Viagens urgentes</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{urgentTrips.length}</Badge>
+                </div>
+                {urgentTrips.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Nenhum embarque imediato.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {urgentTrips.map((p) => {
+                      const days = Math.max(0, Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000));
+                      return (
+                        <li key={p.id}
+                          onClick={() => navigate(`/pacotes/${p.id}`)}
+                          className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                          <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
+                          <span className="truncate flex-1">{p.clientName}</span>
+                          <span className="text-[10.5px] text-navy-foreground/60 tabular-nums shrink-0">{days}d</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              {/* Oportunidades de upsell */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-[hsl(var(--gold))]/25 text-[hsl(var(--gold))] p-1.5"><TrendingUp className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Upsell</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{upsellTargets.length}</Badge>
+                </div>
+                {upsellTargets.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Carteira ativa toda engajada.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {upsellTargets.map((c) => (
+                      <li key={c.id}
+                        onClick={() => navigate(`/clientes/${c.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--gold))] shrink-0" />
+                        <span className="truncate">{c.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Alertas financeiros */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-destructive/20 text-destructive p-1.5"><CreditCard className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Alertas financeiros</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{finAlerts.length}</Badge>
+                </div>
+                {finAlerts.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Carteira em dia 👌</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {finAlerts.map((p) => (
+                      <li key={p.id}
+                        onClick={() => navigate(`/pacotes/${p.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                        <span className="truncate flex-1">{p.clientName}</span>
+                        <span className="text-[10.5px] text-navy-foreground/70 tabular-nums shrink-0">{fmtCurrency(p.totalValue)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
+
             <div className="relative mt-4 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
+              <Button size="sm" variant="secondary"
+                className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
                 onClick={() => navigate("/cotacoes")}>
                 <FileText className="h-3.5 w-3.5" /> Sugerir nova cotação
               </Button>
-              <Button size="sm" variant="secondary" className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
+              <Button size="sm" variant="secondary"
+                className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
                 onClick={() => navigate("/clientes")}>
                 <Mail className="h-3.5 w-3.5" /> Disparar follow-up
               </Button>
