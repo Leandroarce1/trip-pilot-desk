@@ -578,41 +578,71 @@ const Dashboard = () => {
           </div>
         </PanelCard>
 
-        {/* Follow-up hoje */}
-        <PanelCard title="Follow-up hoje" icon={PhoneCall} className="lg:col-span-6"
-          action={<Badge variant="warning">{followUps.length}</Badge>}
+        {/* Follow-up comercial */}
+        <PanelCard title="Follow-up comercial" icon={PhoneCall} className="lg:col-span-6"
+          action={<Badge variant="warning">{followUpsRich.length} leads</Badge>}
         >
           <div className="space-y-2">
-            {followUps.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem follow-ups pendentes 🎉</p>}
-            {followUps.map((c) => (
-              <div key={c.id}
-                className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 cursor-pointer transition-colors"
-                onClick={() => navigate(`/clientes/${c.id}`)}
-              >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary-soft))] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {c.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+            {followUpsRich.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem follow-ups pendentes 🎉</p>}
+            {followUpsRich.map(({ client: c, daysSilent, potential }) => {
+              const heat = daysSilent >= 7 ? "destructive" : daysSilent >= 3 ? "warning" : "info";
+              const heatStyle =
+                heat === "destructive" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                heat === "warning" ? "bg-warning/10 text-warning border-warning/30" :
+                "bg-info-soft text-info-soft-foreground border-info/30";
+              return (
+                <div key={c.id}
+                  className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary-soft))] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {c.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate flex items-center gap-2">
+                      {c.name}
+                      <StatusBadge variant={c.status} />
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-2">
+                      <span className={cn("inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold", heatStyle)}>
+                        <Clock className="h-2.5 w-2.5" />
+                        {daysSilent === 0 ? "hoje" : `${daysSilent}d sem resposta`}
+                      </span>
+                      {potential > 0 && (
+                        <span className="tabular-nums text-navy font-semibold">{fmtCurrency(potential)}</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Mensagem" onClick={() => window.open(`https://wa.me/${c.phone.replace(/\D/g, "")}`, "_blank")}>
+                      <MessageSquare className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{c.phone} · {c.email}</p>
-                </div>
-                <StatusBadge variant={c.status} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </PanelCard>
 
-        {/* Viagens próximas */}
+        {/* Viagens próximas — com status operacional */}
         <PanelCard title="Viagens próximas" icon={Plane} className="lg:col-span-7"
           action={<Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/pacotes")}>Todas <ChevronRight className="h-3 w-3" /></Button>}
         >
           <div className="space-y-2">
-            {nearTrips.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Nenhum embarque agendado.</p>}
-            {nearTrips.map((p) => {
-              const days = Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000);
+            {nearTripsRich.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Nenhum embarque agendado.</p>}
+            {nearTripsRich.map(({ pkg: p, days, checkinReady, voucherReady, docsReady }) => {
+              const urgent = days <= 2;
+              const warn = days <= 7 && days > 2;
               return (
                 <div key={p.id}
-                  className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 cursor-pointer transition-colors"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border p-2.5 hover:bg-muted/40 cursor-pointer transition-colors",
+                    urgent ? "border-destructive/40 bg-destructive/5" :
+                    warn ? "border-warning/30 bg-warning/[0.04]" :
+                    "border-border/60",
+                  )}
                   onClick={() => navigate(`/pacotes/${p.id}`)}
                 >
                   <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
@@ -621,10 +651,35 @@ const Dashboard = () => {
                     <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
                       <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
                     </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Check-in">
+                        <Plane className="h-2.5 w-2.5" /> check-in
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Voucher">
+                        <FileCheck className="h-2.5 w-2.5" /> voucher
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Documentos">
+                        <ShieldCheck className="h-2.5 w-2.5" /> docs
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
-                    <p className="text-[10.5px] text-muted-foreground">em {days} dia{days !== 1 ? "s" : ""}</p>
+                    <p className={cn(
+                      "text-[10.5px] font-semibold tabular-nums",
+                      urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
+                    )}>
+                      {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
+                    </p>
                   </div>
                 </div>
               );
