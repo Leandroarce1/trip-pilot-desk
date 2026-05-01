@@ -25,41 +25,85 @@ import { Flame, Zap, ArrowUp, TrendingDown } from "lucide-react";
 type Trend = "up" | "down" | "neutral" | "alert";
 
 function KpiCard({
-  title, value, sub, icon: Icon, trend = "neutral", accent, onClick,
+  title, value, sub, icon: Icon, trend = "neutral", accent, onClick, deltaPct, spark,
 }: {
   title: string; value: string | number; sub?: string;
-  icon: typeof DollarSign; trend?: Trend; accent?: "primary" | "gold" | "success" | "warning" | "info";
+  icon: typeof DollarSign; trend?: Trend;
+  accent?: "primary" | "gold" | "success" | "warning" | "info";
   onClick?: () => void;
+  deltaPct?: number;
+  spark?: number[];
 }) {
   const accentMap = {
-    primary: "bg-primary/10 text-primary",
-    gold: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--gold))]",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/15 text-warning",
-    info: "bg-info-soft text-info-soft-foreground",
+    primary: { chip: "bg-primary/10 text-primary", glow: "from-primary/15", stroke: "hsl(var(--primary))" },
+    gold:    { chip: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--gold))]", glow: "from-[hsl(var(--gold))]/15", stroke: "hsl(var(--gold))" },
+    success: { chip: "bg-success/10 text-success", glow: "from-success/15", stroke: "hsl(var(--success))" },
+    warning: { chip: "bg-warning/15 text-warning", glow: "from-warning/15", stroke: "hsl(var(--warning))" },
+    info:    { chip: "bg-info-soft text-info-soft-foreground", glow: "from-info/15", stroke: "hsl(var(--info))" },
   } as const;
+  const a = accentMap[accent ?? "primary"];
+  const sparkData = (spark && spark.length ? spark : [2, 3, 2.5, 4, 3.5, 5, 4.5]).map((v, i) => ({ i, v }));
+  const deltaUp = (deltaPct ?? 0) >= 0;
+  const showDelta = typeof deltaPct === "number" && Number.isFinite(deltaPct);
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-4 text-left",
-        "transition-all hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
+        "group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 backdrop-blur-md p-5 text-left",
+        "min-h-[168px] flex flex-col justify-between",
+        "shadow-[0_1px_2px_rgba(11,31,58,0.04),0_4px_16px_-4px_rgba(11,31,58,0.06)]",
+        "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_8px_28px_-6px_rgba(11,31,58,0.18)] hover:border-primary/40 hover:bg-card/90",
         onClick ? "cursor-pointer" : "cursor-default",
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      <div className="relative flex items-start justify-between mb-3">
-        <div className={cn("rounded-lg p-2", accentMap[accent ?? "primary"])}>
-          <Icon className="h-4 w-4" />
+      {/* Accent glow on hover */}
+      <div className={cn("absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-to-br to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl pointer-events-none", a.glow)} />
+
+      {/* Top row: icon + delta badge */}
+      <div className="relative flex items-start justify-between">
+        <div className={cn("rounded-xl p-2.5 ring-1 ring-inset ring-white/40", a.chip)}>
+          <Icon className="h-5 w-5" />
         </div>
-        {trend === "up" && <ArrowUpRight className="h-3.5 w-3.5 text-success" />}
-        {trend === "down" && <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />}
-        {trend === "alert" && <Clock className="h-3.5 w-3.5 text-warning" />}
+        {showDelta ? (
+          <span className={cn(
+            "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10.5px] font-bold tabular-nums",
+            deltaUp ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
+          )}>
+            {deltaUp ? <ArrowUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+            {deltaUp ? "+" : ""}{deltaPct!.toFixed(0)}%
+          </span>
+        ) : trend === "alert" ? (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10.5px] font-bold">
+            <Clock className="h-2.5 w-2.5" /> agora
+          </span>
+        ) : null}
       </div>
-      <p className="relative text-[22px] font-bold tracking-tight text-navy leading-none tabular-nums">{value}</p>
-      <p className="relative label-caption mt-2.5">{title}</p>
-      {sub && <p className="relative text-[10.5px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+
+      {/* Value + label */}
+      <div className="relative">
+        <p className="text-[28px] font-bold tracking-tight text-navy leading-none tabular-nums">{value}</p>
+        <p className="label-caption mt-2.5">{title}</p>
+        {sub && <p className="text-[10.5px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+      </div>
+
+      {/* Sparkline */}
+      <div className="relative h-9 -mx-1 -mb-1 mt-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id={`spark-${a.stroke.replace(/[^a-z]/gi, "")}-${title.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={a.stroke} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={a.stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="v" stroke={a.stroke} strokeWidth={1.75}
+              fill={`url(#spark-${a.stroke.replace(/[^a-z]/gi, "")}-${title.replace(/\s/g, "")})`}
+              isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </button>
   );
 }
