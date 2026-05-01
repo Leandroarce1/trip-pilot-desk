@@ -573,53 +573,93 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 1) Header KPI cards — premium executive */}
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
-        {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
-      </section>
+      {/* 1) AÇÃO HOJE — Central de comando operacional (TOPO, full width) */}
+      {(() => {
+        const totalPending = toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length;
+        return (
+          <section className="relative">
+            {/* Faixa de header destacada */}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-destructive/30 bg-gradient-to-r from-destructive/[0.08] via-warning/[0.06] to-[hsl(var(--gold))]/[0.08] p-5 mb-4">
+              <div className="absolute -top-16 -left-10 h-40 w-40 rounded-full bg-destructive/15 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl pointer-events-none" />
+              <div className="relative flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-destructive text-white p-2.5 shadow-lg shadow-destructive/30">
+                    <Siren className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-navy uppercase leading-none">
+                      Ação hoje
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">
+                      Resolva o que está em risco antes de qualquer outra coisa
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider border-2",
+                    totalPending > 0
+                      ? "bg-destructive text-white border-destructive animate-pulse"
+                      : "bg-success/15 text-success border-success/30",
+                  )}>
+                    {totalPending > 0 ? (
+                      <>
+                        <Siren className="h-3 w-3" />
+                        {totalPending} pendência{totalPending !== 1 ? "s" : ""}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Tudo em dia
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-      {/* 1.5) AÇÃO HOJE — central de comando operacional */}
+            {/* Grid de 4 cards grandes */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+              <ActionCard tone="info" icon={MessageCircle} label="Sem resposta"
+                count={toRespondToday.length}
+                primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
+                secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa limpa"}
+                actionLabel="Responder agora" onAction={() => navigate("/clientes")}
+                urgent={toRespondToday.length >= 5} />
+              <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
+                count={expiringQuotes.length}
+                primary={`Em até 7 dias`}
+                secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
+                actionLabel="Renegociar" onAction={() => navigate("/cotacoes")}
+                urgent={expiringQuotes.length > 0} />
+              <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
+                count={overduePayments.length}
+                primary={fmtCurrency(overdueTotal)}
+                secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
+                actionLabel="Cobrar agora" onAction={() => navigate("/financeiro")}
+                urgent={overduePayments.length > 0} />
+              <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
+                count={trips48h.length}
+                primary={`Próximas 48 horas`}
+                secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques"}
+                actionLabel="Emitir docs" onAction={() => navigate("/pacotes")}
+                urgent={trips48h.length > 0} />
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* 2) KPIs — contexto secundário */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-destructive/10 text-destructive p-1.5 ring-1 ring-destructive/20">
-              <Siren className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold tracking-tight text-navy uppercase">Ação hoje</h2>
-              <p className="text-[11px] text-muted-foreground">O que precisa da sua atenção agora</p>
-            </div>
+          <div>
+            <h2 className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">Visão geral do mês</h2>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Performance e indicadores de longo prazo</p>
           </div>
-          <Badge variant="destructive" className="tabular-nums">
-            {toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length} pendências
-          </Badge>
         </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <ActionCard tone="info" icon={MessageCircle} label="Responder hoje"
-            count={toRespondToday.length}
-            primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
-            secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa de entrada limpa"}
-            actionLabel="Ver leads" onAction={() => navigate("/clientes")}
-            urgent={toRespondToday.length >= 5} />
-          <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
-            count={expiringQuotes.length}
-            primary={`${expiringQuotes.length} expira${expiringQuotes.length !== 1 ? "m" : ""} em 7d`}
-            secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
-            actionLabel="Resolver" onAction={() => navigate("/cotacoes")}
-            urgent={expiringQuotes.length > 0} />
-          <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
-            count={overduePayments.length}
-            primary={fmtCurrency(overdueTotal)}
-            secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
-            actionLabel="Cobrar" onAction={() => navigate("/financeiro")}
-            urgent={overduePayments.length > 0} />
-          <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
-            count={trips48h.length}
-            primary={`${trips48h.length} embarque${trips48h.length !== 1 ? "s" : ""}`}
-            secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques iminentes"}
-            actionLabel="Ver" onAction={() => navigate("/pacotes")}
-            urgent={trips48h.length > 0} />
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
+          {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
         </div>
       </section>
 
