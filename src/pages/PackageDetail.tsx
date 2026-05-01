@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, MapPin, Plane, DollarSign, Calendar, FileText, User, Clock,
-  CheckCircle2, Edit2, Users, ShieldCheck, Hash, Sparkles,
+  CheckCircle2, Edit2, Users, ShieldCheck, Hash, Sparkles, Wallet,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -178,11 +178,30 @@ const PackageDetail = () => {
               <CheckCircle2 className="h-4 w-4" /> Marcar como confirmada
             </Button>
           )}
+          <Button
+            variant={hasFinancial ? "outline" : "default"}
+            onClick={generateFinancial}
+            className={cn(!hasFinancial && "bg-success-soft-foreground text-white hover:bg-success-soft-foreground/90")}
+          >
+            <Wallet className="h-4 w-4" />
+            {hasFinancial ? "Ver financeiro" : "Gerar financeiro"}
+          </Button>
           <Button variant="outline" onClick={() => navigate("/pacotes")}>
             <Edit2 className="h-4 w-4" /> Editar reserva
           </Button>
         </div>
       </div>
+
+      {/* ---------- Sales journey & próxima ação ---------- */}
+      <SalesJourney current="reservation" />
+      {!hasFinancial && (
+        <NextStepBanner
+          title="Próxima ação: gerar financeiro"
+          description={`Crie o lançamento de recebimento (${fmtCurrency(pkg.totalValue)}) vinculado a esta reserva.`}
+          actionLabel="Gerar financeiro agora"
+          onAction={generateFinancial}
+        />
+      )}
 
       {/* ---------- Summary cards ---------- */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
