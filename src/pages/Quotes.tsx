@@ -178,18 +178,19 @@ const Quotes = () => {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Cotações</h1>
-          <p className="text-sm text-muted-foreground">{quotes.length} cotações</p>
+          <h1 className="text-2xl font-bold">Propostas</h1>
+          <p className="text-sm text-muted-foreground">{quotes.length} proposta(s)</p>
         </div>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Nova Cotação</Button>
+            <Button><Plus className="mr-2 h-4 w-4" /> Nova Proposta</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editingQuote ? "Editar Cotação" : "Nova Cotação"}</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{editingQuote ? "Editar Proposta" : "Nova Proposta"}</DialogTitle></DialogHeader>
             <Tabs defaultValue="info" className="pt-2">
               <TabsList className="w-full">
                 <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
+                <TabsTrigger value="items" className="flex-1">Itens</TabsTrigger>
                 <TabsTrigger value="itinerary" className="flex-1">Itinerário</TabsTrigger>
               </TabsList>
               <TabsContent value="info" className="space-y-4 mt-4">
@@ -205,21 +206,79 @@ const Quotes = () => {
                   <div><Label>Data ida</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
                   <div><Label>Data volta</Label><Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div><Label>Valor (R$) *</Label><Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <Label>Valor (R$){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
+                    <Input type="number" value={items.length > 0 ? itemsTotal : form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} disabled={items.length > 0} />
+                  </div>
+                  <div>
+                    <Label>Margem (%){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
+                    <Input type="number" value={items.length > 0 ? computedMargin.toFixed(1) : form.marginPercent} onChange={(e) => setForm({ ...form, marginPercent: e.target.value })} disabled={items.length > 0} />
+                  </div>
                   <div>
                     <Label>Status</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Quote["status"] })}>
+                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as QuoteStatus })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="draft">Rascunho</SelectItem>
                         <SelectItem value="sent">Enviada</SelectItem>
                         <SelectItem value="approved">Aprovada</SelectItem>
+                        <SelectItem value="lost">Perdida</SelectItem>
                         <SelectItem value="cancelled">Cancelada</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div><Label>Descrição do pacote</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+              </TabsContent>
+              <TabsContent value="items" className="space-y-3 mt-4">
+                <p className="text-xs text-muted-foreground">Detalhe os itens da proposta. O valor total e a margem são calculados automaticamente.</p>
+                {items.map((it) => (
+                  <div key={it.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="Descrição (ex: Hotel 5 noites)" value={it.description} onChange={(e) => updateItem(it.id, { description: e.target.value })} className="flex-1" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(it.id)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-[10px]">Qtd</Label>
+                        <Input type="number" value={it.quantity} onChange={(e) => updateItem(it.id, { quantity: Number(e.target.value) || 0 })} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Valor unit. (R$)</Label>
+                        <Input type="number" value={it.unitValue} onChange={(e) => updateItem(it.id, { unitValue: Number(e.target.value) || 0 })} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Custo unit. (R$)</Label>
+                        <Input type="number" value={it.cost ?? 0} onChange={(e) => updateItem(it.id, { cost: Number(e.target.value) || 0 })} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-right text-muted-foreground tabular-nums">
+                      Subtotal: R$ {(it.quantity * it.unitValue).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full" onClick={addItem}>
+                  <Plus className="mr-2 h-4 w-4" />Adicionar item
+                </Button>
+                {items.length > 0 && (
+                  <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Total</p>
+                      <p className="font-bold tabular-nums">R$ {itemsTotal.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
+                      <p className="font-bold tabular-nums">R$ {itemsCost.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Margem</p>
+                      <p className="font-bold tabular-nums text-success">{computedMargin.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="itinerary" className="space-y-4 mt-4">
                 <p className="text-xs text-muted-foreground">Adicione o roteiro dia a dia para compartilhar com o cliente.</p>
@@ -238,7 +297,7 @@ const Quotes = () => {
                 </Button>
               </TabsContent>
             </Tabs>
-            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Cotação"}</Button>
+            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Proposta"}</Button>
           </DialogContent>
         </Dialog>
       </div>
@@ -252,8 +311,10 @@ const Quotes = () => {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
             <SelectItem value="sent">Enviada</SelectItem>
             <SelectItem value="approved">Aprovada</SelectItem>
+            <SelectItem value="lost">Perdida</SelectItem>
             <SelectItem value="cancelled">Cancelada</SelectItem>
           </SelectContent>
         </Select>
