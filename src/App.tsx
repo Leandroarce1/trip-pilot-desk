@@ -23,6 +23,9 @@ import BookingPage from "./pages/BookingPage";
 import Notifications from "./pages/Notifications";
 import Suppliers from "./pages/Suppliers";
 import SupplierDetail from "./pages/SupplierDetail";
+import Itineraries from "./pages/Itineraries";
+import ItineraryPublic from "./pages/ItineraryPublic";
+import Vouchers from "./pages/Vouchers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +45,7 @@ const App = () => (
                 <BookingPage />
               </DataProvider>
             } />
+            <Route path="/itinerario/:slug" element={<ItineraryPublic />} />
             <Route path="/*" element={
               <ProtectedRoute>
                 <DataProvider>
@@ -56,6 +60,8 @@ const App = () => (
                       <Route path="/pacotes" element={<Packages />} />
                       <Route path="/pacotes/:id" element={<PackageDetail />} />
                       <Route path="/voos" element={<Flights />} />
+                      <Route path="/itinerarios" element={<Itineraries />} />
+                      <Route path="/vouchers" element={<Vouchers />} />
                       <Route path="/fornecedores" element={<Suppliers />} />
                       <Route path="/fornecedores/:id" element={<SupplierDetail />} />
                       <Route path="/financeiro" element={<Financial />} />

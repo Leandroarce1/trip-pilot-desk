@@ -48,7 +48,9 @@ const sections: NavSection[] = [
     label: "Operação",
     items: [
       { title: "Reservas", path: "/pacotes", icon: Package },
-      { title: "Viagens", path: "/voos", icon: Plane },
+      { title: "Voos", path: "/voos", icon: Plane },
+      { title: "Itinerários", path: "/itinerarios", icon: Map },
+      { title: "Vouchers", path: "/vouchers", icon: Ticket },
     ],
   },
   {
