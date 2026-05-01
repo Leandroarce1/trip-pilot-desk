@@ -366,11 +366,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   // ---------- CRUD: Quotes ----------
-  const addQuote = async (q: Omit<Quote, "id" | "createdAt" | "clientName">) => {
+  const addQuote = async (q: Omit<Quote, "id" | "createdAt" | "clientName">): Promise<Quote | void> => {
     if (!user) return;
     const { data, error } = await supabase.from("quotes").insert(quoteToRow(q, user.id)).select().single();
     if (error) throw error;
-    setQuotes((prev) => [mapQuote(data, getClientName(data.client_id)), ...prev]);
+    const mapped = mapQuote(data, getClientName(data.client_id));
+    setQuotes((prev) => [mapped, ...prev]);
+    return mapped;
   };
   const updateQuote = async (q: Quote) => {
     if (!user) return;
