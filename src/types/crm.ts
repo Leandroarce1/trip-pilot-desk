@@ -223,3 +223,44 @@ export interface Supplier {
   active: boolean;
   createdAt: string;
 }
+
+// ---------- Itineraries (Operação) ----------
+export interface ItineraryPeriod {
+  morning?: string;
+  afternoon?: string;
+  evening?: string;
+}
+
+export interface ItineraryDayDetailed {
+  day: number;
+  date?: string;
+  title: string;
+  periods: ItineraryPeriod;
+}
+
+export interface Itinerary {
+  id: string;
+  title: string;
+  packageId?: string;
+  quoteId?: string;
+  days: ItineraryDayDetailed[];
+  shareableSlug?: string;
+  createdAt: string;
+}
+
+// ---------- Vouchers (Operação) ----------
+export type VoucherType = "hotel" | "transfer" | "tour" | "ticket" | "other";
+
+export interface Voucher {
+  id: string;
+  title: string;
+  type: VoucherType;
+  packageId?: string;
+  supplier: string;
+  confirmationCode?: string;
+  serviceDate?: string;
+  details: Record<string, any>;
+  notes: string;
+  issued: boolean;
+  createdAt: string;
+}

@@ -5,7 +5,7 @@ import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
   TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
   Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
-  Opportunity, QuoteItem,
+  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher,
 } from "@/types/crm";
 
 // ---------- Mappers (snake_case <-> camelCase) ----------
@@ -246,6 +246,54 @@ const supplierToRow = (s: Partial<Supplier>, userId: string) => ({
   active: s.active ?? true,
 });
 
+// ---------- Itineraries mappers ----------
+const mapItinerary = (r: any): Itinerary => ({
+  id: r.id,
+  title: r.title ?? "",
+  packageId: r.package_id ?? undefined,
+  quoteId: r.quote_id ?? undefined,
+  days: (r.days ?? []) as ItineraryDayDetailed[],
+  shareableSlug: r.shareable_slug ?? undefined,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const itineraryToRow = (i: Partial<Itinerary>, userId: string) => ({
+  user_id: userId,
+  title: i.title!,
+  package_id: i.packageId || null,
+  quote_id: i.quoteId || null,
+  days: (i.days ?? []) as any,
+  shareable_slug: i.shareableSlug ?? null,
+});
+
+// ---------- Vouchers mappers ----------
+const mapVoucher = (r: any): Voucher => ({
+  id: r.id,
+  title: r.title ?? "",
+  type: r.type,
+  packageId: r.package_id ?? undefined,
+  supplier: r.supplier ?? "",
+  confirmationCode: r.confirmation_code ?? undefined,
+  serviceDate: r.service_date ?? undefined,
+  details: (r.details ?? {}) as Record<string, any>,
+  notes: r.notes ?? "",
+  issued: !!r.issued,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const voucherToRow = (v: Partial<Voucher>, userId: string) => ({
+  user_id: userId,
+  title: v.title!,
+  type: v.type ?? "other",
+  package_id: v.packageId || null,
+  supplier: v.supplier ?? "",
+  confirmation_code: v.confirmationCode ?? null,
+  service_date: v.serviceDate || null,
+  details: (v.details ?? {}) as any,
+  notes: v.notes ?? "",
+  issued: v.issued ?? false,
+});
+
 // ---------- Context ----------
 
 interface DataContextType {
@@ -258,6 +306,8 @@ interface DataContextType {
   notifications: Notification[];
   suppliers: Supplier[];
   opportunities: Opportunity[];
+  itineraries: Itinerary[];
+  vouchers: Voucher[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -279,6 +329,12 @@ interface DataContextType {
   addOpportunity: (o: Omit<Opportunity, "id" | "createdAt" | "clientName">) => Promise<Opportunity | void>;
   updateOpportunity: (o: Opportunity) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
+  addItinerary: (i: Omit<Itinerary, "id" | "createdAt">) => Promise<Itinerary | void>;
+  updateItinerary: (i: Itinerary) => Promise<void>;
+  deleteItinerary: (id: string) => Promise<void>;
+  addVoucher: (v: Omit<Voucher, "id" | "createdAt">) => Promise<Voucher | void>;
+  updateVoucher: (v: Voucher) => Promise<void>;
+  deleteVoucher: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
@@ -298,6 +354,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [itineraries, setItineraries] = useState<Itinerary[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
@@ -309,6 +367,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
       setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
+      setItineraries([]); setVouchers([]);
       setLoading(false);
       return;
     }
@@ -317,6 +376,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
       transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
+      itinerariesRes, vouchersRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -326,6 +386,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("packages").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("date", { ascending: false }),
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
+      supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
+      supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -339,6 +401,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setPackages((packagesRes.data ?? []).map((r: any) => mapPackage(r, nameById.get(r.client_id) ?? "")));
     setNotifications((notificationsRes.data ?? []).map(mapNotification));
     setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
+    setItineraries((itinerariesRes.data ?? []).map(mapItinerary));
+    setVouchers((vouchersRes.data ?? []).map(mapVoucher));
     setLoading(false);
   }, [user]);
 
@@ -483,7 +547,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setOpportunities((prev) => prev.filter((x) => x.id !== id));
   };
 
-  // ---------- Notifications ----------
+  // ---------- CRUD: Itineraries ----------
+  const addItinerary = async (i: Omit<Itinerary, "id" | "createdAt">): Promise<Itinerary | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("itineraries").insert(itineraryToRow(i, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapItinerary(data);
+    setItineraries((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateItinerary = async (i: Itinerary) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("itineraries").update(itineraryToRow(i, user.id)).eq("id", i.id).select().single();
+    if (error) throw error;
+    setItineraries((prev) => prev.map((x) => (x.id === i.id ? mapItinerary(data) : x)));
+  };
+  const deleteItinerary = async (id: string) => {
+    const { error } = await supabase.from("itineraries").delete().eq("id", id);
+    if (error) throw error;
+    setItineraries((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Vouchers ----------
+  const addVoucher = async (v: Omit<Voucher, "id" | "createdAt">): Promise<Voucher | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("vouchers").insert(voucherToRow(v, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapVoucher(data);
+    setVouchers((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateVoucher = async (v: Voucher) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("vouchers").update(voucherToRow(v, user.id)).eq("id", v.id).select().single();
+    if (error) throw error;
+    setVouchers((prev) => prev.map((x) => (x.id === v.id ? mapVoucher(data) : x)));
+  };
+  const deleteVoucher = async (id: string) => {
+    const { error } = await supabase.from("vouchers").delete().eq("id", id);
+    if (error) throw error;
+    setVouchers((prev) => prev.filter((x) => x.id !== id));
+  };
+
   const markNotificationRead = async (id: string) => {
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
     if (error) throw error;
@@ -508,6 +613,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       loading,
       clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
+      itineraries, vouchers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
@@ -515,6 +621,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPackage, updatePackage, deletePackage,
       addSupplier, updateSupplier, deleteSupplier,
       addOpportunity, updateOpportunity, deleteOpportunity,
+      addItinerary, updateItinerary, deleteItinerary,
+      addVoucher, updateVoucher, deleteVoucher,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>
