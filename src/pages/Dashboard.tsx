@@ -721,11 +721,19 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir">
-                      <ExternalLink className="h-3.5 w-3.5" />
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1"
+                      onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir lead">
+                      <ExternalLink className="h-3 w-3" /> Abrir
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Mensagem" onClick={() => window.open(`https://wa.me/${c.phone.replace(/\D/g, "")}`, "_blank")}>
-                      <MessageSquare className="h-3.5 w-3.5" />
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1 text-success"
+                      title="Enviar mensagem"
+                      onClick={() => {
+                        const phone = c.phone.replace(/\D/g, "");
+                        const msg = `Olá ${c.name.split(" ")[0]}, tudo bem? Estou retomando nossa conversa sobre sua próxima viagem. Posso te ajudar?`;
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                        toast({ title: "Mensagem aberta", description: `WhatsApp pré-preenchido para ${c.name}.` });
+                      }}>
+                      <MessageSquare className="h-3 w-3" /> Mensagem
                     </Button>
                   </div>
                 </div>
