@@ -92,6 +92,7 @@ export interface Flight {
   departureDate: string;
   departureTime: string;
   checkinAlert: boolean;
+  packageId?: string;
 }
 
 export interface Transaction {
@@ -102,6 +103,8 @@ export interface Transaction {
   date: string;
   status: "paid" | "pending";
   clientName?: string;
+  clientId?: string;
+  packageId?: string;
 }
 
 export type ReservationStatus = "quoting" | "pending" | "confirmed" | "cancelled";
