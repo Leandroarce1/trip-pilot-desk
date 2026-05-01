@@ -226,7 +226,7 @@ const Packages = () => {
     setOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.clientId || !form.destinationCity || !form.departureDate || !form.returnDate) {
       toast.error("Preencha cliente, destino e datas");
       return;
@@ -235,6 +235,8 @@ const Packages = () => {
     const commissionPercent = Number(form.commissionPercent) || 0;
     const count = Math.max(1, Number(form.passengersCount) || 1);
     const client = clients.find((c) => c.id === form.clientId);
+    const supplier = suppliers.find((s) => s.id === form.supplierId);
+    const supplierName = supplier?.name || form.supplier;
 
     // Build passenger list (preserving existing names when editing)
     const existing = editing?.passengers ?? [];
@@ -245,7 +247,7 @@ const Packages = () => {
     const baseName = `${form.destinationCity} – ${client?.name ?? ""}`.trim();
 
     if (editing) {
-      updatePackage({
+      await updatePackage({
         ...editing,
         clientId: form.clientId,
         clientName: client?.name || editing.clientName,
@@ -255,7 +257,8 @@ const Packages = () => {
         departureDate: form.departureDate,
         returnDate: form.returnDate,
         tripType: form.tripType,
-        supplier: form.supplier,
+        supplierId: form.supplierId || undefined,
+        supplier: supplierName,
         confirmationCode: form.confirmationCode,
         totalValue,
         commissionPercent,
@@ -269,7 +272,7 @@ const Packages = () => {
       });
       toast.success("Reserva atualizada");
     } else {
-      addPackage({
+      await addPackage({
         name: baseName || "Nova reserva",
         clientId: form.clientId,
         destinationCity: form.destinationCity,
@@ -278,7 +281,8 @@ const Packages = () => {
         departureDate: form.departureDate,
         returnDate: form.returnDate,
         tripType: form.tripType,
-        supplier: form.supplier,
+        supplierId: form.supplierId || undefined,
+        supplier: supplierName,
         confirmationCode: form.confirmationCode,
         totalValue,
         commissionPercent,
@@ -291,7 +295,22 @@ const Packages = () => {
         history: [{ date: new Date().toISOString(), action: "Reserva criada" }],
         notes: form.notes,
       });
-      toast.success("Reserva criada");
+      // Auto-generate income transaction (pending) for the client
+      if (totalValue > 0) {
+        try {
+          await addTransaction({
+            type: "income",
+            description: `Venda: ${baseName || "Reserva"}`,
+            value: totalValue,
+            date: form.departureDate || new Date().toISOString().slice(0, 10),
+            status: "pending",
+            category: "sale",
+            clientId: form.clientId,
+            clientName: client?.name,
+          });
+        } catch { /* non-fatal */ }
+      }
+      toast.success("Reserva criada", { description: totalValue > 0 ? "Receita lançada no Financeiro." : undefined });
     }
     handleOpenChange(false);
   };
