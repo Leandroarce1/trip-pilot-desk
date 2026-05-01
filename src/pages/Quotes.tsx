@@ -76,6 +76,58 @@ const Quotes = () => {
     setItinerary((prev) => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })));
   };
 
+  /** Aprova proposta + cria reserva + promove cliente para 'sold' */
+  const approveAndGenerateReservation = (q: Quote) => {
+    const client = clients.find((c) => c.id === q.clientId);
+    if (!client) { toast.error("Cliente não encontrado"); return; }
+
+    // 1) Marca proposta como aprovada
+    updateQuote({ ...q, status: "approved" });
+
+    // 2) Promove cliente para 'sold'
+    if (client.status === "lead" || client.status === "negotiation") {
+      updateClient({ ...client, status: "sold" });
+    }
+
+    // 3) Cria reserva vinculada
+    const today = new Date().toISOString().slice(0, 10);
+    addPackage({
+      name: `Viagem para ${q.destination}`,
+      clientId: q.clientId,
+      destinationCity: q.destination.split(",")[0]?.trim() || q.destination,
+      destinationCountry: q.destination.split(",").slice(1).join(",").trim() || "—",
+      destinationFlag: "🌍",
+      departureDate: q.startDate || today,
+      returnDate: q.endDate || today,
+      tripType: "package",
+      supplier: "",
+      confirmationCode: "",
+      totalValue: q.value,
+      commissionPercent: 10,
+      passengers: [{ name: client.name, document: client.document }],
+      reservationStatus: "pending",
+      paymentStatus: "pending",
+      quoteId: q.id,
+      flightIds: [],
+      transactionIds: [],
+      documents: [],
+      history: [
+        { date: new Date().toISOString(), action: `Reserva gerada a partir da proposta #${q.id}` },
+      ],
+      notes: q.description,
+    });
+
+    toast.success("Proposta aprovada — reserva criada", {
+      description: "Cliente promovido para ativo. Acesse a reserva para gerar financeiro.",
+      action: { label: "Ver reservas", onClick: () => navigate("/pacotes") },
+    });
+  };
+
+  // Próxima proposta a aprovar (mais antiga enviada)
+  const nextToApprove = quotes
+    .filter((q) => q.status === "sent")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
