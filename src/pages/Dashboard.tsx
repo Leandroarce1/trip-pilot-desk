@@ -804,6 +804,33 @@ const Dashboard = () => {
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[hsl(var(--primary-soft))]/25 blur-3xl" aria-hidden />
             <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl" aria-hidden />
 
+            {/* Headline contextual — síntese acionável */}
+            <div className="relative mb-4 flex flex-wrap gap-2">
+              {hotClients.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/20 border border-destructive/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <Flame className="h-3 w-3 text-destructive" />
+                  {hotClients.length} {hotClients.length === 1 ? "cliente pode" : "clientes podem"} fechar hoje
+                </span>
+              )}
+              {finAlerts.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/20 border border-warning/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <CreditCard className="h-3 w-3 text-warning" />
+                  {finAlerts.length} pagamento{finAlerts.length !== 1 ? "s" : ""} atrasado{finAlerts.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {urgentTrips.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--gold))]/25 border border-[hsl(var(--gold))]/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <Plane className="h-3 w-3 text-[hsl(var(--gold))]" />
+                  {urgentTrips.length} viagem{urgentTrips.length !== 1 ? "ns" : ""} precisa{urgentTrips.length !== 1 ? "m" : ""} emissão urgente
+                </span>
+              )}
+              {hotClients.length === 0 && finAlerts.length === 0 && urgentTrips.length === 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/20 border border-success/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <CheckCircle2 className="h-3 w-3 text-success" /> Tudo sob controle
+                </span>
+              )}
+            </div>
+
             <div className="relative grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {/* Clientes quentes */}
               <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
