@@ -130,6 +130,19 @@ const Quotes = () => {
 
   return (
     <div className="space-y-6">
+      <SalesJourney current="proposal" completed={["lead", "opportunity"]} />
+
+      {nextToApprove && (
+        <NextStepBanner
+          tone="success"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          title={`Aprovar proposta de ${nextToApprove.clientName}`}
+          description={`${nextToApprove.destination} · R$ ${nextToApprove.value.toLocaleString("pt-BR")} → gera reserva automaticamente`}
+          actionLabel="Aprovar e gerar reserva"
+          onAction={() => approveAndGenerateReservation(nextToApprove)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Cotações</h1>
