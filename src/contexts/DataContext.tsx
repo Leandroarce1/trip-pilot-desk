@@ -1,12 +1,215 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
+  TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
+  Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
 } from "@/types/crm";
-import {
-  mockClients, mockQuotes, mockFlights, mockTransactions, mockPackages, mockNotifications, mockSuppliers,
-} from "@/data/mockData";
+
+// ---------- Mappers (snake_case <-> camelCase) ----------
+
+const mapClient = (r: any): Client => ({
+  id: r.id,
+  name: r.name ?? "",
+  phone: r.phone ?? "",
+  email: r.email ?? "",
+  document: r.document ?? "",
+  notes: r.notes ?? "",
+  status: r.status,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+  profile: (r.profile ?? undefined) as TravelerProfile | undefined,
+  preferences: (r.preferences ?? undefined) as TravelPreferences | undefined,
+  miles: (r.miles ?? undefined) as MilesAccount | undefined,
+  documents: undefined, // separate table; loaded on demand by ClientDetail
+});
+
+const clientToRow = (c: Partial<Client>, userId: string) => ({
+  user_id: userId,
+  name: c.name!,
+  phone: c.phone ?? "",
+  email: c.email ?? "",
+  document: c.document ?? "",
+  notes: c.notes ?? "",
+  status: c.status ?? "lead",
+  profile: (c.profile ?? {}) as any,
+  preferences: (c.preferences ?? {}) as any,
+  miles: (c.miles ?? {}) as any,
+});
+
+const mapQuote = (r: any, clientName: string): Quote => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  clientName,
+  destination: r.destination ?? "",
+  startDate: r.start_date ?? "",
+  endDate: r.end_date ?? "",
+  value: Number(r.value ?? 0),
+  description: r.description ?? "",
+  status: r.status,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+  itinerary: (r.itinerary ?? []) as ItineraryDay[],
+});
+
+const quoteToRow = (q: Partial<Quote>, userId: string) => ({
+  user_id: userId,
+  client_id: q.clientId || null,
+  destination: q.destination!,
+  start_date: q.startDate || null,
+  end_date: q.endDate || null,
+  value: q.value ?? 0,
+  description: q.description ?? "",
+  status: q.status ?? "sent",
+  itinerary: (q.itinerary ?? []) as any,
+});
+
+const mapFlight = (r: any, clientName: string): Flight => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  clientName,
+  airline: r.airline ?? "",
+  flightNumber: r.flight_number ?? "",
+  origin: r.origin ?? "",
+  destination: r.destination ?? "",
+  departureDate: r.departure_date ?? "",
+  departureTime: r.departure_time ?? "",
+  checkinAlert: !!r.checkin_alert,
+});
+
+const flightToRow = (f: Partial<Flight>, userId: string) => ({
+  user_id: userId,
+  client_id: f.clientId || null,
+  airline: f.airline ?? "",
+  flight_number: f.flightNumber ?? "",
+  origin: f.origin ?? "",
+  destination: f.destination ?? "",
+  departure_date: f.departureDate || null,
+  departure_time: f.departureTime ?? "",
+  checkin_alert: f.checkinAlert ?? true,
+});
+
+const mapTransaction = (r: any, clientName?: string): Transaction => ({
+  id: r.id,
+  type: r.type,
+  description: r.description ?? "",
+  value: Number(r.value ?? 0),
+  date: r.date ?? "",
+  status: r.status,
+  clientName,
+});
+
+const transactionToRow = (t: Partial<Transaction> & { clientId?: string; packageId?: string }, userId: string) => ({
+  user_id: userId,
+  client_id: t.clientId || null,
+  package_id: t.packageId || null,
+  type: t.type!,
+  description: t.description ?? "",
+  value: t.value ?? 0,
+  date: t.date || new Date().toISOString().slice(0, 10),
+  status: t.status ?? "pending",
+});
+
+const mapPackage = (r: any, clientName: string): TravelPackage => ({
+  id: r.id,
+  name: r.name ?? "",
+  clientId: r.client_id ?? "",
+  clientName,
+  destinationCity: r.destination_city ?? "",
+  destinationCountry: r.destination_country ?? "",
+  destinationFlag: r.destination_flag ?? undefined,
+  departureDate: r.departure_date ?? "",
+  returnDate: r.return_date ?? "",
+  tripType: r.trip_type,
+  supplier: r.supplier ?? "",
+  supplierId: r.supplier_id ?? undefined,
+  confirmationCode: r.confirmation_code ?? undefined,
+  totalValue: Number(r.total_value ?? 0),
+  commissionPercent: Number(r.commission_percent ?? 0),
+  passengers: (r.passengers ?? []) as Passenger[],
+  reservationStatus: r.reservation_status,
+  paymentStatus: r.payment_status,
+  quoteId: r.quote_id ?? undefined,
+  flightIds: [], // derived; not stored on packages
+  transactionIds: [],
+  documents: (r.documents ?? []) as ReservationDocument[],
+  history: (r.history ?? []) as ReservationHistoryEntry[],
+  notes: r.notes ?? "",
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const packageToRow = (p: Partial<TravelPackage>, userId: string) => ({
+  user_id: userId,
+  client_id: p.clientId || null,
+  name: p.name!,
+  destination_city: p.destinationCity ?? "",
+  destination_country: p.destinationCountry ?? "",
+  destination_flag: p.destinationFlag ?? null,
+  departure_date: p.departureDate || null,
+  return_date: p.returnDate || null,
+  trip_type: p.tripType ?? "package",
+  supplier: p.supplier ?? "",
+  supplier_id: p.supplierId || null,
+  confirmation_code: p.confirmationCode ?? null,
+  total_value: p.totalValue ?? 0,
+  commission_percent: p.commissionPercent ?? 0,
+  passengers: (p.passengers ?? []) as any,
+  reservation_status: p.reservationStatus ?? "quoting",
+  payment_status: p.paymentStatus ?? "pending",
+  quote_id: p.quoteId || null,
+  documents: (p.documents ?? []) as any,
+  history: (p.history ?? []) as any,
+  notes: p.notes ?? "",
+});
+
+const mapNotification = (r: any): Notification => ({
+  id: r.id,
+  type: r.type,
+  title: r.title ?? "",
+  message: r.message ?? "",
+  date: r.date ?? "",
+  read: !!r.read,
+  relatedId: r.related_id ?? undefined,
+});
+
+const mapSupplier = (r: any): Supplier => ({
+  id: r.id,
+  name: r.name ?? "",
+  category: r.category,
+  cnpj: r.cnpj ?? undefined,
+  website: r.website ?? undefined,
+  contactName: r.contact_name ?? "",
+  contactPhone: r.contact_phone ?? "",
+  contactEmail: r.contact_email ?? "",
+  defaultCommission: Number(r.default_commission ?? 0),
+  paymentTerm: (r.payment_term ?? "30") as Supplier["paymentTerm"],
+  accessNotes: r.access_notes ?? undefined,
+  notes: r.notes ?? undefined,
+  rating: r.rating ?? 5,
+  active: !!r.active,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const supplierToRow = (s: Partial<Supplier>, userId: string) => ({
+  user_id: userId,
+  name: s.name!,
+  category: s.category ?? "other",
+  cnpj: s.cnpj ?? null,
+  website: s.website ?? null,
+  contact_name: s.contactName ?? "",
+  contact_phone: s.contactPhone ?? "",
+  contact_email: s.contactEmail ?? "",
+  default_commission: s.defaultCommission ?? 0,
+  payment_term: s.paymentTerm ?? "30",
+  access_notes: s.accessNotes ?? null,
+  notes: s.notes ?? null,
+  rating: s.rating ?? 5,
+  active: s.active ?? true,
+});
+
+// ---------- Context ----------
 
 interface DataContextType {
+  loading: boolean;
   clients: Client[];
   quotes: Quote[];
   flights: Flight[];
@@ -14,87 +217,226 @@ interface DataContextType {
   packages: TravelPackage[];
   notifications: Notification[];
   suppliers: Supplier[];
-  addClient: (c: Omit<Client, "id" | "createdAt">) => void;
-  updateClient: (c: Client) => void;
-  deleteClient: (id: string) => void;
-  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => void;
-  updateQuote: (q: Quote) => void;
-  deleteQuote: (id: string) => void;
-  addFlight: (f: Omit<Flight, "id" | "clientName">) => void;
-  updateFlight: (f: Flight) => void;
-  deleteFlight: (id: string) => void;
-  addTransaction: (t: Omit<Transaction, "id">) => void;
-  updateTransaction: (t: Transaction) => void;
-  deleteTransaction: (id: string) => void;
-  addPackage: (p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => void;
-  updatePackage: (p: TravelPackage) => void;
-  deletePackage: (id: string) => void;
-  addSupplier: (s: Omit<Supplier, "id" | "createdAt">) => void;
-  updateSupplier: (s: Supplier) => void;
-  deleteSupplier: (id: string) => void;
-  markNotificationRead: (id: string) => void;
-  addNotification: (n: Omit<Notification, "id">) => void;
+  addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
+  updateClient: (c: Client) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
+  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<void>;
+  updateQuote: (q: Quote) => Promise<void>;
+  deleteQuote: (id: string) => Promise<void>;
+  addFlight: (f: Omit<Flight, "id" | "clientName">) => Promise<void>;
+  updateFlight: (f: Flight) => Promise<void>;
+  deleteFlight: (id: string) => Promise<void>;
+  addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
+  updateTransaction: (t: Transaction) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
+  addPackage: (p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => Promise<void>;
+  updatePackage: (p: TravelPackage) => Promise<void>;
+  deletePackage: (id: string) => Promise<void>;
+  addSupplier: (s: Omit<Supplier, "id" | "createdAt">) => Promise<void>;
+  updateSupplier: (s: Supplier) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
+  refresh: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [clients, setClients] = useState<Client[]>(mockClients);
-  const [quotes, setQuotes] = useState<Quote[]>(mockQuotes);
-  const [flights, setFlights] = useState<Flight[]>(mockFlights);
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
-  const [packages, setPackages] = useState<TravelPackage[]>(mockPackages);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const { user, loading: authLoading } = useAuth();
 
-  const getClientName = useCallback((clientId: string) =>
-    clients.find((c) => c.id === clientId)?.name || "", [clients]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [packages, setPackages] = useState<TravelPackage[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addClient = useCallback((c: Omit<Client, "id" | "createdAt">) => {
-    setClients((prev) => [{ ...c, id: String(Date.now()), createdAt: new Date().toISOString().slice(0, 10) }, ...prev]);
-  }, []);
-  const updateClient = useCallback((c: Client) => setClients((prev) => prev.map((x) => (x.id === c.id ? c : x))), []);
-  const deleteClient = useCallback((id: string) => setClients((prev) => prev.filter((x) => x.id !== id)), []);
+  const getClientName = useCallback(
+    (clientId: string) => clients.find((c) => c.id === clientId)?.name || "",
+    [clients]
+  );
 
-  const addQuote = useCallback((q: Omit<Quote, "id" | "createdAt" | "clientName">) => {
-    const clientName = clients.find((c) => c.id === q.clientId)?.name || "";
-    setQuotes((prev) => [{ ...q, id: String(Date.now()), clientName, createdAt: new Date().toISOString().slice(0, 10) }, ...prev]);
-  }, [clients]);
-  const updateQuote = useCallback((q: Quote) => setQuotes((prev) => prev.map((x) => (x.id === q.id ? q : x))), []);
-  const deleteQuote = useCallback((id: string) => setQuotes((prev) => prev.filter((x) => x.id !== id)), []);
+  const loadAll = useCallback(async () => {
+    if (!user) {
+      setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
+      setPackages([]); setNotifications([]); setSuppliers([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
 
-  const addFlight = useCallback((f: Omit<Flight, "id" | "clientName">) => {
-    const clientName = clients.find((c) => c.id === f.clientId)?.name || "";
-    setFlights((prev) => [{ ...f, id: String(Date.now()), clientName }, ...prev]);
-  }, [clients]);
-  const updateFlight = useCallback((f: Flight) => setFlights((prev) => prev.map((x) => (x.id === f.id ? f : x))), []);
-  const deleteFlight = useCallback((id: string) => setFlights((prev) => prev.filter((x) => x.id !== id)), []);
+    const [
+      clientsRes, suppliersRes, quotesRes, flightsRes,
+      transactionsRes, packagesRes, notificationsRes,
+    ] = await Promise.all([
+      supabase.from("clients").select("*").order("created_at", { ascending: false }),
+      supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
+      supabase.from("quotes").select("*").order("created_at", { ascending: false }),
+      supabase.from("flights").select("*").order("departure_date", { ascending: true }),
+      supabase.from("transactions").select("*").order("date", { ascending: false }),
+      supabase.from("packages").select("*").order("created_at", { ascending: false }),
+      supabase.from("notifications").select("*").order("date", { ascending: false }),
+    ]);
 
-  const addTransaction = useCallback((t: Omit<Transaction, "id">) =>
-    setTransactions((prev) => [{ ...t, id: String(Date.now()) }, ...prev]), []);
-  const updateTransaction = useCallback((t: Transaction) => setTransactions((prev) => prev.map((x) => (x.id === t.id ? t : x))), []);
-  const deleteTransaction = useCallback((id: string) => setTransactions((prev) => prev.filter((x) => x.id !== id)), []);
+    const clientsData = (clientsRes.data ?? []).map(mapClient);
+    const nameById = new Map(clientsData.map((c) => [c.id, c.name]));
 
-  const addPackage = useCallback((p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => {
-    const clientName = clients.find((c) => c.id === p.clientId)?.name || "";
-    setPackages((prev) => [{ ...p, id: String(Date.now()), clientName, createdAt: new Date().toISOString().slice(0, 10) }, ...prev]);
-  }, [clients]);
-  const updatePackage = useCallback((p: TravelPackage) => setPackages((prev) => prev.map((x) => (x.id === p.id ? p : x))), []);
-  const deletePackage = useCallback((id: string) => setPackages((prev) => prev.filter((x) => x.id !== id)), []);
+    setClients(clientsData);
+    setSuppliers((suppliersRes.data ?? []).map(mapSupplier));
+    setQuotes((quotesRes.data ?? []).map((r: any) => mapQuote(r, nameById.get(r.client_id) ?? "")));
+    setFlights((flightsRes.data ?? []).map((r: any) => mapFlight(r, nameById.get(r.client_id) ?? "")));
+    setTransactions((transactionsRes.data ?? []).map((r: any) => mapTransaction(r, nameById.get(r.client_id))));
+    setPackages((packagesRes.data ?? []).map((r: any) => mapPackage(r, nameById.get(r.client_id) ?? "")));
+    setNotifications((notificationsRes.data ?? []).map(mapNotification));
+    setLoading(false);
+  }, [user]);
 
-  const addSupplier = useCallback((s: Omit<Supplier, "id" | "createdAt">) =>
-    setSuppliers((prev) => [{ ...s, id: String(Date.now()), createdAt: new Date().toISOString().slice(0, 10) }, ...prev]), []);
-  const updateSupplier = useCallback((s: Supplier) => setSuppliers((prev) => prev.map((x) => (x.id === s.id ? s : x))), []);
-  const deleteSupplier = useCallback((id: string) => setSuppliers((prev) => prev.filter((x) => x.id !== id)), []);
+  useEffect(() => {
+    if (!authLoading) loadAll();
+  }, [authLoading, loadAll]);
 
-  const markNotificationRead = useCallback((id: string) =>
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n))), []);
-  const addNotification = useCallback((n: Omit<Notification, "id">) =>
-    setNotifications((prev) => [{ ...n, id: String(Date.now()) }, ...prev]), []);
+  // ---------- CRUD: Clients ----------
+  const addClient = async (c: Omit<Client, "id" | "createdAt">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("clients").insert(clientToRow(c, user.id)).select().single();
+    if (error) throw error;
+    setClients((prev) => [mapClient(data), ...prev]);
+  };
+  const updateClient = async (c: Client) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("clients").update(clientToRow(c, user.id)).eq("id", c.id).select().single();
+    if (error) throw error;
+    setClients((prev) => prev.map((x) => (x.id === c.id ? mapClient(data) : x)));
+  };
+  const deleteClient = async (id: string) => {
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) throw error;
+    setClients((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Quotes ----------
+  const addQuote = async (q: Omit<Quote, "id" | "createdAt" | "clientName">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("quotes").insert(quoteToRow(q, user.id)).select().single();
+    if (error) throw error;
+    setQuotes((prev) => [mapQuote(data, getClientName(data.client_id)), ...prev]);
+  };
+  const updateQuote = async (q: Quote) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("quotes").update(quoteToRow(q, user.id)).eq("id", q.id).select().single();
+    if (error) throw error;
+    setQuotes((prev) => prev.map((x) => (x.id === q.id ? mapQuote(data, getClientName(data.client_id)) : x)));
+  };
+  const deleteQuote = async (id: string) => {
+    const { error } = await supabase.from("quotes").delete().eq("id", id);
+    if (error) throw error;
+    setQuotes((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Flights ----------
+  const addFlight = async (f: Omit<Flight, "id" | "clientName">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("flights").insert(flightToRow(f, user.id)).select().single();
+    if (error) throw error;
+    setFlights((prev) => [mapFlight(data, getClientName(data.client_id)), ...prev]);
+  };
+  const updateFlight = async (f: Flight) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("flights").update(flightToRow(f, user.id)).eq("id", f.id).select().single();
+    if (error) throw error;
+    setFlights((prev) => prev.map((x) => (x.id === f.id ? mapFlight(data, getClientName(data.client_id)) : x)));
+  };
+  const deleteFlight = async (id: string) => {
+    const { error } = await supabase.from("flights").delete().eq("id", id);
+    if (error) throw error;
+    setFlights((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Transactions ----------
+  const addTransaction = async (t: Omit<Transaction, "id">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("transactions").insert(transactionToRow(t, user.id)).select().single();
+    if (error) throw error;
+    setTransactions((prev) => [mapTransaction(data, getClientName(data.client_id)), ...prev]);
+  };
+  const updateTransaction = async (t: Transaction) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("transactions").update(transactionToRow(t, user.id)).eq("id", t.id).select().single();
+    if (error) throw error;
+    setTransactions((prev) => prev.map((x) => (x.id === t.id ? mapTransaction(data, getClientName(data.client_id)) : x)));
+  };
+  const deleteTransaction = async (id: string) => {
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (error) throw error;
+    setTransactions((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Packages ----------
+  const addPackage = async (p: Omit<TravelPackage, "id" | "clientName" | "createdAt">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("packages").insert(packageToRow(p, user.id)).select().single();
+    if (error) throw error;
+    setPackages((prev) => [mapPackage(data, getClientName(data.client_id)), ...prev]);
+  };
+  const updatePackage = async (p: TravelPackage) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("packages").update(packageToRow(p, user.id)).eq("id", p.id).select().single();
+    if (error) throw error;
+    setPackages((prev) => prev.map((x) => (x.id === p.id ? mapPackage(data, getClientName(data.client_id)) : x)));
+  };
+  const deletePackage = async (id: string) => {
+    const { error } = await supabase.from("packages").delete().eq("id", id);
+    if (error) throw error;
+    setPackages((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Suppliers ----------
+  const addSupplier = async (s: Omit<Supplier, "id" | "createdAt">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("suppliers").insert(supplierToRow(s, user.id)).select().single();
+    if (error) throw error;
+    setSuppliers((prev) => [mapSupplier(data), ...prev]);
+  };
+  const updateSupplier = async (s: Supplier) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("suppliers").update(supplierToRow(s, user.id)).eq("id", s.id).select().single();
+    if (error) throw error;
+    setSuppliers((prev) => prev.map((x) => (x.id === s.id ? mapSupplier(data) : x)));
+  };
+  const deleteSupplier = async (id: string) => {
+    const { error } = await supabase.from("suppliers").delete().eq("id", id);
+    if (error) throw error;
+    setSuppliers((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- Notifications ----------
+  const markNotificationRead = async (id: string) => {
+    const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
+    if (error) throw error;
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+  const addNotification = async (n: Omit<Notification, "id">) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("notifications").insert({
+      user_id: user.id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      date: n.date || new Date().toISOString().slice(0, 10),
+      read: n.read ?? false,
+      related_id: n.relatedId ?? null,
+    }).select().single();
+    if (error) throw error;
+    setNotifications((prev) => [mapNotification(data), ...prev]);
+  };
 
   return (
     <DataContext.Provider value={{
+      loading,
       clients, quotes, flights, transactions, packages, notifications, suppliers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
@@ -103,7 +445,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPackage, updatePackage, deletePackage,
       addSupplier, updateSupplier, deleteSupplier,
       markNotificationRead, addNotification,
-      getClientName,
+      getClientName, refresh: loadAll,
     }}>
       {children}
     </DataContext.Provider>
