@@ -66,7 +66,7 @@ const docExpiryStatus = (expiresAt?: string) => {
 const PackageDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { packages, quotes, flights, transactions, updatePackage } = useData();
+  const { packages, quotes, flights, transactions, updatePackage, addTransaction } = useData();
   const pkg = packages.find((p) => p.id === id);
   const [editingPassengers] = useState(false);
 
