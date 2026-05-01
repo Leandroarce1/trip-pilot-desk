@@ -306,6 +306,8 @@ interface DataContextType {
   notifications: Notification[];
   suppliers: Supplier[];
   opportunities: Opportunity[];
+  itineraries: Itinerary[];
+  vouchers: Voucher[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -327,6 +329,12 @@ interface DataContextType {
   addOpportunity: (o: Omit<Opportunity, "id" | "createdAt" | "clientName">) => Promise<Opportunity | void>;
   updateOpportunity: (o: Opportunity) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
+  addItinerary: (i: Omit<Itinerary, "id" | "createdAt">) => Promise<Itinerary | void>;
+  updateItinerary: (i: Itinerary) => Promise<void>;
+  deleteItinerary: (id: string) => Promise<void>;
+  addVoucher: (v: Omit<Voucher, "id" | "createdAt">) => Promise<Voucher | void>;
+  updateVoucher: (v: Voucher) => Promise<void>;
+  deleteVoucher: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
@@ -346,6 +354,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [itineraries, setItineraries] = useState<Itinerary[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
@@ -357,6 +367,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
       setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
+      setItineraries([]); setVouchers([]);
       setLoading(false);
       return;
     }
@@ -365,6 +376,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
       transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
+      itinerariesRes, vouchersRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -374,6 +386,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("packages").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("date", { ascending: false }),
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
+      supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
+      supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -387,6 +401,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setPackages((packagesRes.data ?? []).map((r: any) => mapPackage(r, nameById.get(r.client_id) ?? "")));
     setNotifications((notificationsRes.data ?? []).map(mapNotification));
     setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
+    setItineraries((itinerariesRes.data ?? []).map(mapItinerary));
+    setVouchers((vouchersRes.data ?? []).map(mapVoucher));
     setLoading(false);
   }, [user]);
 
