@@ -33,6 +33,20 @@ export default function Auth() {
     else toast.success("Bem-vindo de volta!");
   };
 
+  const handleForgot = async () => {
+    if (!email) {
+      toast.error("Digite seu e-mail", { description: "Preencha o campo de e-mail antes." });
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) toast.error("Falha ao enviar e-mail", { description: error.message });
+    else toast.success("E-mail enviado!", { description: "Confira sua caixa de entrada para redefinir a senha." });
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
