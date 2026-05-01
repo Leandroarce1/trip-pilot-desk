@@ -85,6 +85,7 @@ type FormState = {
   departureDate: string;
   returnDate: string;
   tripType: TripType;
+  supplierId: string;
   supplier: string;
   confirmationCode: string;
   totalValue: string;
@@ -102,6 +103,7 @@ const emptyForm: FormState = {
   departureDate: "",
   returnDate: "",
   tripType: "package",
+  supplierId: "",
   supplier: "",
   confirmationCode: "",
   totalValue: "",
@@ -113,7 +115,7 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
-  const { packages, clients, addPackage, updatePackage, deletePackage } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction } = useData();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | ReservationStatus>("all");
@@ -212,6 +214,7 @@ const Packages = () => {
       departureDate: p.departureDate,
       returnDate: p.returnDate,
       tripType: p.tripType,
+      supplierId: p.supplierId || "",
       supplier: p.supplier,
       confirmationCode: p.confirmationCode || "",
       totalValue: String(p.totalValue),
