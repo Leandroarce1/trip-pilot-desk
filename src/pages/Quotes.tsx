@@ -243,24 +243,45 @@ const Quotes = () => {
                 <p className="mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{q.itinerary.length} dia(s) no roteiro</p>
               )}
             </div>
-            <div className="border-t pt-3 flex items-center justify-between">
-              <p className="text-lg font-bold text-foreground">R$ {q.value.toLocaleString("pt-BR")}</p>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => navigate(`/reserva/${q.id}`)} title="Ver proposta"><Eye className="h-3.5 w-3.5" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(q)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Excluir cotação?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => { deleteQuote(q.id); toast.success("Cotação excluída!"); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-lg font-bold text-foreground">R$ {q.value.toLocaleString("pt-BR")}</p>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => navigate(`/reserva/${q.id}`)} title="Ver proposta"><Eye className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(q)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Excluir cotação?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { deleteQuote(q.id); toast.success("Cotação excluída!"); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
+              {q.status === "sent" && (
+                <Button
+                  size="sm"
+                  className="w-full bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
+                  onClick={() => approveAndGenerateReservation(q)}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar reserva
+                </Button>
+              )}
+              {q.status === "approved" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-1.5"
+                  onClick={() => navigate("/pacotes")}
+                >
+                  <PackageIcon className="h-3.5 w-3.5" /> Ver reservas geradas
+                </Button>
+              )}
             </div>
           </div>
         ))}
