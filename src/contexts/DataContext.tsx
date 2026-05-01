@@ -50,6 +50,9 @@ const mapQuote = (r: any, clientName: string): Quote => ({
   status: r.status,
   createdAt: r.created_at?.slice(0, 10) ?? "",
   itinerary: (r.itinerary ?? []) as ItineraryDay[],
+  items: (r.items ?? []) as QuoteItem[],
+  marginPercent: Number(r.margin_percent ?? 0),
+  opportunityId: r.opportunity_id ?? undefined,
 });
 
 const quoteToRow = (q: Partial<Quote>, userId: string) => ({
@@ -62,6 +65,38 @@ const quoteToRow = (q: Partial<Quote>, userId: string) => ({
   description: q.description ?? "",
   status: q.status ?? "sent",
   itinerary: (q.itinerary ?? []) as any,
+  items: (q.items ?? []) as any,
+  margin_percent: q.marginPercent ?? 0,
+  opportunity_id: q.opportunityId || null,
+});
+
+// ---------- Opportunities mappers ----------
+const mapOpportunity = (r: any, clientName: string): Opportunity => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  clientName,
+  title: r.title ?? "",
+  destination: r.destination ?? "",
+  estimatedValue: Number(r.estimated_value ?? 0),
+  probability: Number(r.probability ?? 50),
+  expectedCloseDate: r.expected_close_date ?? undefined,
+  stage: r.stage,
+  position: Number(r.position ?? 0),
+  notes: r.notes ?? "",
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const opportunityToRow = (o: Partial<Opportunity>, userId: string) => ({
+  user_id: userId,
+  client_id: o.clientId || null,
+  title: o.title!,
+  destination: o.destination ?? "",
+  estimated_value: o.estimatedValue ?? 0,
+  probability: o.probability ?? 50,
+  expected_close_date: o.expectedCloseDate || null,
+  stage: o.stage ?? "new",
+  position: o.position ?? 0,
+  notes: o.notes ?? "",
 });
 
 const mapFlight = (r: any, clientName: string): Flight => ({
