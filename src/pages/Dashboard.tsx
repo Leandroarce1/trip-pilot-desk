@@ -143,50 +143,117 @@ function ActionCard({
   urgent?: boolean;
 }) {
   const toneMap = {
-    info: { ring: "ring-info/30", bg: "bg-info-soft", text: "text-info-soft-foreground", btn: "bg-info text-white hover:bg-info/90", glow: "from-info/15" },
-    warning: { ring: "ring-warning/40", bg: "bg-warning/10", text: "text-warning", btn: "bg-warning text-white hover:bg-warning/90", glow: "from-warning/20" },
-    destructive: { ring: "ring-destructive/40", bg: "bg-destructive/10", text: "text-destructive", btn: "bg-destructive text-white hover:bg-destructive/90", glow: "from-destructive/20" },
-    gold: { ring: "ring-[hsl(var(--gold))]/40", bg: "bg-[hsl(var(--gold))]/15", text: "text-[hsl(var(--gold))]", btn: "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))] hover:bg-[hsl(var(--gold))]/90", glow: "from-[hsl(var(--gold))]/20" },
+    info: {
+      gradient: "from-info/[0.12] via-info/[0.06] to-transparent",
+      border: "border-info/40",
+      iconBg: "bg-info text-white",
+      number: "text-info",
+      btn: "bg-info hover:bg-info/90 text-white shadow-[0_4px_14px_-4px_hsl(var(--info)/0.5)]",
+      badge: "bg-info/15 text-info border-info/30",
+      badgeLabel: "ATENÇÃO",
+      glow: "bg-info/20",
+    },
+    warning: {
+      gradient: "from-warning/[0.14] via-warning/[0.06] to-transparent",
+      border: "border-warning/45",
+      iconBg: "bg-warning text-white",
+      number: "text-warning",
+      btn: "bg-warning hover:bg-warning/90 text-white shadow-[0_4px_14px_-4px_hsl(var(--warning)/0.5)]",
+      badge: "bg-warning/15 text-warning border-warning/30",
+      badgeLabel: "AÇÃO HOJE",
+      glow: "bg-warning/25",
+    },
+    destructive: {
+      gradient: "from-destructive/[0.14] via-destructive/[0.06] to-transparent",
+      border: "border-destructive/45",
+      iconBg: "bg-destructive text-white",
+      number: "text-destructive",
+      btn: "bg-destructive hover:bg-destructive/90 text-white shadow-[0_4px_14px_-4px_hsl(var(--destructive)/0.5)]",
+      badge: "bg-destructive/15 text-destructive border-destructive/30",
+      badgeLabel: "URGENTE",
+      glow: "bg-destructive/25",
+    },
+    gold: {
+      gradient: "from-[hsl(var(--gold))]/[0.16] via-[hsl(var(--gold))]/[0.07] to-transparent",
+      border: "border-[hsl(var(--gold))]/50",
+      iconBg: "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))]",
+      number: "text-[hsl(var(--gold))]",
+      btn: "bg-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/90 text-[hsl(var(--gold-foreground))] shadow-[0_4px_14px_-4px_hsl(var(--gold)/0.55)]",
+      badge: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--gold))] border-[hsl(var(--gold))]/30",
+      badgeLabel: "EM 48H",
+      glow: "bg-[hsl(var(--gold))]/25",
+    },
   } as const;
   const t = toneMap[tone];
   const isEmpty = count === 0;
+
   return (
     <div className={cn(
-      "group relative overflow-hidden rounded-2xl border bg-card/80 backdrop-blur-md p-4 flex flex-col gap-3",
-      "transition-all hover:-translate-y-0.5 hover:shadow-lg",
-      isEmpty ? "border-border/50 opacity-70" : `border-border/60 ring-1 ring-inset ${t.ring}`,
-      urgent && !isEmpty && "shadow-[0_0_0_1px_hsl(var(--destructive)/0.15),0_8px_24px_-8px_hsl(var(--destructive)/0.25)]",
+      "group relative overflow-hidden rounded-2xl border-2 bg-card p-5 flex flex-col gap-4",
+      "min-h-[200px] transition-all duration-300",
+      "hover:-translate-y-1 hover:shadow-2xl",
+      isEmpty
+        ? "border-border/40 bg-muted/20 opacity-75"
+        : cn("bg-gradient-to-br shadow-lg", t.gradient, t.border),
+      urgent && !isEmpty && "ring-2 ring-offset-2 ring-offset-background ring-destructive/20",
     )}>
-      {urgent && !isEmpty && (
-        <div className={cn("absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br to-transparent blur-2xl pointer-events-none", t.glow)} />
+      {/* Glow blob */}
+      {!isEmpty && (
+        <div className={cn("absolute -top-20 -right-20 h-44 w-44 rounded-full blur-3xl opacity-60 pointer-events-none", t.glow)} />
       )}
+
+      {/* Header: icon + badge */}
       <div className="relative flex items-start justify-between">
-        <div className={cn("rounded-xl p-2", t.bg, t.text)}>
-          <Icon className="h-4.5 w-4.5" />
+        <div className={cn(
+          "rounded-2xl p-3 shadow-lg",
+          isEmpty ? "bg-muted text-muted-foreground" : t.iconBg,
+          urgent && !isEmpty && "animate-pulse",
+        )}>
+          <Icon className="h-7 w-7" strokeWidth={2.25} />
         </div>
-        {urgent && !isEmpty ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse">
-            <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> urgente
+        {!isEmpty ? (
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider",
+            t.badge,
+          )}>
+            {urgent && <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />}
+            {t.badgeLabel}
           </span>
-        ) : isEmpty ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-success/12 text-success px-2 py-0.5 text-[10px] font-bold uppercase">
-            <CheckCircle2 className="h-2.5 w-2.5" /> ok
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/15 text-success border border-success/30 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider">
+            <CheckCircle2 className="h-3 w-3" /> Em dia
           </span>
-        ) : null}
+        )}
       </div>
-      <div className="relative">
-        <p className="label-caption">{label}</p>
-        <p className="text-lg font-bold text-navy tabular-nums leading-tight mt-1">{primary}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{secondary}</p>
+
+      {/* Big number + label */}
+      <div className="relative flex-1">
+        <p className={cn(
+          "text-[56px] font-black leading-none tracking-tighter tabular-nums",
+          isEmpty ? "text-muted-foreground/50" : t.number,
+        )}>
+          {count}
+        </p>
+        <p className="text-[13px] font-bold text-navy mt-1.5 uppercase tracking-wide">{label}</p>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 min-h-[2rem]">
+          {isEmpty ? "Nada pendente nesta categoria 🎉" : secondary}
+        </p>
+        {!isEmpty && primary !== `${count}` && primary !== `${count} cliente` && primary !== `${count} clientes` && (
+          <p className="text-[11px] font-semibold text-navy/70 tabular-nums mt-0.5">{primary}</p>
+        )}
       </div>
+
+      {/* CTA */}
       <Button
-        size="sm"
         onClick={onAction}
         disabled={isEmpty}
-        className={cn("relative h-8 text-xs gap-1 mt-auto", !isEmpty && t.btn)}
+        className={cn(
+          "relative w-full h-10 text-sm font-bold gap-1.5",
+          !isEmpty ? t.btn : "bg-muted text-muted-foreground hover:bg-muted",
+        )}
       >
-        {isEmpty ? "Tudo certo" : actionLabel}
-        {!isEmpty && <ArrowUpRight className="h-3 w-3" />}
+        {isEmpty ? "Sem ações" : actionLabel}
+        {!isEmpty && <ArrowUpRight className="h-4 w-4" />}
       </Button>
     </div>
   );
@@ -506,53 +573,93 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 1) Header KPI cards — premium executive */}
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
-        {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
-      </section>
+      {/* 1) AÇÃO HOJE — Central de comando operacional (TOPO, full width) */}
+      {(() => {
+        const totalPending = toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length;
+        return (
+          <section className="relative">
+            {/* Faixa de header destacada */}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-destructive/30 bg-gradient-to-r from-destructive/[0.08] via-warning/[0.06] to-[hsl(var(--gold))]/[0.08] p-5 mb-4">
+              <div className="absolute -top-16 -left-10 h-40 w-40 rounded-full bg-destructive/15 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl pointer-events-none" />
+              <div className="relative flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-destructive text-white p-2.5 shadow-lg shadow-destructive/30">
+                    <Siren className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-navy uppercase leading-none">
+                      Ação hoje
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1 font-medium">
+                      Resolva o que está em risco antes de qualquer outra coisa
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider border-2",
+                    totalPending > 0
+                      ? "bg-destructive text-white border-destructive animate-pulse"
+                      : "bg-success/15 text-success border-success/30",
+                  )}>
+                    {totalPending > 0 ? (
+                      <>
+                        <Siren className="h-3 w-3" />
+                        {totalPending} pendência{totalPending !== 1 ? "s" : ""}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Tudo em dia
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-      {/* 1.5) AÇÃO HOJE — central de comando operacional */}
+            {/* Grid de 4 cards grandes */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+              <ActionCard tone="info" icon={MessageCircle} label="Sem resposta"
+                count={toRespondToday.length}
+                primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
+                secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa limpa"}
+                actionLabel="Responder agora" onAction={() => navigate("/clientes")}
+                urgent={toRespondToday.length >= 5} />
+              <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
+                count={expiringQuotes.length}
+                primary={`Em até 7 dias`}
+                secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
+                actionLabel="Renegociar" onAction={() => navigate("/cotacoes")}
+                urgent={expiringQuotes.length > 0} />
+              <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
+                count={overduePayments.length}
+                primary={fmtCurrency(overdueTotal)}
+                secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
+                actionLabel="Cobrar agora" onAction={() => navigate("/financeiro")}
+                urgent={overduePayments.length > 0} />
+              <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
+                count={trips48h.length}
+                primary={`Próximas 48 horas`}
+                secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques"}
+                actionLabel="Emitir docs" onAction={() => navigate("/pacotes")}
+                urgent={trips48h.length > 0} />
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* 2) KPIs — contexto secundário */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-destructive/10 text-destructive p-1.5 ring-1 ring-destructive/20">
-              <Siren className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold tracking-tight text-navy uppercase">Ação hoje</h2>
-              <p className="text-[11px] text-muted-foreground">O que precisa da sua atenção agora</p>
-            </div>
+          <div>
+            <h2 className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">Visão geral do mês</h2>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Performance e indicadores de longo prazo</p>
           </div>
-          <Badge variant="destructive" className="tabular-nums">
-            {toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length} pendências
-          </Badge>
         </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <ActionCard tone="info" icon={MessageCircle} label="Responder hoje"
-            count={toRespondToday.length}
-            primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
-            secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa de entrada limpa"}
-            actionLabel="Ver leads" onAction={() => navigate("/clientes")}
-            urgent={toRespondToday.length >= 5} />
-          <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
-            count={expiringQuotes.length}
-            primary={`${expiringQuotes.length} expira${expiringQuotes.length !== 1 ? "m" : ""} em 7d`}
-            secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
-            actionLabel="Resolver" onAction={() => navigate("/cotacoes")}
-            urgent={expiringQuotes.length > 0} />
-          <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
-            count={overduePayments.length}
-            primary={fmtCurrency(overdueTotal)}
-            secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
-            actionLabel="Cobrar" onAction={() => navigate("/financeiro")}
-            urgent={overduePayments.length > 0} />
-          <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
-            count={trips48h.length}
-            primary={`${trips48h.length} embarque${trips48h.length !== 1 ? "s" : ""}`}
-            secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques iminentes"}
-            actionLabel="Ver" onAction={() => navigate("/pacotes")}
-            urgent={trips48h.length > 0} />
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
+          {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
         </div>
       </section>
 
