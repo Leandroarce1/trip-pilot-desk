@@ -59,6 +59,16 @@ const Financial = () => {
   useEffect(() => {
     const q = searchParams.get("search");
     if (q) setSearch(q);
+    const tabParam = searchParams.get("tab");
+    const tabMap: Record<string, string> = {
+      overview: "overview",
+      receivables: "income",
+      income: "income",
+      payables: "expense",
+      expense: "expense",
+      commissions: "commissions",
+    };
+    if (tabParam && tabMap[tabParam]) setTab(tabMap[tabParam]);
   }, [searchParams]);
 
   // ---------- KPIs ----------
