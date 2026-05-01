@@ -5,7 +5,7 @@ import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
   TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
   Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
-  Opportunity, QuoteItem,
+  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher,
 } from "@/types/crm";
 
 // ---------- Mappers (snake_case <-> camelCase) ----------
@@ -244,6 +244,54 @@ const supplierToRow = (s: Partial<Supplier>, userId: string) => ({
   notes: s.notes ?? null,
   rating: s.rating ?? 5,
   active: s.active ?? true,
+});
+
+// ---------- Itineraries mappers ----------
+const mapItinerary = (r: any): Itinerary => ({
+  id: r.id,
+  title: r.title ?? "",
+  packageId: r.package_id ?? undefined,
+  quoteId: r.quote_id ?? undefined,
+  days: (r.days ?? []) as ItineraryDayDetailed[],
+  shareableSlug: r.shareable_slug ?? undefined,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const itineraryToRow = (i: Partial<Itinerary>, userId: string) => ({
+  user_id: userId,
+  title: i.title!,
+  package_id: i.packageId || null,
+  quote_id: i.quoteId || null,
+  days: (i.days ?? []) as any,
+  shareable_slug: i.shareableSlug ?? null,
+});
+
+// ---------- Vouchers mappers ----------
+const mapVoucher = (r: any): Voucher => ({
+  id: r.id,
+  title: r.title ?? "",
+  type: r.type,
+  packageId: r.package_id ?? undefined,
+  supplier: r.supplier ?? "",
+  confirmationCode: r.confirmation_code ?? undefined,
+  serviceDate: r.service_date ?? undefined,
+  details: (r.details ?? {}) as Record<string, any>,
+  notes: r.notes ?? "",
+  issued: !!r.issued,
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const voucherToRow = (v: Partial<Voucher>, userId: string) => ({
+  user_id: userId,
+  title: v.title!,
+  type: v.type ?? "other",
+  package_id: v.packageId || null,
+  supplier: v.supplier ?? "",
+  confirmation_code: v.confirmationCode ?? null,
+  service_date: v.serviceDate || null,
+  details: (v.details ?? {}) as any,
+  notes: v.notes ?? "",
+  issued: v.issued ?? false,
 });
 
 // ---------- Context ----------
