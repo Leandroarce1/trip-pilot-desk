@@ -1120,14 +1120,37 @@ const Dashboard = () => {
                 {finAlerts.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Carteira em dia 👌</p>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {finAlerts.map((p) => (
-                      <li key={p.id}
-                        onClick={() => navigate(`/pacotes/${p.id}`)}
-                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
-                        <span className="truncate flex-1">{p.clientName}</span>
-                        <span className="text-[10.5px] text-navy-foreground/70 tabular-nums shrink-0">{fmtCurrency(p.totalValue)}</span>
+                      <li key={p.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0 animate-pulse" />
+                          <span className="truncate flex-1 font-medium">{p.clientName}</span>
+                          <span className="text-[10.5px] text-navy-foreground/80 tabular-nums shrink-0 font-bold">{fmtCurrency(p.totalValue)}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              const phone = (clients.find((c) => c.id === p.clientId)?.phone || "").replace(/\D/g, "");
+                              const msg = `Olá ${p.clientName.split(" ")[0]}, tudo bem? Passando para confirmar o pagamento de ${fmtCurrency(p.totalValue)} referente à viagem para ${p.destinationCity}. Pode confirmar?`;
+                              if (phone) {
+                                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                                toast({ title: "Cobrança enviada", description: `Mensagem WhatsApp aberta para ${p.clientName}.` });
+                              } else {
+                                toast({ title: "Telefone não encontrado", description: "Cadastre o telefone do cliente.", variant: "destructive" });
+                              }
+                            }}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-destructive/25 hover:bg-destructive/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Enviar cobrança">
+                            <CreditCard className="h-3 w-3" /> Cobrar
+                          </button>
+                          <button
+                            onClick={() => navigate(`/pacotes/${p.id}`)}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Abrir reserva">
+                            <ExternalLink className="h-3 w-3" /> Abrir
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
