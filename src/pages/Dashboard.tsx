@@ -129,7 +129,68 @@ function PanelCard({
   );
 }
 
-const PIE_COLORS = [
+function ActionCard({
+  tone, icon: Icon, label, count, primary, secondary, actionLabel, onAction, urgent,
+}: {
+  tone: "info" | "warning" | "destructive" | "gold";
+  icon: typeof DollarSign;
+  label: string;
+  count: number;
+  primary: string;
+  secondary: string;
+  actionLabel: string;
+  onAction: () => void;
+  urgent?: boolean;
+}) {
+  const toneMap = {
+    info: { ring: "ring-info/30", bg: "bg-info-soft", text: "text-info-soft-foreground", btn: "bg-info text-white hover:bg-info/90", glow: "from-info/15" },
+    warning: { ring: "ring-warning/40", bg: "bg-warning/10", text: "text-warning", btn: "bg-warning text-white hover:bg-warning/90", glow: "from-warning/20" },
+    destructive: { ring: "ring-destructive/40", bg: "bg-destructive/10", text: "text-destructive", btn: "bg-destructive text-white hover:bg-destructive/90", glow: "from-destructive/20" },
+    gold: { ring: "ring-[hsl(var(--gold))]/40", bg: "bg-[hsl(var(--gold))]/15", text: "text-[hsl(var(--gold))]", btn: "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))] hover:bg-[hsl(var(--gold))]/90", glow: "from-[hsl(var(--gold))]/20" },
+  } as const;
+  const t = toneMap[tone];
+  const isEmpty = count === 0;
+  return (
+    <div className={cn(
+      "group relative overflow-hidden rounded-2xl border bg-card/80 backdrop-blur-md p-4 flex flex-col gap-3",
+      "transition-all hover:-translate-y-0.5 hover:shadow-lg",
+      isEmpty ? "border-border/50 opacity-70" : `border-border/60 ring-1 ring-inset ${t.ring}`,
+      urgent && !isEmpty && "shadow-[0_0_0_1px_hsl(var(--destructive)/0.15),0_8px_24px_-8px_hsl(var(--destructive)/0.25)]",
+    )}>
+      {urgent && !isEmpty && (
+        <div className={cn("absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br to-transparent blur-2xl pointer-events-none", t.glow)} />
+      )}
+      <div className="relative flex items-start justify-between">
+        <div className={cn("rounded-xl p-2", t.bg, t.text)}>
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+        {urgent && !isEmpty ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> urgente
+          </span>
+        ) : isEmpty ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/12 text-success px-2 py-0.5 text-[10px] font-bold uppercase">
+            <CheckCircle2 className="h-2.5 w-2.5" /> ok
+          </span>
+        ) : null}
+      </div>
+      <div className="relative">
+        <p className="label-caption">{label}</p>
+        <p className="text-lg font-bold text-navy tabular-nums leading-tight mt-1">{primary}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{secondary}</p>
+      </div>
+      <Button
+        size="sm"
+        onClick={onAction}
+        disabled={isEmpty}
+        className={cn("relative h-8 text-xs gap-1 mt-auto", !isEmpty && t.btn)}
+      >
+        {isEmpty ? "Tudo certo" : actionLabel}
+        {!isEmpty && <ArrowUpRight className="h-3 w-3" />}
+      </Button>
+    </div>
+  );
+}
   "hsl(var(--primary))",
   "hsl(var(--primary-soft))",
   "hsl(var(--gold))",
