@@ -5,7 +5,8 @@ import {
   Clock, Plus, ArrowUpRight, ArrowDownRight, CreditCard,
   MapPin, ChevronRight, Ticket, Target, UserPlus, Activity,
   Sparkles, Trophy, PieChart as PieIcon, MessageCircle, CheckCircle2,
-  PhoneCall, Mail, CalendarClock,
+  PhoneCall, Mail, CalendarClock, MessageSquare, ListTodo, ExternalLink,
+  FileCheck, ShieldCheck, Hourglass, Siren,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,69 @@ function PanelCard({
       </CardHeader>
       <CardContent className="pt-0">{children}</CardContent>
     </Card>
+  );
+}
+
+function ActionCard({
+  tone, icon: Icon, label, count, primary, secondary, actionLabel, onAction, urgent,
+}: {
+  tone: "info" | "warning" | "destructive" | "gold";
+  icon: typeof DollarSign;
+  label: string;
+  count: number;
+  primary: string;
+  secondary: string;
+  actionLabel: string;
+  onAction: () => void;
+  urgent?: boolean;
+}) {
+  const toneMap = {
+    info: { ring: "ring-info/30", bg: "bg-info-soft", text: "text-info-soft-foreground", btn: "bg-info text-white hover:bg-info/90", glow: "from-info/15" },
+    warning: { ring: "ring-warning/40", bg: "bg-warning/10", text: "text-warning", btn: "bg-warning text-white hover:bg-warning/90", glow: "from-warning/20" },
+    destructive: { ring: "ring-destructive/40", bg: "bg-destructive/10", text: "text-destructive", btn: "bg-destructive text-white hover:bg-destructive/90", glow: "from-destructive/20" },
+    gold: { ring: "ring-[hsl(var(--gold))]/40", bg: "bg-[hsl(var(--gold))]/15", text: "text-[hsl(var(--gold))]", btn: "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))] hover:bg-[hsl(var(--gold))]/90", glow: "from-[hsl(var(--gold))]/20" },
+  } as const;
+  const t = toneMap[tone];
+  const isEmpty = count === 0;
+  return (
+    <div className={cn(
+      "group relative overflow-hidden rounded-2xl border bg-card/80 backdrop-blur-md p-4 flex flex-col gap-3",
+      "transition-all hover:-translate-y-0.5 hover:shadow-lg",
+      isEmpty ? "border-border/50 opacity-70" : `border-border/60 ring-1 ring-inset ${t.ring}`,
+      urgent && !isEmpty && "shadow-[0_0_0_1px_hsl(var(--destructive)/0.15),0_8px_24px_-8px_hsl(var(--destructive)/0.25)]",
+    )}>
+      {urgent && !isEmpty && (
+        <div className={cn("absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br to-transparent blur-2xl pointer-events-none", t.glow)} />
+      )}
+      <div className="relative flex items-start justify-between">
+        <div className={cn("rounded-xl p-2", t.bg, t.text)}>
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+        {urgent && !isEmpty ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> urgente
+          </span>
+        ) : isEmpty ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/12 text-success px-2 py-0.5 text-[10px] font-bold uppercase">
+            <CheckCircle2 className="h-2.5 w-2.5" /> ok
+          </span>
+        ) : null}
+      </div>
+      <div className="relative">
+        <p className="label-caption">{label}</p>
+        <p className="text-lg font-bold text-navy tabular-nums leading-tight mt-1">{primary}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{secondary}</p>
+      </div>
+      <Button
+        size="sm"
+        onClick={onAction}
+        disabled={isEmpty}
+        className={cn("relative h-8 text-xs gap-1 mt-auto", !isEmpty && t.btn)}
+      >
+        {isEmpty ? "Tudo certo" : actionLabel}
+        {!isEmpty && <ArrowUpRight className="h-3 w-3" />}
+      </Button>
+    </div>
   );
 }
 
@@ -349,6 +413,56 @@ const Dashboard = () => {
   // Alertas financeiros: pagamentos pendentes
   const finAlerts = pendingPayments.slice(0, 3);
 
+  // ----- AÇÃO HOJE — 4 buckets prioritários -----
+  // 1) Clientes a responder hoje: leads + negociação
+  const toRespondToday = clients.filter((c) => c.status === "lead" || c.status === "negotiation");
+
+  // 2) Propostas vencendo: cotações 'sent' com endDate ≤ 7 dias
+  const expiringQuotes = quotes.filter((q) => {
+    if (q.status !== "sent") return false;
+    const end = new Date(q.endDate);
+    return end >= now && end <= in7d;
+  });
+
+  // 3) Pagamentos atrasados: pendentes com embarque já passado OU em ≤ 14 dias
+  const in14d = new Date(now.getTime() + 14 * 86400000);
+  const overduePayments = pendingPayments.filter((p) => {
+    const dep = new Date(p.departureDate);
+    return dep <= in14d;
+  });
+  const overdueTotal = overduePayments.reduce((s, p) => s + p.totalValue, 0);
+
+  // 4) Viagens em 48h
+  const trips48h = packages.filter((p) => {
+    if (p.reservationStatus === "cancelled") return false;
+    const dep = new Date(p.departureDate);
+    return dep >= now && dep <= in48h;
+  });
+
+  // ----- Follow-up enriquecido (tempo sem resposta + valor potencial) -----
+  const followUpsRich = clients
+    .filter((c) => c.status === "lead" || c.status === "negotiation")
+    .map((c) => {
+      const cQuotes = quotes.filter((q) => q.clientId === c.id);
+      const lastQuote = cQuotes.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      const refDate = lastQuote?.createdAt || c.createdAt;
+      const daysSilent = Math.max(0, Math.floor((now.getTime() - new Date(refDate).getTime()) / 86400000));
+      const potential = cQuotes.reduce((s, q) => Math.max(s, q.value), 0);
+      return { client: c, daysSilent, potential, lastQuote };
+    })
+    .sort((a, b) => (b.potential - a.potential) || (b.daysSilent - a.daysSilent))
+    .slice(0, 5);
+
+  // ----- Viagens próximas com status operacional (check-in / voucher / docs) -----
+  const nearTripsRich = nearTrips.map((p) => {
+    const days = Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000);
+    const hasFlights = p.flightIds && p.flightIds.length > 0;
+    const checkinReady = days <= 2 && hasFlights;
+    const voucherReady = p.reservationStatus === "confirmed" && !!p.confirmationCode;
+    const docsReady = p.documents && p.documents.length > 0;
+    return { pkg: p, days, checkinReady, voucherReady, docsReady };
+  });
+
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
     { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
@@ -397,6 +511,51 @@ const Dashboard = () => {
         {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
       </section>
 
+      {/* 1.5) AÇÃO HOJE — central de comando operacional */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-destructive/10 text-destructive p-1.5 ring-1 ring-destructive/20">
+              <Siren className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold tracking-tight text-navy uppercase">Ação hoje</h2>
+              <p className="text-[11px] text-muted-foreground">O que precisa da sua atenção agora</p>
+            </div>
+          </div>
+          <Badge variant="destructive" className="tabular-nums">
+            {toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length} pendências
+          </Badge>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ActionCard tone="info" icon={MessageCircle} label="Responder hoje"
+            count={toRespondToday.length}
+            primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
+            secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa de entrada limpa"}
+            actionLabel="Ver leads" onAction={() => navigate("/clientes")}
+            urgent={toRespondToday.length >= 5} />
+          <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
+            count={expiringQuotes.length}
+            primary={`${expiringQuotes.length} expira${expiringQuotes.length !== 1 ? "m" : ""} em 7d`}
+            secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
+            actionLabel="Resolver" onAction={() => navigate("/cotacoes")}
+            urgent={expiringQuotes.length > 0} />
+          <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
+            count={overduePayments.length}
+            primary={fmtCurrency(overdueTotal)}
+            secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
+            actionLabel="Cobrar" onAction={() => navigate("/financeiro")}
+            urgent={overduePayments.length > 0} />
+          <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
+            count={trips48h.length}
+            primary={`${trips48h.length} embarque${trips48h.length !== 1 ? "s" : ""}`}
+            secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques iminentes"}
+            actionLabel="Ver" onAction={() => navigate("/pacotes")}
+            urgent={trips48h.length > 0} />
+        </div>
+      </section>
+
       {/* 2) Main grid */}
       <section className="grid gap-5 lg:grid-cols-12">
         {/* Pipeline */}
@@ -419,41 +578,71 @@ const Dashboard = () => {
           </div>
         </PanelCard>
 
-        {/* Follow-up hoje */}
-        <PanelCard title="Follow-up hoje" icon={PhoneCall} className="lg:col-span-6"
-          action={<Badge variant="warning">{followUps.length}</Badge>}
+        {/* Follow-up comercial */}
+        <PanelCard title="Follow-up comercial" icon={PhoneCall} className="lg:col-span-6"
+          action={<Badge variant="warning">{followUpsRich.length} leads</Badge>}
         >
           <div className="space-y-2">
-            {followUps.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem follow-ups pendentes 🎉</p>}
-            {followUps.map((c) => (
-              <div key={c.id}
-                className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 cursor-pointer transition-colors"
-                onClick={() => navigate(`/clientes/${c.id}`)}
-              >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary-soft))] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {c.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+            {followUpsRich.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem follow-ups pendentes 🎉</p>}
+            {followUpsRich.map(({ client: c, daysSilent, potential }) => {
+              const heat = daysSilent >= 7 ? "destructive" : daysSilent >= 3 ? "warning" : "info";
+              const heatStyle =
+                heat === "destructive" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                heat === "warning" ? "bg-warning/10 text-warning border-warning/30" :
+                "bg-info-soft text-info-soft-foreground border-info/30";
+              return (
+                <div key={c.id}
+                  className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary-soft))] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {c.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate flex items-center gap-2">
+                      {c.name}
+                      <StatusBadge variant={c.status} />
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-2">
+                      <span className={cn("inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold", heatStyle)}>
+                        <Clock className="h-2.5 w-2.5" />
+                        {daysSilent === 0 ? "hoje" : `${daysSilent}d sem resposta`}
+                      </span>
+                      {potential > 0 && (
+                        <span className="tabular-nums text-navy font-semibold">{fmtCurrency(potential)}</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Mensagem" onClick={() => window.open(`https://wa.me/${c.phone.replace(/\D/g, "")}`, "_blank")}>
+                      <MessageSquare className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{c.phone} · {c.email}</p>
-                </div>
-                <StatusBadge variant={c.status} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </PanelCard>
 
-        {/* Viagens próximas */}
+        {/* Viagens próximas — com status operacional */}
         <PanelCard title="Viagens próximas" icon={Plane} className="lg:col-span-7"
           action={<Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/pacotes")}>Todas <ChevronRight className="h-3 w-3" /></Button>}
         >
           <div className="space-y-2">
-            {nearTrips.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Nenhum embarque agendado.</p>}
-            {nearTrips.map((p) => {
-              const days = Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000);
+            {nearTripsRich.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Nenhum embarque agendado.</p>}
+            {nearTripsRich.map(({ pkg: p, days, checkinReady, voucherReady, docsReady }) => {
+              const urgent = days <= 2;
+              const warn = days <= 7 && days > 2;
               return (
                 <div key={p.id}
-                  className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 hover:bg-muted/40 cursor-pointer transition-colors"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border p-2.5 hover:bg-muted/40 cursor-pointer transition-colors",
+                    urgent ? "border-destructive/40 bg-destructive/5" :
+                    warn ? "border-warning/30 bg-warning/[0.04]" :
+                    "border-border/60",
+                  )}
                   onClick={() => navigate(`/pacotes/${p.id}`)}
                 >
                   <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
@@ -462,10 +651,35 @@ const Dashboard = () => {
                     <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
                       <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
                     </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Check-in">
+                        <Plane className="h-2.5 w-2.5" /> check-in
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Voucher">
+                        <FileCheck className="h-2.5 w-2.5" /> voucher
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                        docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                      )} title="Documentos">
+                        <ShieldCheck className="h-2.5 w-2.5" /> docs
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
-                    <p className="text-[10.5px] text-muted-foreground">em {days} dia{days !== 1 ? "s" : ""}</p>
+                    <p className={cn(
+                      "text-[10.5px] font-semibold tabular-nums",
+                      urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
+                    )}>
+                      {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
+                    </p>
                   </div>
                 </div>
               );
@@ -590,6 +804,33 @@ const Dashboard = () => {
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[hsl(var(--primary-soft))]/25 blur-3xl" aria-hidden />
             <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl" aria-hidden />
 
+            {/* Headline contextual — síntese acionável */}
+            <div className="relative mb-4 flex flex-wrap gap-2">
+              {hotClients.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/20 border border-destructive/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <Flame className="h-3 w-3 text-destructive" />
+                  {hotClients.length} {hotClients.length === 1 ? "cliente pode" : "clientes podem"} fechar hoje
+                </span>
+              )}
+              {finAlerts.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/20 border border-warning/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <CreditCard className="h-3 w-3 text-warning" />
+                  {finAlerts.length} pagamento{finAlerts.length !== 1 ? "s" : ""} atrasado{finAlerts.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {urgentTrips.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--gold))]/25 border border-[hsl(var(--gold))]/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <Plane className="h-3 w-3 text-[hsl(var(--gold))]" />
+                  {urgentTrips.length} viagem{urgentTrips.length !== 1 ? "ns" : ""} precisa{urgentTrips.length !== 1 ? "m" : ""} emissão urgente
+                </span>
+              )}
+              {hotClients.length === 0 && finAlerts.length === 0 && urgentTrips.length === 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/20 border border-success/30 text-navy-foreground px-3 py-1 text-[11.5px] font-semibold">
+                  <CheckCircle2 className="h-3 w-3 text-success" /> Tudo sob controle
+                </span>
+              )}
+            </div>
+
             <div className="relative grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {/* Clientes quentes */}
               <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
@@ -601,15 +842,44 @@ const Dashboard = () => {
                 {hotClients.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Nenhum lead em ebulição agora.</p>
                 ) : (
-                  <ul className="space-y-1.5">
-                    {hotClients.map(({ client }) => (
-                      <li key={client.id}
-                        onClick={() => navigate(`/clientes/${client.id}`)}
-                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
-                        <span className="truncate">{client.name}</span>
-                      </li>
-                    ))}
+                  <ul className="space-y-2">
+                    {hotClients.map(({ client, lastQuote }) => {
+                      const phone = client.phone.replace(/\D/g, "");
+                      const msg = lastQuote
+                        ? `Olá ${client.name.split(" ")[0]}, tudo bem? Passando para saber se já conseguiu avaliar a proposta para ${lastQuote.destination}. Posso esclarecer alguma dúvida?`
+                        : `Olá ${client.name.split(" ")[0]}, tudo bem? Tenho novidades para sua próxima viagem. Quando podemos conversar?`;
+                      return (
+                        <li key={client.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                          <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0 animate-pulse" />
+                            <span className="truncate flex-1 font-medium">{client.name}</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank")}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-success/20 hover:bg-success/30 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Gerar mensagem WhatsApp"
+                            >
+                              <MessageSquare className="h-3 w-3" /> Mensagem
+                            </button>
+                            <button
+                              onClick={() => navigate(`/cotacoes`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-[hsl(var(--gold))]/25 hover:bg-[hsl(var(--gold))]/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Criar tarefa / nova cotação"
+                            >
+                              <ListTodo className="h-3 w-3" /> Tarefa
+                            </button>
+                            <button
+                              onClick={() => navigate(`/clientes/${client.id}`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Abrir ficha do cliente"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Abrir
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
