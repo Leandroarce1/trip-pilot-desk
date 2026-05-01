@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { Client } from "@/types/crm";
@@ -22,10 +22,19 @@ import { NextStepBanner } from "@/components/NextStepBanner";
 const Clients = () => {
   const { clients, addClient, updateClient } = useData();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(urlStatus || "all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" as Client["status"] });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: (urlStatus as Client["status"]) || "lead" as Client["status"] });
+
+  // Sync filter with URL ?status=
+  useEffect(() => {
+    if (urlStatus) setStatusFilter(urlStatus);
+  }, [urlStatus]);
+
+  const isLeadsView = statusFilter === "lead";
 
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase());
@@ -77,15 +86,19 @@ const Clients = () => {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Clientes</h1>
-          <p className="text-sm text-muted-foreground">{clients.length} clientes cadastrados</p>
+          <h1 className="text-2xl font-bold">{isLeadsView ? "Leads" : "Clientes"}</h1>
+          <p className="text-sm text-muted-foreground">
+            {isLeadsView
+              ? `${clients.filter((c) => c.status === "lead").length} leads ativos`
+              : `${clients.length} clientes cadastrados`}
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Button>
+            <Button><Plus className="mr-2 h-4 w-4" /> {isLeadsView ? "Novo Lead" : "Novo Cliente"}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Novo Cliente</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{isLeadsView ? "Novo Lead" : "Novo Cliente"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -115,7 +128,14 @@ const Clients = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar por nome ou e-mail..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v);
+            if (v === "all") setSearchParams({});
+            else setSearchParams({ status: v });
+          }}
+        >
           <SelectTrigger className="w-[200px]"><SelectValue placeholder="Todos os status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
