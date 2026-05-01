@@ -178,17 +178,33 @@ const Dashboard = () => {
     })),
   ].slice(0, 6);
 
-  // ----- Top vendedores (single-admin: agrupar por fornecedor) -----
-  const supplierStats = useMemo(() => {
-    const map = new Map<string, { name: string; sales: number; revenue: number }>();
+  // ----- Top destinos vendidos (cidade + país) -----
+  const topDestinations = useMemo(() => {
+    const map = new Map<string, { name: string; country: string; flag?: string; sales: number; revenue: number }>();
     packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
-      const cur = map.get(p.supplier) || { name: p.supplier, sales: 0, revenue: 0 };
+      const key = `${p.destinationCity}|${p.destinationCountry}`;
+      const cur = map.get(key) || { name: p.destinationCity, country: p.destinationCountry, flag: p.destinationFlag, sales: 0, revenue: 0 };
       cur.sales += 1; cur.revenue += p.totalValue;
-      map.set(p.supplier, cur);
+      map.set(key, cur);
     });
     return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }, [packages]);
-  const supplierMaxRev = Math.max(...supplierStats.map((s) => s.revenue), 1);
+  const destMaxRev = Math.max(...topDestinations.map((s) => s.revenue), 1);
+
+  // ----- Vendas por categoria (tipo de viagem) -----
+  const categoryLabels: Record<string, string> = {
+    air: "Aéreo", package: "Pacote", cruise: "Cruzeiro", road: "Rodoviário", hotel: "Hotel",
+  };
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, { name: string; value: number }>();
+    packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
+      const label = categoryLabels[p.tripType] ?? p.tripType;
+      const cur = map.get(label) || { name: label, value: 0 };
+      cur.value += p.totalValue;
+      map.set(label, cur);
+    });
+    return [...map.values()].sort((a, b) => b.value - a.value);
+  }, [packages]);
 
   // ----- Receitas x Despesas (4 meses) -----
   const finChart = Array.from({ length: 4 }, (_, i) => {
@@ -200,7 +216,7 @@ const Dashboard = () => {
     return { label: label.charAt(0).toUpperCase() + label.slice(1), Receitas, Despesas };
   });
 
-  // ----- Vendas por destino (país) -----
+  // ----- Vendas por destino (país) — usado em legendas/insights -----
   const destStats = useMemo(() => {
     const map = new Map<string, { name: string; flag?: string; value: number }>();
     packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
@@ -397,25 +413,25 @@ const Dashboard = () => {
 
       {/* 3) Secondary grid */}
       <section className="grid gap-5 lg:grid-cols-12">
-        {/* Top vendedores (fornecedores) */}
-        <PanelCard title="Top fornecedores" icon={Trophy} className="lg:col-span-4">
+        {/* Top destinos vendidos */}
+        <PanelCard title="Top destinos vendidos" icon={Trophy} className="lg:col-span-4">
           <div className="space-y-3">
-            {supplierStats.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas.</p>}
-            {supplierStats.map((s, i) => (
-              <div key={s.name}>
+            {topDestinations.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas.</p>}
+            {topDestinations.map((s, i) => (
+              <div key={`${s.name}-${s.country}`}>
                 <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="font-medium flex items-center gap-2">
+                  <span className="font-medium flex items-center gap-2 min-w-0">
                     <span className={cn(
-                      "h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                      "h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
                       i === 0 ? "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))]" : "bg-muted text-muted-foreground",
                     )}>{i + 1}</span>
-                    {s.name}
+                    <span className="truncate">{s.flag ?? "🌍"} {s.name}, {s.country}</span>
                   </span>
-                  <span className="tabular-nums font-semibold text-navy">{fmtCurrency(s.revenue)}</span>
+                  <span className="tabular-nums font-semibold text-navy shrink-0">{fmtCurrency(s.revenue)}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--primary-soft))]"
-                    style={{ width: `${(s.revenue / supplierMaxRev) * 100}%` }} />
+                    style={{ width: `${(s.revenue / destMaxRev) * 100}%` }} />
                 </div>
                 <p className="text-[10.5px] text-muted-foreground mt-0.5">{s.sales} reserva(s)</p>
               </div>
@@ -443,16 +459,16 @@ const Dashboard = () => {
           </div>
         </PanelCard>
 
-        {/* Vendas por destino */}
-        <PanelCard title="Vendas por destino" icon={PieIcon} className="lg:col-span-4">
-          {destStats.length === 0 ? (
+        {/* Vendas por categoria */}
+        <PanelCard title="Vendas por categoria" icon={PieIcon} className="lg:col-span-4">
+          {categoryStats.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">Sem dados.</p>
           ) : (
             <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={destStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
-                    {destStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
+                    {categoryStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip
                     contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
@@ -460,7 +476,6 @@ const Dashboard = () => {
                   />
                   <Legend verticalAlign="middle" align="right" layout="vertical" iconSize={8}
                     wrapperStyle={{ fontSize: "11px" }}
-                    formatter={(v, _e, i) => `${destStats[i!]?.flag ?? ""} ${v}`}
                   />
                 </PieChart>
               </ResponsiveContainer>
