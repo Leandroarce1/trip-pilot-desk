@@ -97,10 +97,10 @@ const Financial = () => {
                 </div>
                 <div>
                   <Label>Cliente vinculado</Label>
-                  <Select value={form.clientName} onValueChange={(v) => setForm({ ...form, clientName: v })}>
+                  <Select value={form.clientName || "__none__"} onValueChange={(v) => setForm({ ...form, clientName: v === "__none__" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="__none__">Nenhum</SelectItem>
                       {clients.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
