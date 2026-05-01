@@ -547,7 +547,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setOpportunities((prev) => prev.filter((x) => x.id !== id));
   };
 
-  // ---------- Notifications ----------
+  // ---------- CRUD: Itineraries ----------
+  const addItinerary = async (i: Omit<Itinerary, "id" | "createdAt">): Promise<Itinerary | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("itineraries").insert(itineraryToRow(i, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapItinerary(data);
+    setItineraries((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateItinerary = async (i: Itinerary) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("itineraries").update(itineraryToRow(i, user.id)).eq("id", i.id).select().single();
+    if (error) throw error;
+    setItineraries((prev) => prev.map((x) => (x.id === i.id ? mapItinerary(data) : x)));
+  };
+  const deleteItinerary = async (id: string) => {
+    const { error } = await supabase.from("itineraries").delete().eq("id", id);
+    if (error) throw error;
+    setItineraries((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // ---------- CRUD: Vouchers ----------
+  const addVoucher = async (v: Omit<Voucher, "id" | "createdAt">): Promise<Voucher | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("vouchers").insert(voucherToRow(v, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapVoucher(data);
+    setVouchers((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateVoucher = async (v: Voucher) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("vouchers").update(voucherToRow(v, user.id)).eq("id", v.id).select().single();
+    if (error) throw error;
+    setVouchers((prev) => prev.map((x) => (x.id === v.id ? mapVoucher(data) : x)));
+  };
+  const deleteVoucher = async (id: string) => {
+    const { error } = await supabase.from("vouchers").delete().eq("id", id);
+    if (error) throw error;
+    setVouchers((prev) => prev.filter((x) => x.id !== id));
+  };
+
   const markNotificationRead = async (id: string) => {
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
     if (error) throw error;
@@ -572,6 +613,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       loading,
       clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
+      itineraries, vouchers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
@@ -579,6 +621,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPackage, updatePackage, deletePackage,
       addSupplier, updateSupplier, deleteSupplier,
       addOpportunity, updateOpportunity, deleteOpportunity,
+      addItinerary, updateItinerary, deleteItinerary,
+      addVoucher, updateVoucher, deleteVoucher,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>
