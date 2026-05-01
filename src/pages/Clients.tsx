@@ -62,6 +62,19 @@ const Clients = () => {
 
   return (
     <div className="space-y-6">
+      <SalesJourney current="lead" />
+
+      {nextLead && (
+        <NextStepBanner
+          tone="primary"
+          icon={<Sparkles className="h-4 w-4" />}
+          title={`Converter ${nextLead.name} em oportunidade`}
+          description={`${nextLead.phone} · cadastrado em ${fmtDate(nextLead.createdAt)} — mover para negociação`}
+          actionLabel="Converter agora"
+          onAction={() => convertToOpportunity(nextLead)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Clientes</h1>
