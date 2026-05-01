@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, MapPin, Plane, DollarSign, Calendar, FileText, User, Clock,
-  CheckCircle2, Edit2, Users, ShieldCheck, Hash,
+  CheckCircle2, Edit2, Users, ShieldCheck, Hash, Sparkles,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReservationStatus, TripType } from "@/types/crm";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const reservationStatusLabels: Record<ReservationStatus, string> = {
   quoting: "Em cotação",
