@@ -430,6 +430,7 @@ const Financial = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="cashflow">Fluxo de caixa</TabsTrigger>
           <TabsTrigger value="income">Recebimentos</TabsTrigger>
           <TabsTrigger value="expense">Pagamentos</TabsTrigger>
           <TabsTrigger value="commissions">Comissões</TabsTrigger>
@@ -543,13 +544,14 @@ const Financial = () => {
                             {c.fullyReceived ? (
                               <Badge variant="secondary" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Recebida</Badge>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => openNew({
-                                type: "income", category: "commission",
-                                description: `Comissão ${c.packageName}`,
-                                value: String(c.pending.toFixed(2)),
+                              <Button size="sm" variant="outline" onClick={() => setCommissionModal({
+                                open: true,
                                 packageId: c.packageId,
+                                packageName: c.packageName,
                                 clientId: packages.find((p) => p.id === c.packageId)?.clientId ?? "",
-                                status: "paid",
+                                pending: c.pending,
+                                value: c.pending.toFixed(2),
+                                date: today(),
                               })}>Registrar</Button>
                             )}
                           </td>
