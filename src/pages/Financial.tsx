@@ -123,6 +123,51 @@ const Financial = () => {
     return months;
   }, [transactions]);
 
+  // ---------- Fluxo de caixa (próximos 60 dias) ----------
+  const cashflowData = useMemo(() => {
+    const days: { date: string; label: string; entradas: number; saidas: number; saldo: number }[] = [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    // saldo inicial = soma de tudo já pago até hoje (income - expense)
+    let runningBalance = transactions
+      .filter((t) => t.status === "paid" && t.date <= start.toISOString().slice(0, 10))
+      .reduce((s, t) => s + (t.type === "income" ? t.value : -t.value), 0);
+
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      const dayTx = transactions.filter((t) => t.date === key && (t.status === "pending" || (t.status === "paid" && i === 0 && false)));
+      // consideramos previsão: pendentes + atrasados acumulam no dia 0
+      const entradas = dayTx.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+      const saidas = dayTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.value, 0);
+
+      // Atrasados (pendentes com data passada) entram todos no dia 0
+      let extraIn = 0, extraOut = 0;
+      if (i === 0) {
+        const overdueTx = transactions.filter((t) => t.status === "pending" && t.date < key);
+        extraIn = overdueTx.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+        extraOut = overdueTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.value, 0);
+      }
+
+      const totalIn = entradas + extraIn;
+      const totalOut = saidas + extraOut;
+      runningBalance += totalIn - totalOut;
+      days.push({
+        date: key,
+        label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        entradas: totalIn,
+        saidas: totalOut,
+        saldo: runningBalance,
+      });
+    }
+    return days;
+  }, [transactions]);
+
+  const cashflowFinalBalance = cashflowData[cashflowData.length - 1]?.saldo ?? 0;
+  const cashflowTotalIn = cashflowData.reduce((s, d) => s + d.entradas, 0);
+  const cashflowTotalOut = cashflowData.reduce((s, d) => s + d.saidas, 0);
+
   // ---------- Filtros por aba ----------
   const filterFor = (typeOnly?: Transaction["type"]) =>
     transactions.filter((t) => {
