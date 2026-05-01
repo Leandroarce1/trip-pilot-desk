@@ -133,6 +133,7 @@ export interface Transaction {
   value: number;
   date: string;
   status: "paid" | "pending";
+  category?: string;
   clientName?: string;
   clientId?: string;
   packageId?: string;
