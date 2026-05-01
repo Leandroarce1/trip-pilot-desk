@@ -82,8 +82,8 @@ const PackageDetail = () => {
   }
 
   const quote = quotes.find((q) => q.id === pkg.quoteId);
-  const pkgFlights = flights.filter((f) => pkg.flightIds.includes(f.id));
-  const pkgTransactions = transactions.filter((t) => pkg.transactionIds.includes(t.id));
+  const pkgFlights = flights.filter((f) => f.packageId === pkg.id);
+  const pkgTransactions = transactions.filter((t) => t.packageId === pkg.id);
   const totalValue = pkg.totalValue;
   const totalPaid = pkgTransactions
     .filter((t) => t.status === "paid" && t.type === "income")
@@ -114,7 +114,6 @@ const PackageDetail = () => {
       navigate(`/financeiro${filterQuery}`);
       return;
     }
-    const txId = String(Date.now());
     addTransaction({
       type: "income",
       description: `Recebimento — ${pkg.destinationCity} (${pkg.clientName})`,
@@ -122,10 +121,11 @@ const PackageDetail = () => {
       date: new Date().toISOString().slice(0, 10),
       status: "pending",
       clientName: pkg.clientName,
+      clientId: pkg.clientId,
+      packageId: pkg.id,
     });
     updatePackage({
       ...pkg,
-      transactionIds: [...pkg.transactionIds, txId],
       history: [
         ...pkg.history,
         { date: new Date().toISOString(), action: "Lançamento financeiro gerado" },
