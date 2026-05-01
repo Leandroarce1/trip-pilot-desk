@@ -288,30 +288,77 @@ const Dashboard = () => {
     return items.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 8);
   }, [packages, quotes, clients]);
 
-  // ----- IA Concierge insights -----
-  const aiInsights = [
-    upcomingDepartures.length > 0
-      ? `${upcomingDepartures.length} embarque(s) nos próximos 7 dias — confirme documentação dos passageiros.`
-      : "Nenhum embarque iminente — momento ideal para nutrir leads.",
-    pendingPayments.length > 0
-      ? `${pendingPayments.length} reserva(s) com pagamento pendente totalizando ${fmtCurrency(pendingTotal)}.`
-      : "Carteira em dia — sem pagamentos pendentes.",
-    newLeads >= 2
-      ? `${newLeads} novos leads no mês. Agende follow-up com os mais quentes.`
-      : "Considere ações de captação — leads novos abaixo da média.",
-    destStats[0] ? `Destino campeão do mês: ${destStats[0].flag ?? ""} ${destStats[0].name} (${fmtCurrency(destStats[0].value)}).` : "",
-  ].filter(Boolean);
+  // ----- Séries de 6 meses para sparklines + deltas -----
+  const monthKeys = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return d.toISOString().slice(0, 7);
+  });
+  const prevMonthKey = monthKeys[monthKeys.length - 2];
+
+  const series = useMemo(() => {
+    return {
+      sales: monthKeys.map((k) => packages.filter((p) => p.createdAt.startsWith(k)).length),
+      revenue: monthKeys.map((k) =>
+        packages.filter((p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(k))
+          .reduce((s, p) => s + p.totalValue, 0)),
+      tickets: monthKeys.map((k) => flights.filter((f) => f.departureDate.startsWith(k)).length),
+      pending: monthKeys.map((k) =>
+        packages.filter((p) => p.paymentStatus === "pending" && p.reservationStatus !== "cancelled" && p.createdAt.startsWith(k))
+          .reduce((s, p) => s + p.totalValue, 0)),
+      leads: monthKeys.map((k) => clients.filter((c) => c.status === "lead" && c.createdAt.startsWith(k)).length),
+      departures: monthKeys.map((k) =>
+        packages.filter((p) => p.reservationStatus !== "cancelled" && p.departureDate.startsWith(k)).length),
+    };
+  }, [packages, flights, clients, monthKeys.join(",")]);
+
+  const pct = (cur: number, prev: number) => {
+    if (prev === 0) return cur > 0 ? 100 : 0;
+    return ((cur - prev) / prev) * 100;
+  };
+
+  const prevRevenue = packages.filter((p) => p.reservationStatus === "confirmed" && p.departureDate.startsWith(prevMonthKey))
+    .reduce((s, p) => s + p.totalValue, 0);
+  const prevSales = packages.filter((p) => p.createdAt.startsWith(prevMonthKey)).length;
+  const prevTickets = flights.filter((f) => f.departureDate.startsWith(prevMonthKey)).length;
+  const prevLeads = clients.filter((c) => c.status === "lead" && c.createdAt.startsWith(prevMonthKey)).length;
+
+  // ----- IA Concierge — 4 painéis inteligentes -----
+  // Clientes quentes: leads/negotiation com cotação enviada nos últimos 14 dias
+  const cutoffHot = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
+  const hotClients = clients
+    .filter((c) => (c.status === "lead" || c.status === "negotiation"))
+    .map((c) => {
+      const recentQuotes = quotes.filter((q) => q.clientId === c.id && q.createdAt >= cutoffHot);
+      const score = recentQuotes.length * 2 + (c.status === "negotiation" ? 3 : 1);
+      return { client: c, score, lastQuote: recentQuotes[0] };
+    })
+    .filter((x) => x.score > 1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  // Viagens urgentes: embarque ≤ 7 dias
+  const urgentTrips = nearTrips.slice(0, 3);
+
+  // Upsell: clientes 'sold' ou 'recurring' sem reserva ativa nos próximos 60d
+  const in60d = new Date(now.getTime() + 60 * 86400000);
+  const upsellTargets = clients
+    .filter((c) => c.status === "sold" || c.status === "recurring" || c.status === "postSale")
+    .filter((c) => !packages.some((p) => p.clientId === c.id && new Date(p.departureDate) > now && new Date(p.departureDate) <= in60d))
+    .slice(0, 3);
+
+  // Alertas financeiros: pagamentos pendentes
+  const finAlerts = pendingPayments.slice(0, 3);
 
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
-    { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", trend: monthSales > 0 ? "up" : "neutral", onClick: () => navigate("/pacotes") },
-    { title: "Receita confirmada", value: fmtCurrency(monthRevenue), sub: `${monthConfirmed.length} confirmadas`, icon: DollarSign, accent: "success", trend: monthRevenue > 0 ? "up" : "neutral", onClick: () => navigate("/financeiro") },
-    { title: "Margem", value: `${margin.toFixed(1)}%`, sub: `Comissão ${fmtCurrency(monthCommission)}`, icon: TrendingUp, accent: "primary", trend: margin > 8 ? "up" : "neutral" },
-    { title: "Tickets emitidos", value: ticketsIssued, sub: "Voos no mês corrente", icon: Plane, accent: "info", trend: "neutral", onClick: () => navigate("/voos") },
-    { title: "Embarques próximos", value: upcomingDepartures.length, sub: "Próximos 7 dias", icon: CalendarClock, accent: "gold", trend: upcomingDepartures.length > 0 ? "alert" : "neutral", onClick: () => navigate("/pacotes") },
-    { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
-    { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", trend: newLeads > 0 ? "up" : "neutral", onClick: () => navigate("/clientes") },
-    { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", trend: conversion > 30 ? "up" : "neutral" },
+    { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
+    { title: "Receita confirmada", value: fmtCurrency(monthRevenue), sub: `${monthConfirmed.length} confirmadas`, icon: DollarSign, accent: "success", spark: series.revenue, deltaPct: pct(monthRevenue, prevRevenue), onClick: () => navigate("/financeiro") },
+    { title: "Margem", value: `${margin.toFixed(1)}%`, sub: `Comissão ${fmtCurrency(monthCommission)}`, icon: TrendingUp, accent: "primary", spark: series.revenue.map((v) => v * 0.1), trend: margin > 8 ? "up" : "neutral" },
+    { title: "Tickets emitidos", value: ticketsIssued, sub: "Voos no mês corrente", icon: Plane, accent: "info", spark: series.tickets, deltaPct: pct(ticketsIssued, prevTickets), onClick: () => navigate("/voos") },
+    { title: "Embarques próximos", value: upcomingDepartures.length, sub: "Próximos 7 dias", icon: CalendarClock, accent: "gold", spark: series.departures, trend: upcomingDepartures.length > 0 ? "alert" : "neutral", onClick: () => navigate("/pacotes") },
+    { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", spark: series.pending, trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
+    { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", spark: series.leads, deltaPct: pct(newLeads, prevLeads), onClick: () => navigate("/clientes") },
+    { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", spark: series.sales, trend: conversion > 30 ? "up" : "neutral" },
   ];
 
   return (
