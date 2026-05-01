@@ -98,6 +98,14 @@ export default function Auth() {
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Entrando…" : "Entrar"}
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleForgot}
+                  disabled={busy}
+                  className="w-full text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
+                >
+                  Esqueci minha senha
+                </button>
               </form>
             </TabsContent>
 
