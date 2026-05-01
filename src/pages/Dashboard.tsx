@@ -362,11 +362,13 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 relative">
-      {/* Soft ambient background */}
+    <div className="space-y-7 relative">
+      {/* Premium ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-1/3 -left-40 h-96 w-96 rounded-full bg-[hsl(var(--gold))]/5 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/[0.03]" />
+        <div className="absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-primary/8 blur-[120px]" />
+        <div className="absolute top-1/2 -left-40 h-[24rem] w-[24rem] rounded-full bg-[hsl(var(--gold))]/8 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/3 h-[20rem] w-[20rem] rounded-full bg-[hsl(var(--primary-soft))]/5 blur-[100px]" />
       </div>
 
       {/* Header */}
@@ -390,8 +392,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 1) Header KPI cards */}
-      <section className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+      {/* 1) Header KPI cards — premium executive */}
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
         {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
       </section>
 
