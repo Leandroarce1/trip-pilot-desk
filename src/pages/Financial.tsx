@@ -19,6 +19,13 @@ const emptyForm = { type: "income" as Transaction["type"], description: "", valu
 const Financial = () => {
   const { transactions, clients, addTransaction, updateTransaction, deleteTransaction } = useData();
   const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q) setSearch(q);
+  }, [searchParams]);
+
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [open, setOpen] = useState(false);
