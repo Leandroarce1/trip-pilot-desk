@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Phone, Mail, Eye } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
@@ -16,9 +16,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const Clients = () => {
-  const { clients, addClient } = useData();
+  const { clients, addClient, updateClient } = useData();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
