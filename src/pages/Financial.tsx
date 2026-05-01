@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  AreaChart, Area,
 } from "recharts";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -67,6 +68,7 @@ const Financial = () => {
       payables: "expense",
       expense: "expense",
       commissions: "commissions",
+      cashflow: "cashflow",
     };
     if (tabParam && tabMap[tabParam]) setTab(tabMap[tabParam]);
   }, [searchParams]);
