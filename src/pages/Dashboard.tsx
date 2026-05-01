@@ -459,16 +459,16 @@ const Dashboard = () => {
           </div>
         </PanelCard>
 
-        {/* Vendas por destino */}
-        <PanelCard title="Vendas por destino" icon={PieIcon} className="lg:col-span-4">
-          {destStats.length === 0 ? (
+        {/* Vendas por categoria */}
+        <PanelCard title="Vendas por categoria" icon={PieIcon} className="lg:col-span-4">
+          {categoryStats.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">Sem dados.</p>
           ) : (
             <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={destStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
-                    {destStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
+                    {categoryStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip
                     contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
@@ -476,7 +476,6 @@ const Dashboard = () => {
                   />
                   <Legend verticalAlign="middle" align="right" layout="vertical" iconSize={8}
                     wrapperStyle={{ fontSize: "11px" }}
-                    formatter={(v, _e, i) => `${destStats[i!]?.flag ?? ""} ${v}`}
                   />
                 </PieChart>
               </ResponsiveContainer>
