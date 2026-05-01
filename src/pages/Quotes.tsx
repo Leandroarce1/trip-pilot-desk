@@ -30,6 +30,7 @@ const Quotes = () => {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [items, setItems] = useState<QuoteItem[]>([]);
 
   const filtered = quotes.filter((q) => {
     const matchSearch = q.clientName.toLowerCase().includes(search.toLowerCase()) || q.destination.toLowerCase().includes(search.toLowerCase());
@@ -37,33 +38,64 @@ const Quotes = () => {
     return matchSearch && matchStatus;
   });
 
+  // Cálculos automáticos a partir dos itens
+  const itemsTotal = items.reduce((acc, it) => acc + it.quantity * it.unitValue, 0);
+  const itemsCost = items.reduce((acc, it) => acc + it.quantity * (it.cost ?? 0), 0);
+  const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
+  const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
+
   const handleSubmit = () => {
-    if (!form.clientId || !form.destination || !form.value) { toast.error("Preencha os campos obrigatórios"); return; }
+    if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
+    if (effectiveValue <= 0) { toast.error("Adicione itens ou informe um valor"); return; }
     const cleanItinerary = itinerary.filter((d) => d.title.trim() !== "");
+    const cleanItems = items.filter((i) => i.description.trim() !== "");
+    const payload = {
+      clientId: form.clientId,
+      destination: form.destination,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      value: effectiveValue,
+      description: form.description,
+      status: form.status,
+      marginPercent: cleanItems.length > 0 ? Number(computedMargin.toFixed(2)) : Number(form.marginPercent) || 0,
+      itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined,
+      items: cleanItems.length > 0 ? cleanItems : undefined,
+    };
     if (editingQuote) {
-      updateQuote({ ...editingQuote, ...form, value: Number(form.value), clientName: clients.find((c) => c.id === form.clientId)?.name || "", itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined });
-      toast.success("Cotação atualizada!");
+      updateQuote({ ...editingQuote, ...payload, clientName: clients.find((c) => c.id === form.clientId)?.name || "" });
+      toast.success("Proposta atualizada!");
     } else {
-      addQuote({ clientId: form.clientId, destination: form.destination, startDate: form.startDate, endDate: form.endDate, value: Number(form.value), description: form.description, status: form.status, itinerary: cleanItinerary.length > 0 ? cleanItinerary : undefined });
-      toast.success("Cotação criada!");
+      addQuote(payload);
+      toast.success("Proposta criada!");
     }
     setForm(emptyForm);
     setItinerary([]);
+    setItems([]);
     setEditingQuote(null);
     setOpen(false);
   };
 
   const openEdit = (q: Quote) => {
     setEditingQuote(q);
-    setForm({ clientId: q.clientId, destination: q.destination, startDate: q.startDate, endDate: q.endDate, value: String(q.value), description: q.description, status: q.status });
+    setForm({
+      clientId: q.clientId, destination: q.destination, startDate: q.startDate, endDate: q.endDate,
+      value: String(q.value), description: q.description, status: q.status,
+      marginPercent: String(q.marginPercent ?? 20),
+    });
     setItinerary(q.itinerary || []);
+    setItems(q.items || []);
     setOpen(true);
   };
 
   const handleClose = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); }
+    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); setItems([]); }
   };
+
+  const addItem = () => setItems((prev) => [...prev, newItem()]);
+  const updateItem = (id: string, patch: Partial<QuoteItem>) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id));
 
   const addDay = () => {
     setItinerary((prev) => [...prev, { day: prev.length + 1, title: "", description: "" }]);
