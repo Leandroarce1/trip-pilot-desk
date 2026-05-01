@@ -462,6 +462,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setSuppliers((prev) => prev.filter((x) => x.id !== id));
   };
 
+  // ---------- CRUD: Opportunities ----------
+  const addOpportunity = async (o: Omit<Opportunity, "id" | "createdAt" | "clientName">): Promise<Opportunity | void> => {
+    if (!user) return;
+    const { data, error } = await supabase.from("opportunities").insert(opportunityToRow(o, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapOpportunity(data, getClientName(data.client_id));
+    setOpportunities((prev) => [...prev, mapped]);
+    return mapped;
+  };
+  const updateOpportunity = async (o: Opportunity) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("opportunities").update(opportunityToRow(o, user.id)).eq("id", o.id).select().single();
+    if (error) throw error;
+    setOpportunities((prev) => prev.map((x) => (x.id === o.id ? mapOpportunity(data, getClientName(data.client_id)) : x)));
+  };
+  const deleteOpportunity = async (id: string) => {
+    const { error } = await supabase.from("opportunities").delete().eq("id", id);
+    if (error) throw error;
+    setOpportunities((prev) => prev.filter((x) => x.id !== id));
+  };
+
   // ---------- Notifications ----------
   const markNotificationRead = async (id: string) => {
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
@@ -486,13 +507,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       loading,
-      clients, quotes, flights, transactions, packages, notifications, suppliers,
+      clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
       addTransaction, updateTransaction, deleteTransaction,
       addPackage, updatePackage, deletePackage,
       addSupplier, updateSupplier, deleteSupplier,
+      addOpportunity, updateOpportunity, deleteOpportunity,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>
