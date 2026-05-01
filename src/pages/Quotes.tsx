@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
@@ -14,13 +14,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "sent" as Quote["status"] };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
 
 const Quotes = () => {
   const navigate = useNavigate();
-  const { quotes, clients, addQuote, updateQuote, deleteQuote } = useData();
+  const { quotes, clients, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
