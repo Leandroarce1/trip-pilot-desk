@@ -842,15 +842,44 @@ const Dashboard = () => {
                 {hotClients.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Nenhum lead em ebulição agora.</p>
                 ) : (
-                  <ul className="space-y-1.5">
-                    {hotClients.map(({ client }) => (
-                      <li key={client.id}
-                        onClick={() => navigate(`/clientes/${client.id}`)}
-                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
-                        <span className="truncate">{client.name}</span>
-                      </li>
-                    ))}
+                  <ul className="space-y-2">
+                    {hotClients.map(({ client, lastQuote }) => {
+                      const phone = client.phone.replace(/\D/g, "");
+                      const msg = lastQuote
+                        ? `Olá ${client.name.split(" ")[0]}, tudo bem? Passando para saber se já conseguiu avaliar a proposta para ${lastQuote.destination}. Posso esclarecer alguma dúvida?`
+                        : `Olá ${client.name.split(" ")[0]}, tudo bem? Tenho novidades para sua próxima viagem. Quando podemos conversar?`;
+                      return (
+                        <li key={client.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                          <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0 animate-pulse" />
+                            <span className="truncate flex-1 font-medium">{client.name}</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank")}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-success/20 hover:bg-success/30 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Gerar mensagem WhatsApp"
+                            >
+                              <MessageSquare className="h-3 w-3" /> Mensagem
+                            </button>
+                            <button
+                              onClick={() => navigate(`/cotacoes`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-[hsl(var(--gold))]/25 hover:bg-[hsl(var(--gold))]/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Criar tarefa / nova cotação"
+                            >
+                              <ListTodo className="h-3 w-3" /> Tarefa
+                            </button>
+                            <button
+                              onClick={() => navigate(`/clientes/${client.id}`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Abrir ficha do cliente"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Abrir
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
