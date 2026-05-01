@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Phone, Mail, Eye } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
@@ -16,9 +16,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const Clients = () => {
-  const { clients, addClient } = useData();
+  const { clients, addClient, updateClient } = useData();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -39,8 +41,40 @@ const Clients = () => {
     toast.success("Cliente cadastrado!");
   };
 
+  const convertToOpportunity = (c: Client) => {
+    if (c.status === "lead") {
+      updateClient({ ...c, status: "negotiation" });
+      toast.success("Convertido em oportunidade", { description: `${c.name} agora está em negociação.` });
+    }
+  };
+
+  const createProposalFor = (c: Client) => {
+    // Promove para negociação se ainda for lead
+    if (c.status === "lead") updateClient({ ...c, status: "negotiation" });
+    navigate(`/cotacoes?client=${c.id}`);
+    toast("Abrindo cotações", { description: `Crie uma proposta para ${c.name}.` });
+  };
+
+  // Próximo lead a converter (mais antigo)
+  const nextLead = [...clients]
+    .filter((c) => c.status === "lead")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+
   return (
     <div className="space-y-6">
+      <SalesJourney current="lead" />
+
+      {nextLead && (
+        <NextStepBanner
+          tone="primary"
+          icon={<Sparkles className="h-4 w-4" />}
+          title={`Converter ${nextLead.name} em oportunidade`}
+          description={`${nextLead.phone} · cadastrado em ${fmtDate(nextLead.createdAt)} — mover para negociação`}
+          actionLabel="Converter agora"
+          onAction={() => convertToOpportunity(nextLead)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Clientes</h1>
@@ -118,9 +152,33 @@ const Clients = () => {
                   <td className="px-4 py-3"><StatusBadge variant={c.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell tabular-nums">{fmtDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      {c.status === "lead" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground"
+                          onClick={(e) => { e.stopPropagation(); convertToOpportunity(c); }}
+                          title="Converter em oportunidade"
+                        >
+                          <Sparkles className="h-3 w-3" /> Converter
+                        </Button>
+                      )}
+                      {c.status === "negotiation" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1 border-success/40 text-success hover:bg-success hover:text-white"
+                          onClick={(e) => { e.stopPropagation(); createProposalFor(c); }}
+                          title="Criar proposta"
+                        >
+                          <FileText className="h-3 w-3" /> Proposta
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

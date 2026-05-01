@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, Phone, Mail, FileText, Plane, DollarSign, Edit2, Trash2,
-  User, Heart, ShieldCheck, Clock, Award, Plus,
+  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
@@ -31,6 +31,8 @@ import {
 import { toast } from "sonner";
 import { fmtBirthWithAge, fmtCurrency, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SalesJourney, SalesStage } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const genderOptions: Record<Gender, string> = {
   male: "Masculino", female: "Feminino", unspecified: "Prefiro não informar",
@@ -168,6 +170,56 @@ const ClientDetail = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      {/* Sales journey indicator */}
+      {(() => {
+        const stageMap: Record<Client["status"], SalesStage> = {
+          lead: "lead", negotiation: "opportunity",
+          sold: "reservation", recurring: "reservation", postSale: "reservation",
+        };
+        const completedMap: Record<Client["status"], SalesStage[]> = {
+          lead: [], negotiation: ["lead"],
+          sold: ["lead", "opportunity", "proposal"],
+          recurring: ["lead", "opportunity", "proposal"],
+          postSale: ["lead", "opportunity", "proposal"],
+        };
+        return <SalesJourney current={stageMap[client.status]} completed={completedMap[client.status]} />;
+      })()}
+
+      {/* Próxima ação contextual */}
+      {client.status === "lead" && (
+        <NextStepBanner
+          tone="primary"
+          icon={<Sparkles className="h-4 w-4" />}
+          title="Converter em oportunidade"
+          description="Mover este lead para negociação ativa"
+          actionLabel="Converter agora"
+          onAction={() => {
+            updateClient({ ...client, status: "negotiation" });
+            toast.success("Cliente em negociação");
+          }}
+        />
+      )}
+      {client.status === "negotiation" && (
+        <NextStepBanner
+          tone="success"
+          icon={<FileText className="h-4 w-4" />}
+          title="Criar proposta de viagem"
+          description="Envie uma cotação para fechar a venda"
+          actionLabel="Criar proposta"
+          onAction={() => navigate(`/cotacoes?client=${client.id}`)}
+        />
+      )}
+      {(client.status === "sold" || client.status === "recurring") && clientPackages.some((p) => p.paymentStatus === "pending") && (
+        <NextStepBanner
+          tone="warning"
+          icon={<DollarSign className="h-4 w-4" />}
+          title="Há pagamentos pendentes"
+          description="Acompanhe o financeiro deste cliente"
+          actionLabel="Ver financeiro"
+          onAction={() => navigate("/financeiro")}
+        />
+      )}
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">

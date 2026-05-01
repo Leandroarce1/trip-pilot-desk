@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, MapPin, Plane, DollarSign, Calendar, FileText, User, Clock,
-  CheckCircle2, Edit2, Users, ShieldCheck, Hash,
+  CheckCircle2, Edit2, Users, ShieldCheck, Hash, Sparkles,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReservationStatus, TripType } from "@/types/crm";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const reservationStatusLabels: Record<ReservationStatus, string> = {
   quoting: "Em cotação",
@@ -64,7 +66,7 @@ const docExpiryStatus = (expiresAt?: string) => {
 const PackageDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { packages, quotes, flights, transactions, updatePackage } = useData();
+  const { packages, quotes, flights, transactions, updatePackage, addTransaction } = useData();
   const pkg = packages.find((p) => p.id === id);
   const [editingPassengers] = useState(false);
 
@@ -103,6 +105,38 @@ const PackageDetail = () => {
     });
     toast.success("Reserva confirmada");
   };
+
+  /** Gera lançamento financeiro (income pendente) vinculado à reserva */
+  const generateFinancial = () => {
+    if (pkgTransactions.length > 0) {
+      toast.info("Financeiro já gerado", { description: "Já existem lançamentos vinculados a esta reserva." });
+      navigate("/financeiro");
+      return;
+    }
+    const txId = String(Date.now());
+    addTransaction({
+      type: "income",
+      description: `Recebimento — ${pkg.destinationCity} (${pkg.clientName})`,
+      value: pkg.totalValue,
+      date: new Date().toISOString().slice(0, 10),
+      status: "pending",
+      clientName: pkg.clientName,
+    });
+    updatePackage({
+      ...pkg,
+      transactionIds: [...pkg.transactionIds, txId],
+      history: [
+        ...pkg.history,
+        { date: new Date().toISOString(), action: "Lançamento financeiro gerado" },
+      ],
+    });
+    toast.success("Financeiro gerado", {
+      description: `Recebimento de R$ ${pkg.totalValue.toLocaleString("pt-BR")} criado como pendente.`,
+      action: { label: "Ver financeiro", onClick: () => navigate("/financeiro") },
+    });
+  };
+
+  const hasFinancial = pkgTransactions.length > 0;
 
   return (
     <div className="space-y-6">
