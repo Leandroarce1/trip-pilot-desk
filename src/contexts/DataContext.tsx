@@ -257,10 +257,11 @@ interface DataContextType {
   packages: TravelPackage[];
   notifications: Notification[];
   suppliers: Supplier[];
+  opportunities: Opportunity[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
-  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<void>;
+  addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<Quote | void>;
   updateQuote: (q: Quote) => Promise<void>;
   deleteQuote: (id: string) => Promise<void>;
   addFlight: (f: Omit<Flight, "id" | "clientName">) => Promise<void>;
@@ -275,6 +276,9 @@ interface DataContextType {
   addSupplier: (s: Omit<Supplier, "id" | "createdAt">) => Promise<void>;
   updateSupplier: (s: Supplier) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
+  addOpportunity: (o: Omit<Opportunity, "id" | "createdAt" | "clientName">) => Promise<Opportunity | void>;
+  updateOpportunity: (o: Opportunity) => Promise<void>;
+  deleteOpportunity: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
@@ -293,6 +297,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [packages, setPackages] = useState<TravelPackage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
