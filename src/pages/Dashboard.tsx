@@ -216,7 +216,7 @@ const Dashboard = () => {
     return { label: label.charAt(0).toUpperCase() + label.slice(1), Receitas, Despesas };
   });
 
-  // ----- Vendas por destino (país) -----
+  // ----- Vendas por destino (país) — usado em legendas/insights -----
   const destStats = useMemo(() => {
     const map = new Map<string, { name: string; flag?: string; value: number }>();
     packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
