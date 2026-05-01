@@ -14,10 +14,11 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from "recharts";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Flame, Zap, ArrowUp, TrendingDown } from "lucide-react";
 
 // ---------- Reusable inline components ----------
 
