@@ -19,7 +19,7 @@ export default function ItineraryPublic() {
       if (error || !data) { setNotFound(true); setLoading(false); return; }
       setIt({
         id: data.id, title: data.title, packageId: data.package_id ?? undefined,
-        quoteId: data.quote_id ?? undefined, days: (data.days ?? []) as ItineraryDayDetailed[],
+        quoteId: data.quote_id ?? undefined, days: (data.days ?? []) as unknown as ItineraryDayDetailed[],
         shareableSlug: data.shareable_slug ?? undefined, createdAt: data.created_at?.slice(0, 10) ?? "",
       });
       setLoading(false);
