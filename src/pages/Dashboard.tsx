@@ -413,25 +413,25 @@ const Dashboard = () => {
 
       {/* 3) Secondary grid */}
       <section className="grid gap-5 lg:grid-cols-12">
-        {/* Top vendedores (fornecedores) */}
-        <PanelCard title="Top fornecedores" icon={Trophy} className="lg:col-span-4">
+        {/* Top destinos vendidos */}
+        <PanelCard title="Top destinos vendidos" icon={Trophy} className="lg:col-span-4">
           <div className="space-y-3">
-            {supplierStats.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas.</p>}
-            {supplierStats.map((s, i) => (
-              <div key={s.name}>
+            {topDestinations.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas.</p>}
+            {topDestinations.map((s, i) => (
+              <div key={`${s.name}-${s.country}`}>
                 <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="font-medium flex items-center gap-2">
+                  <span className="font-medium flex items-center gap-2 min-w-0">
                     <span className={cn(
-                      "h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                      "h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
                       i === 0 ? "bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))]" : "bg-muted text-muted-foreground",
                     )}>{i + 1}</span>
-                    {s.name}
+                    <span className="truncate">{s.flag ?? "🌍"} {s.name}, {s.country}</span>
                   </span>
-                  <span className="tabular-nums font-semibold text-navy">{fmtCurrency(s.revenue)}</span>
+                  <span className="tabular-nums font-semibold text-navy shrink-0">{fmtCurrency(s.revenue)}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--primary-soft))]"
-                    style={{ width: `${(s.revenue / supplierMaxRev) * 100}%` }} />
+                    style={{ width: `${(s.revenue / destMaxRev) * 100}%` }} />
                 </div>
                 <p className="text-[10.5px] text-muted-foreground mt-0.5">{s.sales} reserva(s)</p>
               </div>
