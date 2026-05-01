@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
+import { toast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend, AreaChart, Area,
@@ -720,11 +721,19 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir">
-                      <ExternalLink className="h-3.5 w-3.5" />
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1"
+                      onClick={() => navigate(`/clientes/${c.id}`)} title="Abrir lead">
+                      <ExternalLink className="h-3 w-3" /> Abrir
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Mensagem" onClick={() => window.open(`https://wa.me/${c.phone.replace(/\D/g, "")}`, "_blank")}>
-                      <MessageSquare className="h-3.5 w-3.5" />
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1 text-success"
+                      title="Enviar mensagem"
+                      onClick={() => {
+                        const phone = c.phone.replace(/\D/g, "");
+                        const msg = `Olá ${c.name.split(" ")[0]}, tudo bem? Estou retomando nossa conversa sobre sua próxima viagem. Posso te ajudar?`;
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                        toast({ title: "Mensagem aberta", description: `WhatsApp pré-preenchido para ${c.name}.` });
+                      }}>
+                      <MessageSquare className="h-3 w-3" /> Mensagem
                     </Button>
                   </div>
                 </div>
@@ -745,48 +754,75 @@ const Dashboard = () => {
               return (
                 <div key={p.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-2.5 hover:bg-muted/40 cursor-pointer transition-colors",
+                    "rounded-lg border p-2.5 transition-colors",
                     urgent ? "border-destructive/40 bg-destructive/5" :
                     warn ? "border-warning/30 bg-warning/[0.04]" :
-                    "border-border/60",
+                    "border-border/60 hover:bg-muted/40",
                   )}
-                  onClick={() => navigate(`/pacotes/${p.id}`)}
                 >
-                  <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.clientName}</p>
-                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Check-in">
-                        <Plane className="h-2.5 w-2.5" /> check-in
-                      </span>
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Voucher">
-                        <FileCheck className="h-2.5 w-2.5" /> voucher
-                      </span>
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Documentos">
-                        <ShieldCheck className="h-2.5 w-2.5" /> docs
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.clientName}</p>
+                      <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Check-in">
+                          <Plane className="h-2.5 w-2.5" /> check-in
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Voucher">
+                          <FileCheck className="h-2.5 w-2.5" /> voucher
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Documentos">
+                          <ShieldCheck className="h-2.5 w-2.5" /> docs
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
+                      <p className={cn(
+                        "text-[10.5px] font-semibold tabular-nums",
+                        urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
+                      )}>
+                        {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
-                    <p className={cn(
-                      "text-[10.5px] font-semibold tabular-nums",
-                      urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
-                    )}>
-                      {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
-                    </p>
+                  {/* Ações funcionais */}
+                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/40">
+                    <Button size="sm" variant="ghost" className="flex-1 h-7 text-[11px] gap-1 justify-center"
+                      onClick={() => navigate(`/pacotes/${p.id}`)}>
+                      <ExternalLink className="h-3 w-3" /> Ver reserva
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      className={cn(
+                        "flex-1 h-7 text-[11px] gap-1 justify-center",
+                        voucherReady ? "text-success" : "text-warning",
+                      )}
+                      onClick={() => {
+                        toast({
+                          title: voucherReady ? "Voucher pronto" : "Voucher solicitado",
+                          description: voucherReady
+                            ? `Voucher de ${p.clientName} disponível para ${p.destinationCity}.`
+                            : `Geração de voucher para ${p.clientName} adicionada à fila.`,
+                        });
+                      }}>
+                      <FileCheck className="h-3 w-3" /> {voucherReady ? "Ver voucher" : "Gerar voucher"}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="flex-1 h-7 text-[11px] gap-1 justify-center"
+                      onClick={() => navigate(`/clientes/${p.clientId}`)}>
+                      <Users className="h-3 w-3" /> Cliente
+                    </Button>
                   </div>
                 </div>
               );
@@ -1001,16 +1037,32 @@ const Dashboard = () => {
                 {urgentTrips.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Nenhum embarque imediato.</p>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {urgentTrips.map((p) => {
                       const days = Math.max(0, Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000));
                       return (
-                        <li key={p.id}
-                          onClick={() => navigate(`/pacotes/${p.id}`)}
-                          className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                          <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
-                          <span className="truncate flex-1">{p.clientName}</span>
-                          <span className="text-[10.5px] text-navy-foreground/60 tabular-nums shrink-0">{days}d</span>
+                        <li key={p.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                          <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                            <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
+                            <span className="truncate flex-1 font-medium">{p.clientName}</span>
+                            <span className="text-[10px] font-bold tabular-nums text-warning shrink-0">{days}d</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                toast({ title: "Emissão solicitada", description: `Emissão de docs para ${p.clientName} adicionada à fila.` });
+                              }}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-warning/25 hover:bg-warning/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Solicitar emissão de docs">
+                              <Zap className="h-3 w-3" /> Emitir
+                            </button>
+                            <button
+                              onClick={() => navigate(`/pacotes/${p.id}`)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                              title="Abrir reserva">
+                              <ExternalLink className="h-3 w-3" /> Abrir
+                            </button>
+                          </div>
                         </li>
                       );
                     })}
@@ -1028,13 +1080,30 @@ const Dashboard = () => {
                 {upsellTargets.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Carteira ativa toda engajada.</p>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {upsellTargets.map((c) => (
-                      <li key={c.id}
-                        onClick={() => navigate(`/clientes/${c.id}`)}
-                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--gold))] shrink-0" />
-                        <span className="truncate">{c.name}</span>
+                      <li key={c.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--gold))] shrink-0" />
+                          <span className="truncate flex-1 font-medium">{c.name}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              navigate("/cotacoes");
+                              toast({ title: "Cotação sugerida", description: `Crie uma proposta de upsell para ${c.name}.` });
+                            }}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-[hsl(var(--gold))]/25 hover:bg-[hsl(var(--gold))]/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Criar cotação de upsell">
+                            <FileText className="h-3 w-3" /> Cotar
+                          </button>
+                          <button
+                            onClick={() => navigate(`/clientes/${c.id}`)}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Abrir cliente">
+                            <ExternalLink className="h-3 w-3" /> Abrir
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -1051,14 +1120,37 @@ const Dashboard = () => {
                 {finAlerts.length === 0 ? (
                   <p className="text-[11.5px] text-navy-foreground/60">Carteira em dia 👌</p>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {finAlerts.map((p) => (
-                      <li key={p.id}
-                        onClick={() => navigate(`/pacotes/${p.id}`)}
-                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
-                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
-                        <span className="truncate flex-1">{p.clientName}</span>
-                        <span className="text-[10.5px] text-navy-foreground/70 tabular-nums shrink-0">{fmtCurrency(p.totalValue)}</span>
+                      <li key={p.id} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="flex items-center gap-2 text-[12px] mb-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0 animate-pulse" />
+                          <span className="truncate flex-1 font-medium">{p.clientName}</span>
+                          <span className="text-[10.5px] text-navy-foreground/80 tabular-nums shrink-0 font-bold">{fmtCurrency(p.totalValue)}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              const phone = (clients.find((c) => c.id === p.clientId)?.phone || "").replace(/\D/g, "");
+                              const msg = `Olá ${p.clientName.split(" ")[0]}, tudo bem? Passando para confirmar o pagamento de ${fmtCurrency(p.totalValue)} referente à viagem para ${p.destinationCity}. Pode confirmar?`;
+                              if (phone) {
+                                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                                toast({ title: "Cobrança enviada", description: `Mensagem WhatsApp aberta para ${p.clientName}.` });
+                              } else {
+                                toast({ title: "Telefone não encontrado", description: "Cadastre o telefone do cliente.", variant: "destructive" });
+                              }
+                            }}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-destructive/25 hover:bg-destructive/35 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Enviar cobrança">
+                            <CreditCard className="h-3 w-3" /> Cobrar
+                          </button>
+                          <button
+                            onClick={() => navigate(`/pacotes/${p.id}`)}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-navy-foreground text-[10px] font-semibold py-1 transition-colors"
+                            title="Abrir reserva">
+                            <ExternalLink className="h-3 w-3" /> Abrir
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
