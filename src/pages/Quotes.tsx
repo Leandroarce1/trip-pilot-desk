@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
-import { Quote, ItineraryDay } from "@/types/crm";
+import { Quote, ItineraryDay, QuoteItem, QuoteStatus } from "@/types/crm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,8 +17,9 @@ import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
 import { NextStepBanner } from "@/components/NextStepBanner";
 
-const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "sent" as Quote["status"] };
+const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
+const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", quantity: 1, unitValue: 0, cost: 0 });
 
 const Quotes = () => {
   const navigate = useNavigate();
