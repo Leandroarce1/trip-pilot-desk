@@ -74,11 +74,13 @@ const mapFlight = (r: any, clientName: string): Flight => ({
   departureDate: r.departure_date ?? "",
   departureTime: r.departure_time ?? "",
   checkinAlert: !!r.checkin_alert,
+  packageId: r.package_id ?? undefined,
 });
 
 const flightToRow = (f: Partial<Flight>, userId: string) => ({
   user_id: userId,
   client_id: f.clientId || null,
+  package_id: f.packageId || null,
   airline: f.airline ?? "",
   flight_number: f.flightNumber ?? "",
   origin: f.origin ?? "",
@@ -96,9 +98,11 @@ const mapTransaction = (r: any, clientName?: string): Transaction => ({
   date: r.date ?? "",
   status: r.status,
   clientName,
+  clientId: r.client_id ?? undefined,
+  packageId: r.package_id ?? undefined,
 });
 
-const transactionToRow = (t: Partial<Transaction> & { clientId?: string; packageId?: string }, userId: string) => ({
+const transactionToRow = (t: Partial<Transaction>, userId: string) => ({
   user_id: userId,
   client_id: t.clientId || null,
   package_id: t.packageId || null,
