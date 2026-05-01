@@ -371,7 +371,7 @@ const Financial = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         <StatCard title="Receitas (mês)" value={brl(monthIncome)} icon={TrendingUp} variant="success" />
         <StatCard title="Despesas (mês)" value={brl(monthExpense)} icon={TrendingDown} variant="warning" />
         <StatCard title="Lucro (mês)" value={brl(monthProfit)} icon={DollarSign} variant={monthProfit >= 0 ? "info" : "default"} />
