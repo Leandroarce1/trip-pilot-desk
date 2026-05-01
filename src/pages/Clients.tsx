@@ -22,10 +22,19 @@ import { NextStepBanner } from "@/components/NextStepBanner";
 const Clients = () => {
   const { clients, addClient, updateClient } = useData();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(urlStatus || "all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" as Client["status"] });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: (urlStatus as Client["status"]) || "lead" as Client["status"] });
+
+  // Sync filter with URL ?status=
+  useEffect(() => {
+    if (urlStatus) setStatusFilter(urlStatus);
+  }, [urlStatus]);
+
+  const isLeadsView = statusFilter === "lead";
 
   const filtered = clients.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase());
