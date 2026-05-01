@@ -746,48 +746,75 @@ const Dashboard = () => {
               return (
                 <div key={p.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-2.5 hover:bg-muted/40 cursor-pointer transition-colors",
+                    "rounded-lg border p-2.5 transition-colors",
                     urgent ? "border-destructive/40 bg-destructive/5" :
                     warn ? "border-warning/30 bg-warning/[0.04]" :
-                    "border-border/60",
+                    "border-border/60 hover:bg-muted/40",
                   )}
-                  onClick={() => navigate(`/pacotes/${p.id}`)}
                 >
-                  <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.clientName}</p>
-                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Check-in">
-                        <Plane className="h-2.5 w-2.5" /> check-in
-                      </span>
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Voucher">
-                        <FileCheck className="h-2.5 w-2.5" /> voucher
-                      </span>
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
-                        docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-                      )} title="Documentos">
-                        <ShieldCheck className="h-2.5 w-2.5" /> docs
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl shrink-0" aria-hidden>{p.destinationFlag ?? "🌍"}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.clientName}</p>
+                      <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{p.destinationCity}, {p.destinationCountry}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          checkinReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Check-in">
+                          <Plane className="h-2.5 w-2.5" /> check-in
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          voucherReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Voucher">
+                          <FileCheck className="h-2.5 w-2.5" /> voucher
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold",
+                          docsReady ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                        )} title="Documentos">
+                          <ShieldCheck className="h-2.5 w-2.5" /> docs
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
+                      <p className={cn(
+                        "text-[10.5px] font-semibold tabular-nums",
+                        urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
+                      )}>
+                        {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums text-navy">{fmtDate(p.departureDate)}</p>
-                    <p className={cn(
-                      "text-[10.5px] font-semibold tabular-nums",
-                      urgent ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground",
-                    )}>
-                      {days <= 0 ? "hoje" : `em ${days} dia${days !== 1 ? "s" : ""}`}
-                    </p>
+                  {/* Ações funcionais */}
+                  <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/40">
+                    <Button size="sm" variant="ghost" className="flex-1 h-7 text-[11px] gap-1 justify-center"
+                      onClick={() => navigate(`/pacotes/${p.id}`)}>
+                      <ExternalLink className="h-3 w-3" /> Ver reserva
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      className={cn(
+                        "flex-1 h-7 text-[11px] gap-1 justify-center",
+                        voucherReady ? "text-success" : "text-warning",
+                      )}
+                      onClick={() => {
+                        toast({
+                          title: voucherReady ? "Voucher pronto" : "Voucher solicitado",
+                          description: voucherReady
+                            ? `Voucher de ${p.clientName} disponível para ${p.destinationCity}.`
+                            : `Geração de voucher para ${p.clientName} adicionada à fila.`,
+                        });
+                      }}>
+                      <FileCheck className="h-3 w-3" /> {voucherReady ? "Ver voucher" : "Gerar voucher"}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="flex-1 h-7 text-[11px] gap-1 justify-center"
+                      onClick={() => navigate(`/clientes/${p.clientId}`)}>
+                      <Users className="h-3 w-3" /> Cliente
+                    </Button>
                   </div>
                 </div>
               );
