@@ -108,9 +108,10 @@ const PackageDetail = () => {
 
   /** Gera lançamento financeiro (income pendente) vinculado à reserva */
   const generateFinancial = () => {
+    const filterQuery = `?search=${encodeURIComponent(pkg.destinationCity)}`;
     if (pkgTransactions.length > 0) {
-      toast.info("Financeiro já gerado", { description: "Já existem lançamentos vinculados a esta reserva." });
-      navigate("/financeiro");
+      toast.info("Financeiro já gerado", { description: "Abrindo lançamentos vinculados a esta reserva." });
+      navigate(`/financeiro${filterQuery}`);
       return;
     }
     const txId = String(Date.now());
@@ -132,8 +133,8 @@ const PackageDetail = () => {
     });
     toast.success("Financeiro gerado", {
       description: `Recebimento de R$ ${pkg.totalValue.toLocaleString("pt-BR")} criado como pendente.`,
-      action: { label: "Ver financeiro", onClick: () => navigate("/financeiro") },
     });
+    navigate(`/financeiro${filterQuery}`);
   };
 
   const hasFinancial = pkgTransactions.length > 0;
