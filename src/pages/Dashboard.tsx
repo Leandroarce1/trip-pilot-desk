@@ -575,25 +575,126 @@ const Dashboard = () => {
           )}
         </PanelCard>
 
-        {/* IA Concierge — full width */}
-        <PanelCard title="IA Concierge" icon={Sparkles} className="lg:col-span-12">
-          <div className="rounded-xl bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--navy-active))] text-navy-foreground p-4 relative overflow-hidden">
-            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[hsl(var(--primary-soft))]/20 blur-2xl" aria-hidden />
-            <div className="absolute right-4 bottom-4 opacity-20" aria-hidden><Sparkles className="h-16 w-16" /></div>
-            <div className="relative grid gap-3 sm:grid-cols-2">
-              {aiInsights.map((t, i) => (
-                <div key={i} className="flex items-start gap-2.5 rounded-lg bg-white/5 border border-white/10 p-3 backdrop-blur-sm">
-                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--gold))] shrink-0 mt-0.5" />
-                  <p className="text-[12.5px] leading-relaxed text-navy-foreground/90">{t}</p>
+        {/* IA Concierge — painel inteligente em 4 cards */}
+        <PanelCard
+          title="IA Concierge"
+          icon={Sparkles}
+          className="lg:col-span-12"
+          action={<Badge variant="outline" className="border-[hsl(var(--gold))]/40 text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/5 text-[10.5px]">
+            <Sparkles className="h-3 w-3 mr-1" /> insights ao vivo
+          </Badge>}
+        >
+          <div className="relative rounded-2xl bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--navy-active))] text-navy-foreground p-5 overflow-hidden">
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[hsl(var(--primary-soft))]/25 blur-3xl" aria-hidden />
+            <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[hsl(var(--gold))]/15 blur-3xl" aria-hidden />
+
+            <div className="relative grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {/* Clientes quentes */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-destructive/20 text-destructive p-1.5"><Flame className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Clientes quentes</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{hotClients.length}</Badge>
                 </div>
-              ))}
+                {hotClients.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Nenhum lead em ebulição agora.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {hotClients.map(({ client }) => (
+                      <li key={client.id}
+                        onClick={() => navigate(`/clientes/${client.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                        <span className="truncate">{client.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Viagens urgentes */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-warning/25 text-warning p-1.5"><Zap className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Viagens urgentes</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{urgentTrips.length}</Badge>
+                </div>
+                {urgentTrips.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Nenhum embarque imediato.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {urgentTrips.map((p) => {
+                      const days = Math.max(0, Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000));
+                      return (
+                        <li key={p.id}
+                          onClick={() => navigate(`/pacotes/${p.id}`)}
+                          className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                          <span className="shrink-0">{p.destinationFlag ?? "🌍"}</span>
+                          <span className="truncate flex-1">{p.clientName}</span>
+                          <span className="text-[10.5px] text-navy-foreground/60 tabular-nums shrink-0">{days}d</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              {/* Oportunidades de upsell */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-[hsl(var(--gold))]/25 text-[hsl(var(--gold))] p-1.5"><TrendingUp className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Upsell</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{upsellTargets.length}</Badge>
+                </div>
+                {upsellTargets.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Carteira ativa toda engajada.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {upsellTargets.map((c) => (
+                      <li key={c.id}
+                        onClick={() => navigate(`/clientes/${c.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--gold))] shrink-0" />
+                        <span className="truncate">{c.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Alertas financeiros */}
+              <div className="rounded-xl bg-white/[0.06] border border-white/10 p-4 backdrop-blur-md hover:bg-white/[0.10] transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-lg bg-destructive/20 text-destructive p-1.5"><CreditCard className="h-3.5 w-3.5" /></div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-navy-foreground/80">Alertas financeiros</p>
+                  <Badge variant="secondary" className="ml-auto bg-white/15 text-navy-foreground border-0 text-[10px]">{finAlerts.length}</Badge>
+                </div>
+                {finAlerts.length === 0 ? (
+                  <p className="text-[11.5px] text-navy-foreground/60">Carteira em dia 👌</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {finAlerts.map((p) => (
+                      <li key={p.id}
+                        onClick={() => navigate(`/pacotes/${p.id}`)}
+                        className="flex items-center gap-2 text-[12px] cursor-pointer hover:text-[hsl(var(--gold))] transition-colors">
+                        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                        <span className="truncate flex-1">{p.clientName}</span>
+                        <span className="text-[10.5px] text-navy-foreground/70 tabular-nums shrink-0">{fmtCurrency(p.totalValue)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
+
             <div className="relative mt-4 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
+              <Button size="sm" variant="secondary"
+                className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
                 onClick={() => navigate("/cotacoes")}>
                 <FileText className="h-3.5 w-3.5" /> Sugerir nova cotação
               </Button>
-              <Button size="sm" variant="secondary" className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
+              <Button size="sm" variant="secondary"
+                className="gap-1.5 bg-white/10 hover:bg-white/20 text-navy-foreground border-white/20"
                 onClick={() => navigate("/clientes")}>
                 <Mail className="h-3.5 w-3.5" /> Disparar follow-up
               </Button>
