@@ -133,6 +133,7 @@ const mapTransaction = (r: any, clientName?: string): Transaction => ({
   value: Number(r.value ?? 0),
   date: r.date ?? "",
   status: r.status,
+  category: r.category ?? undefined,
   clientName,
   clientId: r.client_id ?? undefined,
   packageId: r.package_id ?? undefined,
@@ -147,6 +148,7 @@ const transactionToRow = (t: Partial<Transaction>, userId: string) => ({
   value: t.value ?? 0,
   date: t.date || new Date().toISOString().slice(0, 10),
   status: t.status ?? "pending",
+  category: t.category ?? "",
 });
 
 const mapPackage = (r: any, clientName: string): TravelPackage => ({
