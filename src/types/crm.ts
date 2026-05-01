@@ -67,6 +67,16 @@ export interface ItineraryDay {
   description: string;
 }
 
+export interface QuoteItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitValue: number;
+  cost?: number;
+}
+
+export type QuoteStatus = "draft" | "sent" | "approved" | "cancelled" | "lost";
+
 export interface Quote {
   id: string;
   clientId: string;
@@ -76,9 +86,30 @@ export interface Quote {
   endDate: string;
   value: number;
   description: string;
-  status: "sent" | "approved" | "cancelled";
+  status: QuoteStatus;
   createdAt: string;
   itinerary?: ItineraryDay[];
+  items?: QuoteItem[];
+  marginPercent?: number;
+  opportunityId?: string;
+}
+
+// ---------- Opportunities (Pipeline) ----------
+export type OpportunityStage = "new" | "contact" | "proposal" | "closed_won" | "closed_lost";
+
+export interface Opportunity {
+  id: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  destination: string;
+  estimatedValue: number;
+  probability: number;
+  expectedCloseDate?: string;
+  stage: OpportunityStage;
+  position: number;
+  notes: string;
+  createdAt: string;
 }
 
 export interface Flight {
