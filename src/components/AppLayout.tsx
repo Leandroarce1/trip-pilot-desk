@@ -39,7 +39,6 @@ const sections: NavSection[] = [
     label: "Comercial",
     items: [
       { title: "Leads", path: "/clientes?status=lead", icon: Target },
-      { title: "Pipeline", path: "/pacotes?view=pipeline", icon: GitBranch, comingSoon: true },
       { title: "Oportunidades", path: "/clientes?status=negotiation", icon: Sparkles },
       { title: "Propostas", path: "/cotacoes", icon: FileText },
     ],
@@ -50,8 +49,6 @@ const sections: NavSection[] = [
     items: [
       { title: "Reservas", path: "/pacotes", icon: Package },
       { title: "Viagens", path: "/voos", icon: Plane },
-      { title: "Itinerários", path: "/itinerarios", icon: Map, comingSoon: true },
-      { title: "Vouchers", path: "/vouchers", icon: Ticket, comingSoon: true },
     ],
   },
   {
@@ -59,8 +56,6 @@ const sections: NavSection[] = [
     label: "Clientes",
     items: [
       { title: "Clientes", path: "/clientes", icon: Users },
-      { title: "Viajantes", path: "/viajantes", icon: UserCheck, comingSoon: true },
-      { title: "Documentos", path: "/documentos", icon: IdCard, comingSoon: true },
     ],
   },
   {
@@ -77,27 +72,14 @@ const sections: NavSection[] = [
     key: "catalogo",
     label: "Catálogo",
     items: [
-      { title: "Produtos", path: "/produtos", icon: Boxes, comingSoon: true },
       { title: "Fornecedores", path: "/fornecedores", icon: Building2 },
-      { title: "Destinos", path: "/destinos", icon: MapPin, comingSoon: true },
-    ],
-  },
-  {
-    key: "inteligencia",
-    label: "Inteligência",
-    items: [
-      { title: "IA Concierge", path: "/ia", icon: Brain, comingSoon: true },
-      { title: "Relatórios", path: "/relatorios", icon: BarChart3, comingSoon: true },
-      { title: "Analytics", path: "/analytics", icon: LineChart, comingSoon: true },
     ],
   },
   {
     key: "sistema",
     label: "Sistema",
     items: [
-      { title: "Tarefas", path: "/tarefas", icon: ListTodo, comingSoon: true },
       { title: "Notificações", path: "/alertas", icon: Bell },
-      { title: "Configurações", path: "/configuracoes", icon: Settings, comingSoon: true },
     ],
   },
 ];
