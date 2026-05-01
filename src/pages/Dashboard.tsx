@@ -524,7 +524,7 @@ const Dashboard = () => {
   // ----- Viagens próximas com status operacional (check-in / voucher / docs) -----
   const nearTripsRich = nearTrips.map((p) => {
     const days = Math.ceil((new Date(p.departureDate).getTime() - now.getTime()) / 86400000);
-    const hasFlights = p.flightIds && p.flightIds.length > 0;
+    const hasFlights = flights.some((f) => f.packageId === p.id);
     const checkinReady = days <= 2 && hasFlights;
     const voucherReady = p.reservationStatus === "confirmed" && !!p.confirmationCode;
     const docsReady = p.documents && p.documents.length > 0;

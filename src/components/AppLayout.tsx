@@ -5,11 +5,13 @@ import {
   Bell, Building2, Target, GitBranch, Sparkles, Map, Ticket, UserCheck,
   IdCard, ArrowDownToLine, ArrowUpFromLine, Percent, Wallet, Boxes,
   MapPin, Brain, BarChart3, LineChart, ListTodo, Settings, ChevronLeft,
-  ChevronRight, PanelLeftClose, PanelLeftOpen,
+  ChevronRight, PanelLeftClose, PanelLeftOpen, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "@/components/Logo";
+import { toast } from "sonner";
 
 type NavItem = {
   title: string;
@@ -110,7 +112,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   });
   const location = useLocation();
   const { notifications } = useData();
+  const { user, signOut } = useAuth();
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const userInitial = (user?.email?.[0] ?? "A").toUpperCase();
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Sessão encerrada");
+  };
 
   useEffect(() => {
     localStorage.setItem(COLLAPSED_KEY, collapsed ? "1" : "0");
@@ -339,9 +347,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </span>
               )}
             </NavLink>
-            <div className="h-8 w-8 rounded-full bg-navy flex items-center justify-center">
-              <span className="text-xs font-bold text-navy-foreground">A</span>
+            <div className="h-8 w-8 rounded-full bg-navy flex items-center justify-center" title={user?.email ?? ""}>
+              <span className="text-xs font-bold text-navy-foreground">{userInitial}</span>
             </div>
+            <button
+              onClick={handleLogout}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+              aria-label="Sair"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
