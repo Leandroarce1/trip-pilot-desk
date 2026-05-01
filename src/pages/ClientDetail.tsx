@@ -31,6 +31,8 @@ import {
 import { toast } from "sonner";
 import { fmtBirthWithAge, fmtCurrency, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SalesJourney, SalesStage } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
 
 const genderOptions: Record<Gender, string> = {
   male: "Masculino", female: "Feminino", unspecified: "Prefiro não informar",
