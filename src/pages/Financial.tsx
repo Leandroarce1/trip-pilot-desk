@@ -138,7 +138,7 @@ const Financial = () => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       const key = d.toISOString().slice(0, 10);
-      const dayTx = transactions.filter((t) => t.date === key && (t.status === "pending" || (t.status === "paid" && i === 0 && false)));
+      const dayTx = transactions.filter((t) => t.date === key && t.status === "pending");
       // consideramos previsão: pendentes + atrasados acumulam no dia 0
       const entradas = dayTx.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
       const saidas = dayTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.value, 0);
