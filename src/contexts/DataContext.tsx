@@ -308,7 +308,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadAll = useCallback(async () => {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
-      setPackages([]); setNotifications([]); setSuppliers([]);
+      setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
       setLoading(false);
       return;
     }
@@ -316,7 +316,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
-      transactionsRes, packagesRes, notificationsRes,
+      transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -325,6 +325,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("transactions").select("*").order("date", { ascending: false }),
       supabase.from("packages").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("date", { ascending: false }),
+      supabase.from("opportunities").select("*").order("position", { ascending: true }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -337,6 +338,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions((transactionsRes.data ?? []).map((r: any) => mapTransaction(r, nameById.get(r.client_id))));
     setPackages((packagesRes.data ?? []).map((r: any) => mapPackage(r, nameById.get(r.client_id) ?? "")));
     setNotifications((notificationsRes.data ?? []).map(mapNotification));
+    setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
     setLoading(false);
   }, [user]);
 
