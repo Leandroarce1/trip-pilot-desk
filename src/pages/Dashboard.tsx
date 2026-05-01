@@ -448,6 +448,51 @@ const Dashboard = () => {
         {kpis.map((k) => <KpiCard key={k.title} {...k} />)}
       </section>
 
+      {/* 1.5) AÇÃO HOJE — central de comando operacional */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-destructive/10 text-destructive p-1.5 ring-1 ring-destructive/20">
+              <Siren className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold tracking-tight text-navy uppercase">Ação hoje</h2>
+              <p className="text-[11px] text-muted-foreground">O que precisa da sua atenção agora</p>
+            </div>
+          </div>
+          <Badge variant="destructive" className="tabular-nums">
+            {toRespondToday.length + expiringQuotes.length + overduePayments.length + trips48h.length} pendências
+          </Badge>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ActionCard tone="info" icon={MessageCircle} label="Responder hoje"
+            count={toRespondToday.length}
+            primary={`${toRespondToday.length} cliente${toRespondToday.length !== 1 ? "s" : ""}`}
+            secondary={toRespondToday[0] ? `Próximo: ${toRespondToday[0].name}` : "Caixa de entrada limpa"}
+            actionLabel="Ver leads" onAction={() => navigate("/clientes")}
+            urgent={toRespondToday.length >= 5} />
+          <ActionCard tone="warning" icon={Hourglass} label="Propostas vencendo"
+            count={expiringQuotes.length}
+            primary={`${expiringQuotes.length} expira${expiringQuotes.length !== 1 ? "m" : ""} em 7d`}
+            secondary={expiringQuotes[0] ? `${expiringQuotes[0].clientName} · ${fmtCurrency(expiringQuotes[0].value)}` : "Nada vencendo"}
+            actionLabel="Resolver" onAction={() => navigate("/cotacoes")}
+            urgent={expiringQuotes.length > 0} />
+          <ActionCard tone="destructive" icon={CreditCard} label="Pagamentos atrasados"
+            count={overduePayments.length}
+            primary={fmtCurrency(overdueTotal)}
+            secondary={overduePayments[0] ? `${overduePayments[0].clientName} · ${overduePayments[0].destinationCity}` : "Carteira em dia"}
+            actionLabel="Cobrar" onAction={() => navigate("/financeiro")}
+            urgent={overduePayments.length > 0} />
+          <ActionCard tone="gold" icon={Plane} label="Embarques em 48h"
+            count={trips48h.length}
+            primary={`${trips48h.length} embarque${trips48h.length !== 1 ? "s" : ""}`}
+            secondary={trips48h[0] ? `${trips48h[0].clientName} → ${trips48h[0].destinationCity}` : "Sem embarques iminentes"}
+            actionLabel="Ver" onAction={() => navigate("/pacotes")}
+            urgent={trips48h.length > 0} />
+        </div>
+      </section>
+
       {/* 2) Main grid */}
       <section className="grid gap-5 lg:grid-cols-12">
         {/* Pipeline */}
