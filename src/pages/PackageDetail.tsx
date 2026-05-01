@@ -106,6 +106,38 @@ const PackageDetail = () => {
     toast.success("Reserva confirmada");
   };
 
+  /** Gera lançamento financeiro (income pendente) vinculado à reserva */
+  const generateFinancial = () => {
+    if (pkgTransactions.length > 0) {
+      toast.info("Financeiro já gerado", { description: "Já existem lançamentos vinculados a esta reserva." });
+      navigate("/financeiro");
+      return;
+    }
+    const txId = String(Date.now());
+    addTransaction({
+      type: "income",
+      description: `Recebimento — ${pkg.destinationCity} (${pkg.clientName})`,
+      value: pkg.totalValue,
+      date: new Date().toISOString().slice(0, 10),
+      status: "pending",
+      clientName: pkg.clientName,
+    });
+    updatePackage({
+      ...pkg,
+      transactionIds: [...pkg.transactionIds, txId],
+      history: [
+        ...pkg.history,
+        { date: new Date().toISOString(), action: "Lançamento financeiro gerado" },
+      ],
+    });
+    toast.success("Financeiro gerado", {
+      description: `Recebimento de R$ ${pkg.totalValue.toLocaleString("pt-BR")} criado como pendente.`,
+      action: { label: "Ver financeiro", onClick: () => navigate("/financeiro") },
+    });
+  };
+
+  const hasFinancial = pkgTransactions.length > 0;
+
   return (
     <div className="space-y-6">
       {/* ---------- Header ---------- */}
