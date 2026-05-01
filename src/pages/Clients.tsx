@@ -152,9 +152,33 @@ const Clients = () => {
                   <td className="px-4 py-3"><StatusBadge variant={c.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell tabular-nums">{fmtDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      {c.status === "lead" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground"
+                          onClick={(e) => { e.stopPropagation(); convertToOpportunity(c); }}
+                          title="Converter em oportunidade"
+                        >
+                          <Sparkles className="h-3 w-3" /> Converter
+                        </Button>
+                      )}
+                      {c.status === "negotiation" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1 border-success/40 text-success hover:bg-success hover:text-white"
+                          onClick={(e) => { e.stopPropagation(); createProposalFor(c); }}
+                          title="Criar proposta"
+                        >
+                          <FileText className="h-3 w-3" /> Proposta
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
