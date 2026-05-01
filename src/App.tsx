@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Quotes from "./pages/Quotes";
+import Pipeline from "./pages/Pipeline";
+import Opportunities from "./pages/Opportunities";
 import Flights from "./pages/Flights";
 import Financial from "./pages/Financial";
 import Packages from "./pages/Packages";
