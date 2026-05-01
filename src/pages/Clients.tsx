@@ -41,6 +41,25 @@ const Clients = () => {
     toast.success("Cliente cadastrado!");
   };
 
+  const convertToOpportunity = (c: Client) => {
+    if (c.status === "lead") {
+      updateClient({ ...c, status: "negotiation" });
+      toast.success("Convertido em oportunidade", { description: `${c.name} agora está em negociação.` });
+    }
+  };
+
+  const createProposalFor = (c: Client) => {
+    // Promove para negociação se ainda for lead
+    if (c.status === "lead") updateClient({ ...c, status: "negotiation" });
+    navigate(`/cotacoes?client=${c.id}`);
+    toast("Abrindo cotações", { description: `Crie uma proposta para ${c.name}.` });
+  };
+
+  // Próximo lead a converter (mais antigo)
+  const nextLead = [...clients]
+    .filter((c) => c.status === "lead")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
