@@ -193,7 +193,7 @@ const PackageDetail = () => {
       </div>
 
       {/* ---------- Sales journey & próxima ação ---------- */}
-      <SalesJourney currentStage="reservation" />
+      <SalesJourney current="reservation" />
       {!hasFinancial && (
         <NextStepBanner
           title="Próxima ação: gerar financeiro"
