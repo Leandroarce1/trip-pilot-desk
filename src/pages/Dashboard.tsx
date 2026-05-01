@@ -191,6 +191,8 @@ function ActionCard({
     </div>
   );
 }
+
+const PIE_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--primary-soft))",
   "hsl(var(--gold))",
