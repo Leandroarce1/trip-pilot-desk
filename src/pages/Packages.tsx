@@ -21,6 +21,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SalesJourney } from "@/components/SalesJourney";
+import { FileText as FileTextIcon } from "lucide-react";
 
 // ------- Status helpers -------
 const reservationStatusLabels: Record<ReservationStatus, string> = {
@@ -115,7 +117,7 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
-  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes } = useData();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | ReservationStatus>("all");
@@ -333,6 +335,8 @@ const Packages = () => {
 
   return (
     <div className="space-y-6">
+      <SalesJourney current="reservation" completed={["lead", "opportunity", "proposal"]} />
+
       {/* ---------- Page header ---------- */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
