@@ -13,6 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { SalesJourney } from "@/components/SalesJourney";
+import { NextStepBanner } from "@/components/NextStepBanner";
+import { ArrowRight, FileText as FileTextIcon } from "lucide-react";
 
 const STAGE_LABELS: Record<OpportunityStage, string> = {
   new: "Novo", contact: "Em contato", proposal: "Proposta",
@@ -122,8 +125,26 @@ export default function Opportunities() {
     }
   };
 
+  // Próxima oportunidade a virar proposta
+  const nextOpp = [...opportunities]
+    .filter((o) => o.stage !== "closed_won" && o.stage !== "closed_lost" && o.clientId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+
   return (
     <div className="space-y-6">
+      <SalesJourney current="opportunity" completed={["lead"]} />
+
+      {nextOpp && (
+        <NextStepBanner
+          tone="primary"
+          icon={<FileTextIcon className="h-4 w-4" />}
+          title={`Criar proposta para ${nextOpp.clientName || nextOpp.title}`}
+          description={`${nextOpp.destination || "destino a definir"} · valor estimado R$ ${nextOpp.estimatedValue.toLocaleString("pt-BR")}`}
+          actionLabel="Criar proposta"
+          onAction={() => createProposal(nextOpp)}
+        />
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Oportunidades</h1>
@@ -246,7 +267,16 @@ export default function Opportunities() {
                     <div>{o.title}</div>
                     {o.destination && <div className="text-xs text-muted-foreground">{o.destination}</div>}
                   </TableCell>
-                  <TableCell>{o.clientName || <span className="text-muted-foreground italic text-xs">—</span>}</TableCell>
+                  <TableCell>
+                    {o.clientName ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{o.clientName}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Origem: Lead</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STAGE_TONES[o.stage]}`}>
                       {STAGE_LABELS[o.stage]}
