@@ -4,9 +4,13 @@ import {
   Plus, Search, Eye, Edit2, Trash2, Plane, Calendar as CalendarIcon,
   TrendingUp, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown,
   ChevronLeft, ChevronRight, Package as PackageIcon, X,
+  User as UserIcon, FileText, Ticket, DollarSign, Flame, Sparkles,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
-import { TravelPackage, ReservationStatus, TripType, Passenger } from "@/types/crm";
+import { TravelPackage, ReservationStatus, TripType, Passenger, Opportunity, Quote } from "@/types/crm";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
