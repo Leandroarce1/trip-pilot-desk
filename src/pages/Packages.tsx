@@ -100,6 +100,14 @@ const filterPills: Array<{ key: "all" | OpStatus; label: string }> = [
   { key: "cancelled", label: "Canceladas" },
 ];
 
+const tripTypeLabels: Record<TripType, string> = {
+  air: "Aéreo",
+  package: "Pacote completo",
+  cruise: "Cruzeiro",
+  road: "Rodoviário",
+  hotel: "Hotel",
+};
+
 // ------- Sorting -------
 type SortKey =
   | "clientName" | "destinationCity" | "departureDate" | "returnDate"
