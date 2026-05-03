@@ -43,18 +43,59 @@ const reservationStatusBadge: Record<ReservationStatus, string> = {
   cancelled: "bg-error-soft text-error-soft-foreground",
 };
 
-const tripTypeLabels: Record<TripType, string> = {
-  air: "Aéreo",
-  package: "Pacote completo",
-  cruise: "Cruzeiro",
-  road: "Rodoviário",
-  hotel: "Hotel",
+// Derived operational status for the agent panel
+type OpStatus = "awaiting_payment" | "confirmed" | "issued" | "traveling" | "completed" | "cancelled" | "quoting";
+
+const opStatusMeta: Record<OpStatus, { label: string; cls: string }> = {
+  quoting:          { label: "Em cotação",        cls: "bg-info-soft text-info-soft-foreground" },
+  awaiting_payment: { label: "Aguardando pgto.",  cls: "bg-warning-soft text-warning-soft-foreground" },
+  confirmed:        { label: "Confirmada",        cls: "bg-success-soft text-success-soft-foreground" },
+  issued:           { label: "Emitida",           cls: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--navy))]" },
+  traveling:        { label: "Em viagem",         cls: "bg-primary/15 text-primary" },
+  completed:        { label: "Concluída",         cls: "bg-secondary text-secondary-foreground" },
+  cancelled:        { label: "Cancelada",         cls: "bg-error-soft text-error-soft-foreground" },
 };
 
-const filterPills: Array<{ key: "all" | ReservationStatus; label: string }> = [
+const daysUntil = (iso: string) => {
+  if (!iso) return Infinity;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+};
+
+const computeOpStatus = (p: TravelPackage, hasVoucher: boolean): OpStatus => {
+  if (p.reservationStatus === "cancelled") return "cancelled";
+  if (p.reservationStatus === "quoting") return "quoting";
+  const dDep = daysUntil(p.departureDate);
+  const dRet = daysUntil(p.returnDate);
+  if (dRet < 0) return "completed";
+  if (dDep <= 0 && dRet >= 0) return "traveling";
+  if (p.paymentStatus !== "paid") return "awaiting_payment";
+  if (hasVoucher) return "issued";
+  return "confirmed";
+};
+
+const computeNextAction = (p: TravelPackage, op: OpStatus, hasVoucher: boolean): { label: string; tone: "warning" | "primary" | "success" | "muted" } | null => {
+  if (op === "cancelled" || op === "completed") return null;
+  if (op === "quoting") return { label: "Confirmar reserva", tone: "primary" };
+  if (op === "awaiting_payment") return { label: "Cobrar cliente", tone: "warning" };
+  if (op === "confirmed" && !hasVoucher) return { label: "Gerar voucher", tone: "primary" };
+  if (op === "issued") {
+    const d = daysUntil(p.departureDate);
+    if (d <= 3 && d >= 0) return { label: "Enviar check-in", tone: "warning" };
+    return { label: "Acompanhar viagem", tone: "muted" };
+  }
+  if (op === "traveling") return { label: "Acompanhar viagem", tone: "success" };
+  return null;
+};
+
+const filterPills: Array<{ key: "all" | OpStatus; label: string }> = [
   { key: "all", label: "Todas" },
+  { key: "awaiting_payment", label: "Aguardando pgto." },
   { key: "confirmed", label: "Confirmadas" },
-  { key: "pending", label: "Pendentes" },
+  { key: "issued", label: "Emitidas" },
+  { key: "traveling", label: "Em viagem" },
+  { key: "completed", label: "Concluídas" },
   { key: "quoting", label: "Em cotação" },
   { key: "cancelled", label: "Canceladas" },
 ];
