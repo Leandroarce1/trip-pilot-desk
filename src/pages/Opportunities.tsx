@@ -267,7 +267,16 @@ export default function Opportunities() {
                     <div>{o.title}</div>
                     {o.destination && <div className="text-xs text-muted-foreground">{o.destination}</div>}
                   </TableCell>
-                  <TableCell>{o.clientName || <span className="text-muted-foreground italic text-xs">—</span>}</TableCell>
+                  <TableCell>
+                    {o.clientName ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{o.clientName}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Origem: Lead</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STAGE_TONES[o.stage]}`}>
                       {STAGE_LABELS[o.stage]}
