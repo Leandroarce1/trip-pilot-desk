@@ -4,9 +4,13 @@ import {
   Plus, Search, Eye, Edit2, Trash2, Plane, Calendar as CalendarIcon,
   TrendingUp, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown,
   ChevronLeft, ChevronRight, Package as PackageIcon, X,
+  User as UserIcon, FileText, Ticket, DollarSign, Flame, Sparkles,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
-import { TravelPackage, ReservationStatus, TripType, Passenger } from "@/types/crm";
+import { TravelPackage, ReservationStatus, TripType, Passenger, Opportunity, Quote } from "@/types/crm";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +43,63 @@ const reservationStatusBadge: Record<ReservationStatus, string> = {
   cancelled: "bg-error-soft text-error-soft-foreground",
 };
 
+// Derived operational status for the agent panel
+type OpStatus = "awaiting_payment" | "confirmed" | "issued" | "traveling" | "completed" | "cancelled" | "quoting";
+
+const opStatusMeta: Record<OpStatus, { label: string; cls: string }> = {
+  quoting:          { label: "Em cotação",        cls: "bg-info-soft text-info-soft-foreground" },
+  awaiting_payment: { label: "Aguardando pgto.",  cls: "bg-warning-soft text-warning-soft-foreground" },
+  confirmed:        { label: "Confirmada",        cls: "bg-success-soft text-success-soft-foreground" },
+  issued:           { label: "Emitida",           cls: "bg-[hsl(var(--gold))]/15 text-[hsl(var(--navy))]" },
+  traveling:        { label: "Em viagem",         cls: "bg-primary/15 text-primary" },
+  completed:        { label: "Concluída",         cls: "bg-secondary text-secondary-foreground" },
+  cancelled:        { label: "Cancelada",         cls: "bg-error-soft text-error-soft-foreground" },
+};
+
+const daysUntil = (iso: string) => {
+  if (!iso) return Infinity;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+};
+
+const computeOpStatus = (p: TravelPackage, hasVoucher: boolean): OpStatus => {
+  if (p.reservationStatus === "cancelled") return "cancelled";
+  if (p.reservationStatus === "quoting") return "quoting";
+  const dDep = daysUntil(p.departureDate);
+  const dRet = daysUntil(p.returnDate);
+  if (dRet < 0) return "completed";
+  if (dDep <= 0 && dRet >= 0) return "traveling";
+  if (p.paymentStatus !== "paid") return "awaiting_payment";
+  if (hasVoucher) return "issued";
+  return "confirmed";
+};
+
+const computeNextAction = (p: TravelPackage, op: OpStatus, hasVoucher: boolean): { label: string; tone: "warning" | "primary" | "success" | "muted" } | null => {
+  if (op === "cancelled" || op === "completed") return null;
+  if (op === "quoting") return { label: "Confirmar reserva", tone: "primary" };
+  if (op === "awaiting_payment") return { label: "Cobrar cliente", tone: "warning" };
+  if (op === "confirmed" && !hasVoucher) return { label: "Gerar voucher", tone: "primary" };
+  if (op === "issued") {
+    const d = daysUntil(p.departureDate);
+    if (d <= 3 && d >= 0) return { label: "Enviar check-in", tone: "warning" };
+    return { label: "Acompanhar viagem", tone: "muted" };
+  }
+  if (op === "traveling") return { label: "Acompanhar viagem", tone: "success" };
+  return null;
+};
+
+const filterPills: Array<{ key: "all" | OpStatus; label: string }> = [
+  { key: "all", label: "Todas" },
+  { key: "awaiting_payment", label: "Aguardando pgto." },
+  { key: "confirmed", label: "Confirmadas" },
+  { key: "issued", label: "Emitidas" },
+  { key: "traveling", label: "Em viagem" },
+  { key: "completed", label: "Concluídas" },
+  { key: "quoting", label: "Em cotação" },
+  { key: "cancelled", label: "Canceladas" },
+];
+
 const tripTypeLabels: Record<TripType, string> = {
   air: "Aéreo",
   package: "Pacote completo",
@@ -46,14 +107,6 @@ const tripTypeLabels: Record<TripType, string> = {
   road: "Rodoviário",
   hotel: "Hotel",
 };
-
-const filterPills: Array<{ key: "all" | ReservationStatus; label: string }> = [
-  { key: "all", label: "Todas" },
-  { key: "confirmed", label: "Confirmadas" },
-  { key: "pending", label: "Pendentes" },
-  { key: "quoting", label: "Em cotação" },
-  { key: "cancelled", label: "Canceladas" },
-];
 
 // ------- Sorting -------
 type SortKey =
@@ -117,10 +170,10 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
-  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | ReservationStatus>("all");
+  const [filter, setFilter] = useState<"all" | OpStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey>("departureDate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
@@ -129,6 +182,8 @@ const Packages = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TravelPackage | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const hasVoucherFor = (pkgId: string) => vouchers.some((v) => v.packageId === pkgId && v.issued);
 
   // ------- Filtering + sorting -------
   const filtered = useMemo(() => {
@@ -140,10 +195,11 @@ const Packages = () => {
         p.destinationCity.toLowerCase().includes(q) ||
         p.destinationCountry.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q);
-      const matchesFilter = filter === "all" || p.reservationStatus === filter;
+      const op = computeOpStatus(p, hasVoucherFor(p.id));
+      const matchesFilter = filter === "all" || op === filter;
       return matchesSearch && matchesFilter;
     });
-  }, [packages, search, filter]);
+  }, [packages, search, filter, vouchers]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -553,19 +609,20 @@ const Packages = () => {
       </Card>
 
       {/* ---------- Table ---------- */}
+      <TooltipProvider delayDuration={200}>
       <Card>
         <CardContent className="p-0 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <SortHead k="clientName" label="Cliente" />
+                <SortHead k="clientName" label="Cliente / Origem" />
                 <SortHead k="destinationCity" label="Destino" />
                 <SortHead k="departureDate" label="Embarque" />
-                <SortHead k="returnDate" label="Retorno" />
                 <SortHead k="supplier" label="Fornecedor" />
                 <SortHead k="totalValue" label="Total" className="text-right" />
                 <SortHead k="commission" label="Comissão" className="text-right" />
                 <SortHead k="reservationStatus" label="Status" />
+                <TableHead>Próxima ação</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -579,21 +636,67 @@ const Packages = () => {
               )}
               {pageItems.map((p) => {
                 const commission = (p.totalValue * p.commissionPercent) / 100;
+                const hasVoucher = hasVoucherFor(p.id);
+                const op = computeOpStatus(p, hasVoucher);
+                const next = computeNextAction(p, op, hasVoucher);
+                const dDep = daysUntil(p.departureDate);
+                const urgent = (op === "awaiting_payment" && dDep <= 14) || (op === "confirmed" && !hasVoucher && dDep <= 7) || (op === "issued" && dDep <= 3 && dDep >= 0);
+                const linkedQuote: Quote | undefined = p.quoteId ? quotes.find((q) => q.id === p.quoteId) : undefined;
+                const linkedOpp: Opportunity | undefined = linkedQuote?.opportunityId
+                  ? opportunities.find((o) => o.id === linkedQuote.opportunityId)
+                  : opportunities.find((o) => o.clientId === p.clientId);
+
+                const nextToneCls =
+                  next?.tone === "warning" ? "bg-warning text-white hover:bg-warning/90"
+                  : next?.tone === "success" ? "bg-success text-white hover:bg-success/90"
+                  : next?.tone === "muted" ? "bg-muted text-foreground hover:bg-muted/80"
+                  : "bg-primary text-primary-foreground hover:bg-primary-hover";
+
+                const handleNextAction = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (!next) return;
+                  if (next.label === "Cobrar cliente") navigate("/financeiro?tab=transactions");
+                  else if (next.label === "Gerar voucher") navigate("/vouchers");
+                  else if (next.label === "Confirmar reserva") openEdit(p);
+                  else navigate(`/pacotes/${p.id}`);
+                };
+
                 return (
-                  <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/pacotes/${p.id}`)}>
+                  <TableRow
+                    key={p.id}
+                    className={cn("cursor-pointer", urgent && "bg-warning/[0.04]")}
+                    onClick={() => navigate(`/pacotes/${p.id}`)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-primary">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-primary">
                           {initials(p.clientName)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-navy truncate">{p.clientName}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-navy truncate">{p.clientName}</p>
+                            {urgent && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Flame className="h-3.5 w-3.5 text-warning" />
+                                </TooltipTrigger>
+                                <TooltipContent>Reserva urgente</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                           <p className="text-[11px] text-muted-foreground truncate">{p.name}</p>
-                          {p.quoteId && quotes.some((q) => q.id === p.quoteId) && (
-                            <p className="text-[10px] text-primary/80 uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                              <FileTextIcon className="h-2.5 w-2.5" /> Origem: Proposta
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                            {linkedOpp && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-info-soft text-info-soft-foreground px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wider">
+                                <Sparkles className="h-2.5 w-2.5" /> Oport.
+                              </span>
+                            )}
+                            {linkedQuote && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-primary px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wider">
+                                <FileText className="h-2.5 w-2.5" /> Proposta
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -603,9 +706,18 @@ const Packages = () => {
                         <span className="font-medium">{p.destinationCity}</span>
                         <span className="text-muted-foreground">, {p.destinationCountry}</span>
                       </div>
+                      <p className="text-[10.5px] text-muted-foreground tabular-nums">
+                        {fmtDate(p.departureDate)} → {fmtDate(p.returnDate)}
+                      </p>
                     </TableCell>
-                    <TableCell className="text-sm tabular-nums">{fmtDate(p.departureDate)}</TableCell>
-                    <TableCell className="text-sm tabular-nums">{fmtDate(p.returnDate)}</TableCell>
+                    <TableCell className="text-sm tabular-nums">
+                      {fmtDate(p.departureDate)}
+                      {dDep >= 0 && dDep <= 30 && (
+                        <p className={cn("text-[10px]", urgent ? "text-warning font-semibold" : "text-muted-foreground")}>
+                          em {dDep}d
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm">{p.supplier || "—"}</TableCell>
                     <TableCell className="text-right text-sm font-semibold tabular-nums text-navy">
                       {fmtCurrency(p.totalValue)}
@@ -617,20 +729,73 @@ const Packages = () => {
                       <span
                         className={cn(
                           "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em]",
-                          reservationStatusBadge[p.reservationStatus],
+                          opStatusMeta[op].cls,
                         )}
                       >
-                        {reservationStatusLabels[p.reservationStatus]}
+                        {opStatusMeta[op].label}
                       </span>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {next ? (
+                        <Button size="sm" className={cn("h-7 px-2.5 text-[11px]", nextToneCls)} onClick={handleNextAction}>
+                          {next.label}
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-0.5">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/pacotes/${p.id}`)} aria-label="Visualizar">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)} aria-label="Editar">
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/pacotes/${p.id}`)} aria-label="Abrir reserva">
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Abrir reserva</TooltipContent>
+                        </Tooltip>
+                        {linkedQuote && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/cotacoes?id=${linkedQuote.id}`)} aria-label="Ver proposta">
+                                <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver proposta</TooltipContent>
+                          </Tooltip>
+                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/clientes/${p.clientId}`)} aria-label="Ver cliente">
+                              <UserIcon className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Ver cliente</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => navigate("/vouchers")} aria-label="Voucher">
+                              <Ticket className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{hasVoucher ? "Ver voucher" : "Gerar voucher"}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => navigate("/financeiro?tab=transactions")} aria-label="Financeiro">
+                              <DollarSign className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Abrir financeiro</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(p)} aria-label="Editar">
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Excluir">
@@ -662,6 +827,7 @@ const Packages = () => {
           </Table>
         </CardContent>
       </Card>
+      </TooltipProvider>
 
       {/* ---------- Pagination ---------- */}
       {sorted.length > 0 && (
