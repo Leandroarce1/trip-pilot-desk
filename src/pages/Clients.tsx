@@ -20,7 +20,7 @@ import { SalesJourney } from "@/components/SalesJourney";
 import { NextStepBanner } from "@/components/NextStepBanner";
 
 const Clients = () => {
-  const { clients, addClient, updateClient } = useData();
+  const { clients, addClient, updateClient, addOpportunity, opportunities } = useData();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlStatus = searchParams.get("status");
@@ -50,10 +50,31 @@ const Clients = () => {
     toast.success("Cliente cadastrado!");
   };
 
-  const convertToOpportunity = (c: Client) => {
-    if (c.status === "lead") {
-      updateClient({ ...c, status: "negotiation" });
-      toast.success("Convertido em oportunidade", { description: `${c.name} agora está em negociação.` });
+  const convertToOpportunity = async (c: Client) => {
+    if (c.status !== "lead") return;
+    try {
+      // Promove cliente
+      await updateClient({ ...c, status: "negotiation" });
+      // Cria oportunidade vinculada ao lead se ainda não existir
+      const exists = opportunities.some((o) => o.clientId === c.id);
+      if (!exists) {
+        await addOpportunity({
+          clientId: c.id,
+          title: `Oportunidade — ${c.name}`,
+          destination: "",
+          estimatedValue: 0,
+          probability: 50,
+          stage: "new",
+          position: Date.now(),
+          notes: `Originada do lead ${c.name}`,
+        });
+      }
+      toast.success("Convertido em oportunidade", {
+        description: `${c.name} agora está no pipeline.`,
+        action: { label: "Ver pipeline", onClick: () => navigate("/oportunidades") },
+      });
+    } catch {
+      toast.error("Erro ao converter lead");
     }
   };
 
