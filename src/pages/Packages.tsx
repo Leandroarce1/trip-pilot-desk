@@ -589,6 +589,11 @@ const Packages = () => {
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-navy truncate">{p.clientName}</p>
                           <p className="text-[11px] text-muted-foreground truncate">{p.name}</p>
+                          {p.quoteId && quotes.some((q) => q.id === p.quoteId) && (
+                            <p className="text-[10px] text-primary/80 uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                              <FileTextIcon className="h-2.5 w-2.5" /> Origem: Proposta
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
