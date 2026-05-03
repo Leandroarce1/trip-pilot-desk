@@ -170,10 +170,10 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
-  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | ReservationStatus>("all");
+  const [filter, setFilter] = useState<"all" | OpStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey>("departureDate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
@@ -182,6 +182,8 @@ const Packages = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TravelPackage | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const hasVoucherFor = (pkgId: string) => vouchers.some((v) => v.packageId === pkgId && v.issued);
 
   // ------- Filtering + sorting -------
   const filtered = useMemo(() => {
@@ -193,10 +195,11 @@ const Packages = () => {
         p.destinationCity.toLowerCase().includes(q) ||
         p.destinationCountry.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q);
-      const matchesFilter = filter === "all" || p.reservationStatus === filter;
+      const op = computeOpStatus(p, hasVoucherFor(p.id));
+      const matchesFilter = filter === "all" || op === filter;
       return matchesSearch && matchesFilter;
     });
-  }, [packages, search, filter]);
+  }, [packages, search, filter, vouchers]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
