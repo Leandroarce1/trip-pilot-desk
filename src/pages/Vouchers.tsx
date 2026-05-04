@@ -138,8 +138,16 @@ export default function Vouchers() {
                   </div>
                   {pkg && <p className="text-xs text-muted-foreground truncate">📦 {pkg.name}</p>}
                   <div className="flex gap-1 pt-1">
-                    <Button size="sm" variant="outline" onClick={() => startEdit(v)} className="flex-1"><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Button>
-                    <Button size="sm" variant={v.issued ? "outline" : "default"} onClick={() => toggleIssued(v)}>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => { generateVoucherPdf(v, pkg); toast.success("PDF gerado"); }}
+                      className="flex-1"
+                    >
+                      <FileDown className="h-3.5 w-3.5 mr-1" />Gerar PDF
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant={v.issued ? "outline" : "secondary"} onClick={() => toggleIssued(v)}>
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => handleDelete(v.id)} className="text-destructive">
