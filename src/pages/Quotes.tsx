@@ -334,7 +334,12 @@ const Quotes = () => {
                 </Button>
               </TabsContent>
             </Tabs>
-            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Proposta"}</Button>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+              <Button variant="ghost" className="sm:w-auto" onClick={requestClose}>Cancelar</Button>
+              <div className="flex-1" />
+              <Button variant="outline" onClick={() => handleSubmit({ keepOpen: true })}>Salvar</Button>
+              <Button onClick={() => handleSubmit()}>{editingQuote ? "Salvar e voltar" : "Criar e voltar"}</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
