@@ -251,8 +251,13 @@ const Quotes = () => {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <Label>Valor (R$){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
-                    <Input type="number" value={items.length > 0 ? itemsTotal : form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} disabled={items.length > 0} />
+                    <Label>Aéreo (R$)</Label>
+                    <Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="0" />
+                    {items.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                        + Itens R$ {itemsTotal.toLocaleString("pt-BR")} = <span className="font-semibold text-primary">R$ {effectiveValue.toLocaleString("pt-BR")}</span>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Margem (%){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
