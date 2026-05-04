@@ -163,6 +163,8 @@ const emptyForm: FormState = {
   supplierId: "",
   supplier: "",
   confirmationCode: "",
+  locator: "",
+  supplierDeadline: "",
   totalValue: "",
   commissionPercent: "10",
   passengersCount: "1",
