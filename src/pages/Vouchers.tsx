@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Ticket, Trash2, Pencil, CheckCircle2, Clock, Building2, Bus, Camera, Hotel, MoreHorizontal } from "lucide-react";
+import { Plus, Ticket, Trash2, Pencil, CheckCircle2, Clock, Building2, Bus, Camera, Hotel, MoreHorizontal, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { generateVoucherPdf } from "@/lib/voucherPdf";
 
 const TYPE_META: Record<VoucherType, { label: string; icon: any; color: string }> = {
   hotel: { label: "Hotel", icon: Hotel, color: "bg-blue-500/10 text-blue-600" },
@@ -137,8 +138,16 @@ export default function Vouchers() {
                   </div>
                   {pkg && <p className="text-xs text-muted-foreground truncate">📦 {pkg.name}</p>}
                   <div className="flex gap-1 pt-1">
-                    <Button size="sm" variant="outline" onClick={() => startEdit(v)} className="flex-1"><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Button>
-                    <Button size="sm" variant={v.issued ? "outline" : "default"} onClick={() => toggleIssued(v)}>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => { generateVoucherPdf(v, pkg); toast.success("PDF gerado"); }}
+                      className="flex-1"
+                    >
+                      <FileDown className="h-3.5 w-3.5 mr-1" />Gerar PDF
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant={v.issued ? "outline" : "secondary"} onClick={() => toggleIssued(v)}>
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => handleDelete(v.id)} className="text-destructive">
