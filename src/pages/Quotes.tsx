@@ -50,8 +50,9 @@ const Quotes = () => {
   // Cálculos automáticos a partir dos itens
   const itemsTotal = items.reduce((acc, it) => acc + it.quantity * it.unitValue, 0);
   const itemsCost = items.reduce((acc, it) => acc + it.quantity * (it.cost ?? 0), 0);
-  const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
-  const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
+  const airfareValue = Number(form.value) || 0;
+  const effectiveValue = itemsTotal + airfareValue;
+  const computedMargin = effectiveValue > 0 ? ((effectiveValue - itemsCost) / effectiveValue) * 100 : Number(form.marginPercent) || 0;
 
   const handleSubmit = (opts?: { keepOpen?: boolean }) => {
     if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
@@ -250,8 +251,13 @@ const Quotes = () => {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <Label>Valor (R$){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
-                    <Input type="number" value={items.length > 0 ? itemsTotal : form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} disabled={items.length > 0} />
+                    <Label>Aéreo (R$)</Label>
+                    <Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="0" />
+                    {items.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                        + Itens R$ {itemsTotal.toLocaleString("pt-BR")} = <span className="font-semibold text-primary">R$ {effectiveValue.toLocaleString("pt-BR")}</span>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Margem (%){items.length > 0 && <span className="text-[10px] text-muted-foreground ml-1">(auto)</span>}</Label>
@@ -308,8 +314,8 @@ const Quotes = () => {
                 {items.length > 0 && (
                   <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Total</p>
-                      <p className="font-bold tabular-nums">R$ {itemsTotal.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">Itens + Aéreo</p>
+                      <p className="font-bold tabular-nums">R$ {effectiveValue.toLocaleString("pt-BR")}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
