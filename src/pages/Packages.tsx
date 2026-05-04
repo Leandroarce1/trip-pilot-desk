@@ -658,7 +658,10 @@ const Packages = () => {
                 const op = computeOpStatus(p, hasVoucher);
                 const next = computeNextAction(p, op, hasVoucher);
                 const dDep = daysUntil(p.departureDate);
-                const urgent = (op === "awaiting_payment" && dDep <= 14) || (op === "confirmed" && !hasVoucher && dDep <= 7) || (op === "issued" && dDep <= 3 && dDep >= 0);
+                const dDeadline = p.supplierDeadline ? daysUntil(p.supplierDeadline) : null;
+                const deadlineSoon = dDeadline !== null && dDeadline <= 7 && dDeadline >= 0 && p.paymentStatus !== "paid";
+                const deadlineLate = dDeadline !== null && dDeadline < 0 && p.paymentStatus !== "paid";
+                const urgent = (op === "awaiting_payment" && dDep <= 14) || (op === "confirmed" && !hasVoucher && dDep <= 7) || (op === "issued" && dDep <= 3 && dDep >= 0) || deadlineSoon || deadlineLate;
                 const linkedQuote: Quote | undefined = p.quoteId ? quotes.find((q) => q.id === p.quoteId) : undefined;
                 const linkedOpp: Opportunity | undefined = linkedQuote?.opportunityId
                   ? opportunities.find((o) => o.id === linkedQuote.opportunityId)
