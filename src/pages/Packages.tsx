@@ -279,6 +279,8 @@ const Packages = () => {
       supplierId: p.supplierId || "",
       supplier: p.supplier,
       confirmationCode: p.confirmationCode || "",
+      locator: p.locator || "",
+      supplierDeadline: p.supplierDeadline || "",
       totalValue: String(p.totalValue),
       commissionPercent: String(p.commissionPercent),
       passengersCount: String(Math.max(1, p.passengers.length)),
