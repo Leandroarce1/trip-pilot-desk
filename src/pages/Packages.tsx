@@ -143,6 +143,8 @@ type FormState = {
   supplierId: string;
   supplier: string;
   confirmationCode: string;
+  locator: string;
+  supplierDeadline: string;
   totalValue: string;
   commissionPercent: string;
   passengersCount: string;
@@ -161,6 +163,8 @@ const emptyForm: FormState = {
   supplierId: "",
   supplier: "",
   confirmationCode: "",
+  locator: "",
+  supplierDeadline: "",
   totalValue: "",
   commissionPercent: "10",
   passengersCount: "1",
@@ -275,6 +279,8 @@ const Packages = () => {
       supplierId: p.supplierId || "",
       supplier: p.supplier,
       confirmationCode: p.confirmationCode || "",
+      locator: p.locator || "",
+      supplierDeadline: p.supplierDeadline || "",
       totalValue: String(p.totalValue),
       commissionPercent: String(p.commissionPercent),
       passengersCount: String(Math.max(1, p.passengers.length)),
@@ -318,6 +324,8 @@ const Packages = () => {
         supplierId: form.supplierId || undefined,
         supplier: supplierName,
         confirmationCode: form.confirmationCode,
+        locator: form.locator,
+        supplierDeadline: form.supplierDeadline || undefined,
         totalValue,
         commissionPercent,
         passengers,
@@ -342,6 +350,8 @@ const Packages = () => {
         supplierId: form.supplierId || undefined,
         supplier: supplierName,
         confirmationCode: form.confirmationCode,
+        locator: form.locator,
+        supplierDeadline: form.supplierDeadline || undefined,
         totalValue,
         commissionPercent,
         passengers,
@@ -491,8 +501,16 @@ const Packages = () => {
                 )}
               </div>
               <div>
-                <Label className="label-caption">Localizador / confirmação</Label>
-                <Input className="mt-1.5 font-mono" value={form.confirmationCode} onChange={(e) => setForm({ ...form, confirmationCode: e.target.value })} placeholder="ABC123" />
+                <Label className="label-caption">Localizador / PNR *</Label>
+                <Input className="mt-1.5 font-mono" value={form.locator} onChange={(e) => setForm({ ...form, locator: e.target.value })} placeholder="ABC123" />
+              </div>
+              <div>
+                <Label className="label-caption">Código de confirmação</Label>
+                <Input className="mt-1.5 font-mono" value={form.confirmationCode} onChange={(e) => setForm({ ...form, confirmationCode: e.target.value })} placeholder="opcional" />
+              </div>
+              <div>
+                <Label className="label-caption">Prazo de pagamento ao fornecedor</Label>
+                <Input className="mt-1.5" type="date" value={form.supplierDeadline} onChange={(e) => setForm({ ...form, supplierDeadline: e.target.value })} />
               </div>
 
               <div>
@@ -640,7 +658,10 @@ const Packages = () => {
                 const op = computeOpStatus(p, hasVoucher);
                 const next = computeNextAction(p, op, hasVoucher);
                 const dDep = daysUntil(p.departureDate);
-                const urgent = (op === "awaiting_payment" && dDep <= 14) || (op === "confirmed" && !hasVoucher && dDep <= 7) || (op === "issued" && dDep <= 3 && dDep >= 0);
+                const dDeadline = p.supplierDeadline ? daysUntil(p.supplierDeadline) : null;
+                const deadlineSoon = dDeadline !== null && dDeadline <= 7 && dDeadline >= 0 && p.paymentStatus !== "paid";
+                const deadlineLate = dDeadline !== null && dDeadline < 0 && p.paymentStatus !== "paid";
+                const urgent = (op === "awaiting_payment" && dDep <= 14) || (op === "confirmed" && !hasVoucher && dDep <= 7) || (op === "issued" && dDep <= 3 && dDep >= 0) || deadlineSoon || deadlineLate;
                 const linkedQuote: Quote | undefined = p.quoteId ? quotes.find((q) => q.id === p.quoteId) : undefined;
                 const linkedOpp: Opportunity | undefined = linkedQuote?.opportunityId
                   ? opportunities.find((o) => o.id === linkedQuote.opportunityId)
@@ -709,12 +730,27 @@ const Packages = () => {
                       <p className="text-[10.5px] text-muted-foreground tabular-nums">
                         {fmtDate(p.departureDate)} → {fmtDate(p.returnDate)}
                       </p>
+                      {p.locator && (
+                        <p className="text-[10.5px] font-mono text-primary mt-0.5">
+                          PNR: {p.locator}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm tabular-nums">
                       {fmtDate(p.departureDate)}
                       {dDep >= 0 && dDep <= 30 && (
                         <p className={cn("text-[10px]", urgent ? "text-warning font-semibold" : "text-muted-foreground")}>
                           em {dDep}d
+                        </p>
+                      )}
+                      {p.supplierDeadline && p.paymentStatus !== "paid" && (
+                        <p className={cn(
+                          "text-[10px] font-semibold mt-0.5 inline-flex items-center gap-0.5",
+                          deadlineLate ? "text-destructive" : deadlineSoon ? "text-warning" : "text-muted-foreground"
+                        )}>
+                          {(deadlineLate || deadlineSoon) && <AlertCircle className="h-2.5 w-2.5" />}
+                          Pgto forn: {fmtDate(p.supplierDeadline)}
+                          {deadlineLate ? ` (atrasado ${Math.abs(dDeadline!)}d)` : deadlineSoon ? ` (${dDeadline}d)` : ""}
                         </p>
                       )}
                     </TableCell>
