@@ -503,9 +503,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   const updatePackage = async (p: TravelPackage) => {
     if (!user) return;
+    const previous = packages.find((x) => x.id === p.id);
     const { data, error } = await supabase.from("packages").update(packageToRow(p, user.id)).eq("id", p.id).select().single();
     if (error) throw error;
-    setPackages((prev) => prev.map((x) => (x.id === p.id ? mapPackage(data, getClientName(data.client_id)) : x)));
+    const mapped = mapPackage(data, getClientName(data.client_id));
+    setPackages((prev) => prev.map((x) => (x.id === p.id ? mapped : x)));
+
+    // ---- Automação: ao confirmar reserva, gera comissão (pendente) automaticamente ----
+    const becameConfirmed = previous?.reservationStatus !== "confirmed" && mapped.reservationStatus === "confirmed";
+    if (becameConfirmed && mapped.totalValue > 0 && mapped.commissionPercent > 0) {
+      const expected = (mapped.totalValue * mapped.commissionPercent) / 100;
+      const alreadyHasCommission = transactions.some(
+        (t) => t.packageId === mapped.id && t.category === "commission",
+      );
+      if (!alreadyHasCommission && expected > 0) {
+        try {
+          const commissionTx: Omit<Transaction, "id"> = {
+            type: "income",
+            description: `Comissão — ${mapped.destinationCity} (${mapped.clientName})`,
+            value: expected,
+            date: new Date().toISOString().slice(0, 10),
+            status: "pending",
+            category: "commission",
+            clientName: mapped.clientName,
+            clientId: mapped.clientId,
+            packageId: mapped.id,
+          };
+          const { data: txData, error: txErr } = await supabase
+            .from("transactions").insert(transactionToRow(commissionTx, user.id)).select().single();
+          if (!txErr && txData) {
+            setTransactions((prev) => [mapTransaction(txData, getClientName(txData.client_id)), ...prev]);
+          }
+        } catch (e) {
+          console.warn("Falha ao gerar comissão automática:", e);
+        }
+      }
+    }
   };
   const deletePackage = async (id: string) => {
     const { error } = await supabase.from("packages").delete().eq("id", id);
