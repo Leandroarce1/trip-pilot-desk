@@ -356,6 +356,7 @@ export type Database = {
           documents: Json | null
           history: Json | null
           id: string
+          locator: string | null
           name: string
           notes: string | null
           passengers: Json | null
@@ -364,6 +365,7 @@ export type Database = {
           reservation_status: Database["public"]["Enums"]["reservation_status"]
           return_date: string | null
           supplier: string | null
+          supplier_deadline: string | null
           supplier_id: string | null
           total_value: number | null
           trip_type: Database["public"]["Enums"]["trip_type"]
@@ -382,6 +384,7 @@ export type Database = {
           documents?: Json | null
           history?: Json | null
           id?: string
+          locator?: string | null
           name: string
           notes?: string | null
           passengers?: Json | null
@@ -390,6 +393,7 @@ export type Database = {
           reservation_status?: Database["public"]["Enums"]["reservation_status"]
           return_date?: string | null
           supplier?: string | null
+          supplier_deadline?: string | null
           supplier_id?: string | null
           total_value?: number | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
@@ -408,6 +412,7 @@ export type Database = {
           documents?: Json | null
           history?: Json | null
           id?: string
+          locator?: string | null
           name?: string
           notes?: string | null
           passengers?: Json | null
@@ -416,6 +421,7 @@ export type Database = {
           reservation_status?: Database["public"]["Enums"]["reservation_status"]
           return_date?: string | null
           supplier?: string | null
+          supplier_deadline?: string | null
           supplier_id?: string | null
           total_value?: number | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
