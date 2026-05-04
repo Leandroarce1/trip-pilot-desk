@@ -350,6 +350,8 @@ const Packages = () => {
         supplierId: form.supplierId || undefined,
         supplier: supplierName,
         confirmationCode: form.confirmationCode,
+        locator: form.locator,
+        supplierDeadline: form.supplierDeadline || undefined,
         totalValue,
         commissionPercent,
         passengers,
