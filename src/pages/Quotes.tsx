@@ -314,8 +314,8 @@ const Quotes = () => {
                 {items.length > 0 && (
                   <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Total</p>
-                      <p className="font-bold tabular-nums">R$ {itemsTotal.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">Itens + Aéreo</p>
+                      <p className="font-bold tabular-nums">R$ {effectiveValue.toLocaleString("pt-BR")}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
