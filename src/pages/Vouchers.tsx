@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Ticket, Trash2, Pencil, CheckCircle2, Clock, Building2, Bus, Camera, Hotel, MoreHorizontal } from "lucide-react";
+import { Plus, Ticket, Trash2, Pencil, CheckCircle2, Clock, Building2, Bus, Camera, Hotel, MoreHorizontal, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { generateVoucherPdf } from "@/lib/voucherPdf";
 
 const TYPE_META: Record<VoucherType, { label: string; icon: any; color: string }> = {
   hotel: { label: "Hotel", icon: Hotel, color: "bg-blue-500/10 text-blue-600" },
