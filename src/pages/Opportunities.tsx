@@ -202,7 +202,11 @@ export default function Opportunities() {
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
-              <Button onClick={handleSubmit} className="w-full">{editing ? "Salvar" : "Criar"}</Button>
+              <div className="flex gap-2 pt-2 border-t">
+                <Button variant="ghost" onClick={() => handleClose(false)}>Cancelar</Button>
+                <div className="flex-1" />
+                <Button onClick={handleSubmit}>{editing ? "Salvar e voltar" : "Criar"}</Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
