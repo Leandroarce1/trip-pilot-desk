@@ -165,6 +165,8 @@ const mapPackage = (r: any, clientName: string): TravelPackage => ({
   supplier: r.supplier ?? "",
   supplierId: r.supplier_id ?? undefined,
   confirmationCode: r.confirmation_code ?? undefined,
+  locator: r.locator ?? undefined,
+  supplierDeadline: r.supplier_deadline ?? undefined,
   totalValue: Number(r.total_value ?? 0),
   commissionPercent: Number(r.commission_percent ?? 0),
   passengers: (r.passengers ?? []) as Passenger[],
