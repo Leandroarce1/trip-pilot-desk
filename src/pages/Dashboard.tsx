@@ -339,7 +339,23 @@ const Dashboard = () => {
     return dep >= now && dep <= in48h;
   });
 
+  const supplierDeadlineAlerts = packages
+    .filter((p) => {
+      if (!p.supplierDeadline || p.paymentStatus === "paid" || p.reservationStatus === "cancelled") return false;
+      const d = Math.ceil((new Date(p.supplierDeadline).getTime() - Date.now()) / 86400000);
+      return d <= 7;
+    })
+    .sort((a, b) => (a.supplierDeadline! < b.supplierDeadline! ? -1 : 1));
+
   const importantAlerts = [
+    ...supplierDeadlineAlerts.slice(0, 3).map((p) => {
+      const d = Math.ceil((new Date(p.supplierDeadline!).getTime() - Date.now()) / 86400000);
+      return {
+        id: `sd-${p.id}`, kind: "payment" as const,
+        title: d < 0 ? `Pagamento ao fornecedor ATRASADO — ${p.clientName}` : `Pagamento ao fornecedor em ${d}d — ${p.clientName}`,
+        sub: `${p.supplier || "Fornecedor"} · ${p.destinationCity} · ${fmtCurrency(p.totalValue)} · vence ${fmtDate(p.supplierDeadline!)}`,
+      };
+    }),
     ...checkinAlerts.map((f) => ({
       id: `ck-${f.id}`, kind: "checkin" as const,
       title: `Check-in em até 48h — ${f.clientName}`,
