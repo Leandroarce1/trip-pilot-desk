@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X, ArrowLeft } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { Quote, ItineraryDay, QuoteItem, QuoteStatus } from "@/types/crm";
