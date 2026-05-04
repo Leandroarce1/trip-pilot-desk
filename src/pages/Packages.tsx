@@ -501,8 +501,16 @@ const Packages = () => {
                 )}
               </div>
               <div>
-                <Label className="label-caption">Localizador / confirmação</Label>
-                <Input className="mt-1.5 font-mono" value={form.confirmationCode} onChange={(e) => setForm({ ...form, confirmationCode: e.target.value })} placeholder="ABC123" />
+                <Label className="label-caption">Localizador / PNR *</Label>
+                <Input className="mt-1.5 font-mono" value={form.locator} onChange={(e) => setForm({ ...form, locator: e.target.value })} placeholder="ABC123" />
+              </div>
+              <div>
+                <Label className="label-caption">Código de confirmação</Label>
+                <Input className="mt-1.5 font-mono" value={form.confirmationCode} onChange={(e) => setForm({ ...form, confirmationCode: e.target.value })} placeholder="opcional" />
+              </div>
+              <div>
+                <Label className="label-caption">Prazo de pagamento ao fornecedor</Label>
+                <Input className="mt-1.5" type="date" value={form.supplierDeadline} onChange={(e) => setForm({ ...form, supplierDeadline: e.target.value })} />
               </div>
 
               <div>
