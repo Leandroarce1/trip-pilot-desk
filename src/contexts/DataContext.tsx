@@ -194,6 +194,8 @@ const packageToRow = (p: Partial<TravelPackage>, userId: string) => ({
   supplier: p.supplier ?? "",
   supplier_id: p.supplierId || null,
   confirmation_code: p.confirmationCode ?? null,
+  locator: p.locator ?? null,
+  supplier_deadline: p.supplierDeadline || null,
   total_value: p.totalValue ?? 0,
   commission_percent: p.commissionPercent ?? 0,
   passengers: (p.passengers ?? []) as any,
