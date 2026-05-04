@@ -754,11 +754,6 @@ const Packages = () => {
                         </p>
                       )}
                     </TableCell>
-                        <p className={cn("text-[10px]", urgent ? "text-warning font-semibold" : "text-muted-foreground")}>
-                          em {dDep}d
-                        </p>
-                      )}
-                    </TableCell>
                     <TableCell className="text-sm">{p.supplier || "—"}</TableCell>
                     <TableCell className="text-right text-sm font-semibold tabular-nums text-navy">
                       {fmtCurrency(p.totalValue)}
