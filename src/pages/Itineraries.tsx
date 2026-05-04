@@ -29,6 +29,26 @@ export default function Itineraries() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Itinerary | null>(null);
   const [form, setForm] = useState<Partial<Itinerary>>({ title: "", days: [emptyDay(1)] });
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const pkgId = searchParams.get("packageId");
+    const editId = searchParams.get("edit");
+    if (editId) {
+      const it = itineraries.find((x) => x.id === editId);
+      if (it) { setEditing(it); setForm({ ...it }); setOpen(true); }
+      searchParams.delete("edit");
+      setSearchParams(searchParams, { replace: true });
+    } else if (pkgId) {
+      const pkg = packages.find((p) => p.id === pkgId);
+      setEditing(null);
+      setForm({ title: pkg ? `Roteiro — ${pkg.name}` : "", packageId: pkgId, days: [emptyDay(1)] });
+      setOpen(true);
+      searchParams.delete("packageId");
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itineraries.length, packages.length]);
 
   const startCreate = () => {
     setEditing(null);
