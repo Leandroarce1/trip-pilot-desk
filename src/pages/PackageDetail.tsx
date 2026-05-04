@@ -320,30 +320,94 @@ const PackageDetail = () => {
         </CardContent>
       </Card>
 
-      {/* ---------- Itinerary (from quote) ---------- */}
-      {quote?.itinerary && quote.itinerary.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" />Itinerário</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {quote.itinerary.map((day) => (
-              <div key={day.day} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    {day.day}
-                  </div>
-                  <div className="flex-1 w-px bg-border mt-1" />
-                </div>
-                <div className="pb-4">
-                  <p className="text-sm font-semibold text-navy">{day.title}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{day.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* ---------- Itinerary (vinculado por package_id ou quote_id) ---------- */}
+      {(() => {
+        const linked = itineraries.find(
+          (it) => it.packageId === pkg.id || (pkg.quoteId && it.quoteId === pkg.quoteId),
+        );
+        const hasDetailed = linked && linked.days?.length > 0;
+        const hasSimple = !linked && quote?.itinerary && quote.itinerary.length > 0;
+
+        if (!hasDetailed && !hasSimple) {
+          return (
+            <Card>
+              <CardHeader className="pb-3 flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />Itinerário
+                </CardTitle>
+                <Button size="sm" variant="outline" onClick={() => navigate(`/itinerarios?packageId=${pkg.id}`)}>
+                  Criar itinerário
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Nenhum roteiro vinculado a esta reserva.
+                </p>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                {linked?.title || "Itinerário"}
+              </CardTitle>
+              {linked && (
+                <Button size="sm" variant="outline" onClick={() => navigate(`/itinerarios?edit=${linked.id}`)}>
+                  Editar roteiro
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {hasDetailed
+                ? linked!.days.map((day) => (
+                    <div key={day.day} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                          {day.day}
+                        </div>
+                        <div className="flex-1 w-px bg-border mt-1" />
+                      </div>
+                      <div className="pb-3 flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-navy">
+                          Dia {day.day}{day.title ? ` — ${day.title}` : ""}
+                          {day.date && <span className="ml-2 text-[11px] text-muted-foreground font-normal tabular-nums">{fmtDate(day.date)}</span>}
+                        </p>
+                        <div className="mt-1 space-y-1 text-sm">
+                          {day.periods?.morning && (
+                            <p><span className="text-[11px] uppercase tracking-wide text-amber-600 font-semibold mr-1.5">Manhã</span><span className="text-muted-foreground">{day.periods.morning}</span></p>
+                          )}
+                          {day.periods?.afternoon && (
+                            <p><span className="text-[11px] uppercase tracking-wide text-amber-600 font-semibold mr-1.5">Tarde</span><span className="text-muted-foreground">{day.periods.afternoon}</span></p>
+                          )}
+                          {day.periods?.evening && (
+                            <p><span className="text-[11px] uppercase tracking-wide text-amber-600 font-semibold mr-1.5">Noite</span><span className="text-muted-foreground">{day.periods.evening}</span></p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                : quote!.itinerary!.map((day) => (
+                    <div key={day.day} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                          {day.day}
+                        </div>
+                        <div className="flex-1 w-px bg-border mt-1" />
+                      </div>
+                      <div className="pb-4">
+                        <p className="text-sm font-semibold text-navy">{day.title}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{day.description}</p>
+                      </div>
+                    </div>
+                  ))}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* ---------- Flights ---------- */}
       <Card>
