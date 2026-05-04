@@ -23,6 +23,7 @@ const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", qu
 
 const Quotes = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { quotes, clients, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -31,6 +32,14 @@ const Quotes = () => {
   const [form, setForm] = useState(emptyForm);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
   const [items, setItems] = useState<QuoteItem[]>([]);
+  const [dirty, setDirty] = useState(false);
+  const initRef = useRef(false);
+  const fromParam = searchParams.get("from");
+  const editParam = searchParams.get("edit");
+
+  // Track dirty
+  useEffect(() => { if (open) setDirty(true); }, [form, itinerary, items]);
+  useEffect(() => { if (!open) setDirty(false); }, [open]);
 
   const filtered = quotes.filter((q) => {
     const matchSearch = q.clientName.toLowerCase().includes(search.toLowerCase()) || q.destination.toLowerCase().includes(search.toLowerCase());
