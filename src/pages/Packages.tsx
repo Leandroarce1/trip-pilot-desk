@@ -143,6 +143,8 @@ type FormState = {
   supplierId: string;
   supplier: string;
   confirmationCode: string;
+  locator: string;
+  supplierDeadline: string;
   totalValue: string;
   commissionPercent: string;
   passengersCount: string;
