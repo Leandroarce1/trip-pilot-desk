@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Search, Edit2, Trash2, Eye, MapPin, Calendar as CalendarIcon, CheckCircle2, Package as PackageIcon, X, ArrowLeft } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { Quote, ItineraryDay, QuoteItem, QuoteStatus } from "@/types/crm";
@@ -23,6 +23,7 @@ const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", qu
 
 const Quotes = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { quotes, clients, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -31,6 +32,14 @@ const Quotes = () => {
   const [form, setForm] = useState(emptyForm);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
   const [items, setItems] = useState<QuoteItem[]>([]);
+  const [dirty, setDirty] = useState(false);
+  const initRef = useRef(false);
+  const fromParam = searchParams.get("from");
+  const editParam = searchParams.get("edit");
+
+  // Track dirty
+  useEffect(() => { if (open) setDirty(true); }, [form, itinerary, items]);
+  useEffect(() => { if (!open) setDirty(false); }, [open]);
 
   const filtered = quotes.filter((q) => {
     const matchSearch = q.clientName.toLowerCase().includes(search.toLowerCase()) || q.destination.toLowerCase().includes(search.toLowerCase());
@@ -44,7 +53,7 @@ const Quotes = () => {
   const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
   const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
 
-  const handleSubmit = () => {
+  const handleSubmit = (opts?: { keepOpen?: boolean }) => {
     if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
     if (effectiveValue <= 0) { toast.error("Adicione itens ou informe um valor"); return; }
     const cleanItinerary = itinerary.filter((d) => d.title.trim() !== "");
@@ -68,11 +77,17 @@ const Quotes = () => {
       addQuote(payload);
       toast.success("Proposta criada!");
     }
+    setDirty(false);
+    if (opts?.keepOpen) return;
     setForm(emptyForm);
     setItinerary([]);
     setItems([]);
     setEditingQuote(null);
     setOpen(false);
+    if (fromParam) {
+      setSearchParams({});
+      navigate(`/${fromParam}`);
+    }
   };
 
   const openEdit = (q: Quote) => {
@@ -85,12 +100,34 @@ const Quotes = () => {
     setItinerary(q.itinerary || []);
     setItems(q.items || []);
     setOpen(true);
+    setTimeout(() => setDirty(false), 0);
+  };
+
+  const requestClose = () => {
+    if (dirty && !window.confirm("Você tem alterações não salvas. Deseja descartar?")) return;
+    setOpen(false);
+    setEditingQuote(null);
+    setForm(emptyForm);
+    setItinerary([]);
+    setItems([]);
+    setDirty(false);
+    if (fromParam) { setSearchParams({}); }
   };
 
   const handleClose = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); setItems([]); }
+    if (!isOpen) { requestClose(); return; }
+    setOpen(true);
   };
+
+  // Auto-open editor when arriving with ?edit=ID
+  useEffect(() => {
+    if (initRef.current) return;
+    if (editParam && quotes.length > 0) {
+      const q = quotes.find((x) => x.id === editParam);
+      if (q) { openEdit(q); initRef.current = true; }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editParam, quotes]);
 
   const addItem = () => setItems((prev) => [...prev, newItem()]);
   const updateItem = (id: string, patch: Partial<QuoteItem>) =>
@@ -163,6 +200,11 @@ const Quotes = () => {
 
   return (
     <div className="space-y-6">
+      {fromParam && (
+        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2" onClick={() => { setSearchParams({}); navigate(`/${fromParam}`); }}>
+          <ArrowLeft className="h-4 w-4" /> Voltar para {fromParam === "oportunidades" ? "Oportunidades" : fromParam}
+        </Button>
+      )}
       <SalesJourney current="proposal" completed={["lead", "opportunity"]} />
 
       {nextToApprove && (
@@ -297,7 +339,12 @@ const Quotes = () => {
                 </Button>
               </TabsContent>
             </Tabs>
-            <Button onClick={handleSubmit} className="w-full mt-4">{editingQuote ? "Salvar" : "Criar Proposta"}</Button>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+              <Button variant="ghost" className="sm:w-auto" onClick={requestClose}>Cancelar</Button>
+              <div className="flex-1" />
+              <Button variant="outline" onClick={() => handleSubmit({ keepOpen: true })}>Salvar</Button>
+              <Button onClick={() => handleSubmit()}>{editingQuote ? "Salvar e voltar" : "Criar e voltar"}</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

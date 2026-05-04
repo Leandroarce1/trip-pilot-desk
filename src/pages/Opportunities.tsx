@@ -113,13 +113,12 @@ export default function Opportunities() {
         status: "draft",
         opportunityId: o.id,
       });
-      // Avança oportunidade para "proposal"
       if (o.stage !== "proposal" && o.stage !== "closed_won") {
         await updateOpportunity({ ...o, stage: "proposal" });
       }
-      toast.success("Proposta criada como rascunho", {
-        action: { label: "Ver propostas", onClick: () => navigate("/cotacoes") },
-      });
+      toast.success("Proposta criada. Você está editando o rascunho agora.");
+      const id = (quote as any)?.id;
+      navigate(`/cotacoes?edit=${id ?? ""}&from=oportunidades`);
     } catch {
       toast.error("Erro ao criar proposta");
     }
@@ -203,7 +202,11 @@ export default function Opportunities() {
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
-              <Button onClick={handleSubmit} className="w-full">{editing ? "Salvar" : "Criar"}</Button>
+              <div className="flex gap-2 pt-2 border-t">
+                <Button variant="ghost" onClick={() => handleClose(false)}>Cancelar</Button>
+                <div className="flex-1" />
+                <Button onClick={handleSubmit}>{editing ? "Salvar e voltar" : "Criar"}</Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
