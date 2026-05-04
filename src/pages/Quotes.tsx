@@ -53,7 +53,7 @@ const Quotes = () => {
   const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
   const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
 
-  const handleSubmit = () => {
+  const handleSubmit = (opts?: { keepOpen?: boolean }) => {
     if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
     if (effectiveValue <= 0) { toast.error("Adicione itens ou informe um valor"); return; }
     const cleanItinerary = itinerary.filter((d) => d.title.trim() !== "");
@@ -77,11 +77,17 @@ const Quotes = () => {
       addQuote(payload);
       toast.success("Proposta criada!");
     }
+    setDirty(false);
+    if (opts?.keepOpen) return;
     setForm(emptyForm);
     setItinerary([]);
     setItems([]);
     setEditingQuote(null);
     setOpen(false);
+    if (fromParam) {
+      setSearchParams({});
+      navigate(`/${fromParam}`);
+    }
   };
 
   const openEdit = (q: Quote) => {
@@ -94,12 +100,34 @@ const Quotes = () => {
     setItinerary(q.itinerary || []);
     setItems(q.items || []);
     setOpen(true);
+    setTimeout(() => setDirty(false), 0);
+  };
+
+  const requestClose = () => {
+    if (dirty && !window.confirm("Você tem alterações não salvas. Deseja descartar?")) return;
+    setOpen(false);
+    setEditingQuote(null);
+    setForm(emptyForm);
+    setItinerary([]);
+    setItems([]);
+    setDirty(false);
+    if (fromParam) { setSearchParams({}); }
   };
 
   const handleClose = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) { setEditingQuote(null); setForm(emptyForm); setItinerary([]); setItems([]); }
+    if (!isOpen) { requestClose(); return; }
+    setOpen(true);
   };
+
+  // Auto-open editor when arriving with ?edit=ID
+  useEffect(() => {
+    if (initRef.current) return;
+    if (editParam && quotes.length > 0) {
+      const q = quotes.find((x) => x.id === editParam);
+      if (q) { openEdit(q); initRef.current = true; }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editParam, quotes]);
 
   const addItem = () => setItems((prev) => [...prev, newItem()]);
   const updateItem = (id: string, patch: Partial<QuoteItem>) =>
