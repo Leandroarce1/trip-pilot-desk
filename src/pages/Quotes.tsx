@@ -50,8 +50,9 @@ const Quotes = () => {
   // Cálculos automáticos a partir dos itens
   const itemsTotal = items.reduce((acc, it) => acc + it.quantity * it.unitValue, 0);
   const itemsCost = items.reduce((acc, it) => acc + it.quantity * (it.cost ?? 0), 0);
-  const computedMargin = itemsTotal > 0 ? ((itemsTotal - itemsCost) / itemsTotal) * 100 : Number(form.marginPercent) || 0;
-  const effectiveValue = items.length > 0 ? itemsTotal : Number(form.value) || 0;
+  const airfareValue = Number(form.value) || 0;
+  const effectiveValue = itemsTotal + airfareValue;
+  const computedMargin = effectiveValue > 0 ? ((effectiveValue - itemsCost) / effectiveValue) * 100 : Number(form.marginPercent) || 0;
 
   const handleSubmit = (opts?: { keepOpen?: boolean }) => {
     if (!form.clientId || !form.destination) { toast.error("Preencha cliente e destino"); return; }
