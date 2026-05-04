@@ -174,6 +174,8 @@ export interface TravelPackage {
   supplier: string;
   supplierId?: string;
   confirmationCode?: string;
+  locator?: string;
+  supplierDeadline?: string;
   totalValue: number;
   commissionPercent: number;
   passengers: Passenger[];
