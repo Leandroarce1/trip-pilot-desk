@@ -730,10 +730,30 @@ const Packages = () => {
                       <p className="text-[10.5px] text-muted-foreground tabular-nums">
                         {fmtDate(p.departureDate)} → {fmtDate(p.returnDate)}
                       </p>
+                      {p.locator && (
+                        <p className="text-[10.5px] font-mono text-primary mt-0.5">
+                          PNR: {p.locator}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm tabular-nums">
                       {fmtDate(p.departureDate)}
                       {dDep >= 0 && dDep <= 30 && (
+                        <p className={cn("text-[10px]", urgent ? "text-warning font-semibold" : "text-muted-foreground")}>
+                          em {dDep}d
+                        </p>
+                      )}
+                      {p.supplierDeadline && p.paymentStatus !== "paid" && (
+                        <p className={cn(
+                          "text-[10px] font-semibold mt-0.5 inline-flex items-center gap-0.5",
+                          deadlineLate ? "text-destructive" : deadlineSoon ? "text-warning" : "text-muted-foreground"
+                        )}>
+                          {(deadlineLate || deadlineSoon) && <AlertCircle className="h-2.5 w-2.5" />}
+                          Pgto forn: {fmtDate(p.supplierDeadline)}
+                          {deadlineLate ? ` (atrasado ${Math.abs(dDeadline!)}d)` : deadlineSoon ? ` (${dDeadline}d)` : ""}
+                        </p>
+                      )}
+                    </TableCell>
                         <p className={cn("text-[10px]", urgent ? "text-warning font-semibold" : "text-muted-foreground")}>
                           em {dDep}d
                         </p>
