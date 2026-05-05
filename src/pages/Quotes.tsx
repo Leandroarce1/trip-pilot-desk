@@ -424,16 +424,19 @@ const Quotes = () => {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar reserva
                 </Button>
               )}
-              {q.status === "approved" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full gap-1.5"
-                  onClick={() => navigate("/pacotes")}
-                >
-                  <PackageIcon className="h-3.5 w-3.5" /> Ver reservas geradas
-                </Button>
-              )}
+              {q.status === "approved" && (() => {
+                const linkedPkg = packages.find((p) => p.quoteId === q.id);
+                return (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5"
+                    onClick={() => linkedPkg ? navigate(`/pacotes/${linkedPkg.id}`) : navigate(`/pacotes?clientId=${q.clientId}`)}
+                  >
+                    <PackageIcon className="h-3.5 w-3.5" /> {linkedPkg ? "Ver reserva gerada" : "Ver reservas do cliente"}
+                  </Button>
+                );
+              })()}
             </div>
           </div>
         ))}
