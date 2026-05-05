@@ -5,7 +5,7 @@ import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
   TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
   Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
-  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher,
+  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher, Traveler,
 } from "@/types/crm";
 
 // ---------- Mappers (snake_case <-> camelCase) ----------
