@@ -833,8 +833,6 @@ const Dashboard = () => {
           </PanelCard>
         </div>
       </section>
-        );
-      })()}
 
       {/* 2) KPIs — contexto secundário */}
       <section>
