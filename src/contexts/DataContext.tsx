@@ -748,11 +748,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => [mapNotification(data), ...prev]);
   };
 
+  // ---------- CRUD: Travelers ----------
+  const addTraveler = async (t: Omit<Traveler, "id" | "createdAt">): Promise<Traveler | void> => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).from("travelers").insert(travelerToRow(t, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapTraveler(data);
+    setTravelers((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateTraveler = async (t: Traveler) => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
+    if (error) throw error;
+    setTravelers((prev) => prev.map((x) => (x.id === t.id ? mapTraveler(data) : x)));
+  };
+  const deleteTraveler = async (id: string) => {
+    const { error } = await (supabase as any).from("travelers").delete().eq("id", id);
+    if (error) throw error;
+    setTravelers((prev) => prev.filter((x) => x.id !== id));
+  };
+
   return (
     <DataContext.Provider value={{
       loading,
       clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
-      itineraries, vouchers,
+      itineraries, vouchers, travelers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
@@ -762,6 +783,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addOpportunity, updateOpportunity, deleteOpportunity,
       addItinerary, updateItinerary, deleteItinerary,
       addVoucher, updateVoucher, deleteVoucher,
+      addTraveler, updateTraveler, deleteTraveler,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>
