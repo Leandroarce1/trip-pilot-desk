@@ -351,7 +351,6 @@ const Financial = () => {
 
   const filterClient = clients.find((c) => c.id === clientFilter);
   const filterPackage = packages.find((p) => p.id === packageFilter);
-  const hasContextFilter = !!(clientFilter || packageFilter);
 
   return (
     <div className="space-y-6">
