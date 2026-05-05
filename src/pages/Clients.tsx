@@ -56,7 +56,7 @@ const Clients = () => {
       } as any);
 
       const hasTravel = !!(form.destination || form.travelDate || form.budget);
-      if (hasTravel && form.status === "lead" && created?.id) {
+      if (hasTravel && form.status === "lead" && created && (created as any).id) {
         await addOpportunity({
           clientId: created.id,
           title: `Oportunidade — ${form.name}`,
