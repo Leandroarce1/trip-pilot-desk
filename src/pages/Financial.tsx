@@ -495,12 +495,31 @@ const Financial = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <StatCard title="Receitas (mês)" value={brl(monthIncome)} icon={TrendingUp} variant="success" />
         <StatCard title="Despesas (mês)" value={brl(monthExpense)} icon={TrendingDown} variant="warning" />
-        <StatCard title="Lucro (mês)" value={brl(monthProfit)} icon={DollarSign} variant={monthProfit >= 0 ? "info" : "default"} />
+        <StatCard
+          title="Comissões do mês"
+          value={brl(monthCommissions.total)}
+          icon={Percent}
+          variant="info"
+          description={`Pago ${brl(monthCommissions.paid)} · Pend ${brl(monthCommissions.pending)}`}
+        />
+        <StatCard
+          title="Lucro estimado (mês)"
+          value={brl(profitEstimated)}
+          icon={DollarSign}
+          variant={profitEstimated >= 0 ? "info" : "default"}
+          description="Comissões totais − despesas"
+        />
+        <StatCard
+          title="Lucro realizado (mês)"
+          value={brl(profitRealized)}
+          icon={DollarSign}
+          variant={profitRealized >= 0 ? "success" : "default"}
+          description="Comissões pagas − despesas pagas"
+        />
         <StatCard title="A receber atrasado" value={brl(overdueValue)} icon={AlertCircle} variant={overdueValue > 0 ? "warning" : "default"} />
-        <StatCard title="Comissões pendentes" value={brl(commissionPending)} icon={Percent} variant="info" />
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
