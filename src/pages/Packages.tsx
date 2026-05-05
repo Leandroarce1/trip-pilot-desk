@@ -292,6 +292,23 @@ const Packages = () => {
     setOpen(true);
   };
 
+  // Auto-abrir edição quando chega via ?edit=ID
+  useEffect(() => {
+    if (autoOpenRef.current) return;
+    const editId = searchParams.get("edit");
+    if (editId && packages.length > 0) {
+      const p = packages.find((x) => x.id === editId);
+      if (p) {
+        openEdit(p);
+        autoOpenRef.current = true;
+        const sp = new URLSearchParams(searchParams);
+        sp.delete("edit");
+        setSearchParams(sp, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, packages]);
+
   const handleSubmit = async () => {
     if (!form.clientId || !form.destinationCity || !form.departureDate || !form.returnDate) {
       toast.error("Preencha cliente, destino e datas");
