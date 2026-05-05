@@ -35,11 +35,19 @@ const BookingPage = () => {
   const remaining = quote.value - totalPaid;
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR")}`;
 
+  const items = quote.items ?? [];
+  const itemsTotal = items.reduce((s, it) => s + it.quantity * it.unitValue, 0);
+  const airfareValue = Math.max(0, quote.value - itemsTotal);
+  const itemsCommission = items.reduce((s, it) => s + (it.quantity * it.unitValue) * ((it.commissionPercent ?? 0) / 100), 0);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card">
         <div className="max-w-3xl mx-auto p-6">
+          <Button variant="ghost" size="sm" className="-ml-2 mb-2 gap-1.5" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" /> Voltar
+          </Button>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Proposta de Viagem</p>
           <h1 className="text-2xl font-bold">{quote.destination}</h1>
           <p className="text-sm text-muted-foreground mt-1">Preparada para {quote.clientName}</p>
