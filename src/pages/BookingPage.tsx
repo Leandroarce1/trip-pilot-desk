@@ -1,9 +1,15 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { MapPin, Calendar, DollarSign, CheckCircle, Clock, Plane } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Calendar, DollarSign, CheckCircle, Clock, Plane, ArrowLeft, Package as PackageIcon } from "lucide-react";
 import { fmtDate } from "@/lib/format";
+
+const CATEGORY_LABEL: Record<string, string> = {
+  flight: "✈️ Aéreo", hotel: "🏨 Hotel", transfer: "🚐 Translado",
+  tour: "🗺️ Passeio", insurance: "🛡️ Seguro", other: "📦 Outro",
+};
 
 const BookingPage = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
