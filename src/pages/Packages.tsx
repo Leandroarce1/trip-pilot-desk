@@ -177,6 +177,12 @@ const emptyForm: FormState = {
   passengersCount: "1",
   notes: "",
   reservationStatus: "quoting",
+  flightAirline: "",
+  flightNumber: "",
+  flightOrigin: "",
+  flightDestination: "",
+  flightDate: "",
+  flightTime: "",
 };
 
 const Packages = () => {
