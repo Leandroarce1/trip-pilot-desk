@@ -117,8 +117,8 @@ export default function Opportunities() {
       const quote = await addQuote({
         clientId: o.clientId,
         destination: o.destination || o.title,
-        startDate: "",
-        endDate: "",
+        startDate: o.expectedCloseDate ?? "",
+        endDate: o.returnDate ?? "",
         value: o.estimatedValue,
         description: o.notes,
         status: "draft",
