@@ -547,6 +547,44 @@ const Dashboard = () => {
     return { pkg: p, days, checkinReady, voucherReady, docsReady };
   });
 
+  // ----- Agenda da Agência (próximos 7 dias) -----
+  const in7dStr = in7d.toISOString().slice(0, 10);
+  const todayStr = now.toISOString().slice(0, 10);
+
+  const birthdaysSoon = clients
+    .filter((c) => c.profile?.birthDate)
+    .map((c) => {
+      const bd = c.profile!.birthDate!;
+      const [, m, d] = bd.split("-");
+      const thisYear = new Date(`${now.getFullYear()}-${m}-${d}`);
+      if (thisYear < now) thisYear.setFullYear(now.getFullYear() + 1);
+      const days = Math.ceil((thisYear.getTime() - now.getTime()) / 86400000);
+      return { client: c, date: thisYear.toISOString().slice(0, 10), days };
+    })
+    .filter((x) => x.days <= 7 && x.days >= 0)
+    .sort((a, b) => a.days - b.days)
+    .slice(0, 5);
+
+  const payablesDue = transactions
+    .filter((t) => t.type === "expense" && t.status === "pending" && t.date <= in7dStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  const receivablesDue = transactions
+    .filter((t) => t.type === "income" && t.status === "pending" && t.date <= in7dStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  const flightsSoon = flights
+    .filter((f) => f.departureDate >= todayStr && f.departureDate <= in7dStr)
+    .sort((a, b) => a.departureDate.localeCompare(b.departureDate))
+    .slice(0, 5);
+
+  const tripsSoon = packages
+    .filter((p) => p.reservationStatus !== "cancelled" && p.departureDate >= todayStr && p.departureDate <= in7dStr)
+    .sort((a, b) => a.departureDate.localeCompare(b.departureDate))
+    .slice(0, 5);
+
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
     { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
