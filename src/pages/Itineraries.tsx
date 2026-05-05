@@ -13,6 +13,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Map, Trash2, Link2, Copy, Pencil } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
 
 const slugify = (s: string) =>
