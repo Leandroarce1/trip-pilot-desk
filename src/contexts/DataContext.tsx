@@ -314,7 +314,7 @@ interface DataContextType {
   opportunities: Opportunity[];
   itineraries: Itinerary[];
   vouchers: Voucher[];
-  addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<void>;
+  addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<Client | void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
   addQuote: (q: Omit<Quote, "id" | "createdAt" | "clientName">) => Promise<Quote | void>;
