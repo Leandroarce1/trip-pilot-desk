@@ -10,6 +10,7 @@ import {
   paymentTermLabels, emptySupplierForm, SupplierFormState,
 } from "@/lib/suppliers";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/BackButton";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
