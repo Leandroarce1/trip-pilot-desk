@@ -271,6 +271,7 @@ const ClientDetail = () => {
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
           <TabsTrigger value="profile">Perfil viajante</TabsTrigger>
+          <TabsTrigger value="travelers">Viajantes ({clientTravelers.length})</TabsTrigger>
           <TabsTrigger value="preferences">Preferências</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
