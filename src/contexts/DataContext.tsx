@@ -5,7 +5,7 @@ import {
   Client, Quote, Flight, Transaction, TravelPackage, Notification, Supplier,
   TravelerProfile, TravelPreferences, ClientDocument, MilesAccount,
   Passenger, ReservationDocument, ReservationHistoryEntry, ItineraryDay,
-  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher,
+  Opportunity, QuoteItem, Itinerary, ItineraryDayDetailed, Voucher, Traveler,
 } from "@/types/crm";
 
 // ---------- Mappers (snake_case <-> camelCase) ----------
@@ -80,6 +80,9 @@ const mapOpportunity = (r: any, clientName: string): Opportunity => ({
   estimatedValue: Number(r.estimated_value ?? 0),
   probability: Number(r.probability ?? 50),
   expectedCloseDate: r.expected_close_date ?? undefined,
+  returnDate: r.return_date ?? undefined,
+  travelersCount: r.travelers_count ?? undefined,
+  leadSource: r.lead_source ?? undefined,
   stage: r.stage,
   position: Number(r.position ?? 0),
   notes: r.notes ?? "",
@@ -94,9 +97,42 @@ const opportunityToRow = (o: Partial<Opportunity>, userId: string) => ({
   estimated_value: o.estimatedValue ?? 0,
   probability: o.probability ?? 50,
   expected_close_date: o.expectedCloseDate || null,
+  return_date: o.returnDate || null,
+  travelers_count: o.travelersCount ?? 1,
+  lead_source: o.leadSource ?? "",
   stage: o.stage ?? "new",
   position: o.position ?? 0,
   notes: o.notes ?? "",
+});
+
+// ---------- Travelers mappers ----------
+const mapTraveler = (r: any): Traveler => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  name: r.name ?? "",
+  document: r.document ?? "",
+  birthDate: r.birth_date ?? undefined,
+  passportNumber: r.passport_number ?? "",
+  passportExpiry: r.passport_expiry ?? undefined,
+  passportCountry: r.passport_country ?? "",
+  nationality: r.nationality ?? "",
+  relation: r.relation ?? "",
+  notes: r.notes ?? "",
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const travelerToRow = (t: Partial<Traveler>, userId: string) => ({
+  user_id: userId,
+  client_id: t.clientId!,
+  name: t.name!,
+  document: t.document ?? "",
+  birth_date: t.birthDate || null,
+  passport_number: t.passportNumber ?? "",
+  passport_expiry: t.passportExpiry || null,
+  passport_country: t.passportCountry ?? "",
+  nationality: t.nationality ?? "",
+  relation: t.relation ?? "",
+  notes: t.notes ?? "",
 });
 
 const mapFlight = (r: any, clientName: string): Flight => ({
@@ -314,6 +350,7 @@ interface DataContextType {
   opportunities: Opportunity[];
   itineraries: Itinerary[];
   vouchers: Voucher[];
+  travelers: Traveler[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<Client | void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -341,6 +378,9 @@ interface DataContextType {
   addVoucher: (v: Omit<Voucher, "id" | "createdAt">) => Promise<Voucher | void>;
   updateVoucher: (v: Voucher) => Promise<void>;
   deleteVoucher: (id: string) => Promise<void>;
+  addTraveler: (t: Omit<Traveler, "id" | "createdAt">) => Promise<Traveler | void>;
+  updateTraveler: (t: Traveler) => Promise<void>;
+  deleteTraveler: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
@@ -362,6 +402,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [travelers, setTravelers] = useState<Traveler[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
@@ -373,7 +414,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
       setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
-      setItineraries([]); setVouchers([]);
+      setItineraries([]); setVouchers([]); setTravelers([]);
       setLoading(false);
       return;
     }
@@ -382,7 +423,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
       transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
-      itinerariesRes, vouchersRes,
+      itinerariesRes, vouchersRes, travelersRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -394,6 +435,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
       supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
       supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
+      (supabase as any).from("travelers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -409,6 +451,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
     setItineraries((itinerariesRes.data ?? []).map(mapItinerary));
     setVouchers((vouchersRes.data ?? []).map(mapVoucher));
+    setTravelers(((travelersRes as any).data ?? []).map(mapTraveler));
     setLoading(false);
   }, [user]);
 
@@ -705,11 +748,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => [mapNotification(data), ...prev]);
   };
 
+  // ---------- CRUD: Travelers ----------
+  const addTraveler = async (t: Omit<Traveler, "id" | "createdAt">): Promise<Traveler | void> => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).from("travelers").insert(travelerToRow(t, user.id)).select().single();
+    if (error) throw error;
+    const mapped = mapTraveler(data);
+    setTravelers((prev) => [mapped, ...prev]);
+    return mapped;
+  };
+  const updateTraveler = async (t: Traveler) => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
+    if (error) throw error;
+    setTravelers((prev) => prev.map((x) => (x.id === t.id ? mapTraveler(data) : x)));
+  };
+  const deleteTraveler = async (id: string) => {
+    const { error } = await (supabase as any).from("travelers").delete().eq("id", id);
+    if (error) throw error;
+    setTravelers((prev) => prev.filter((x) => x.id !== id));
+  };
+
   return (
     <DataContext.Provider value={{
       loading,
       clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
-      itineraries, vouchers,
+      itineraries, vouchers, travelers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
       addFlight, updateFlight, deleteFlight,
@@ -719,6 +783,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addOpportunity, updateOpportunity, deleteOpportunity,
       addItinerary, updateItinerary, deleteItinerary,
       addVoucher, updateVoucher, deleteVoucher,
+      addTraveler, updateTraveler, deleteTraveler,
       markNotificationRead, addNotification,
       getClientName, refresh: loadAll,
     }}>

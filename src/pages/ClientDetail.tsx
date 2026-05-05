@@ -2,14 +2,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, Phone, Mail, FileText, Plane, DollarSign, Edit2, Trash2,
-  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2,
+  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2, Users,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Client, ClientDocument, ClientDocType, FlightClass, Gender, OriginChannel,
-  SeatPreference, TravelStyle,
+  SeatPreference, TravelStyle, Traveler,
 } from "@/types/crm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +77,8 @@ const docExpiryStatus = (expiresAt?: string) => {
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { clients, packages, transactions, updateClient, deleteClient } = useData();
+  const { clients, packages, transactions, updateClient, deleteClient,
+    travelers, addTraveler, updateTraveler, deleteTraveler } = useData();
   const client = clients.find((c) => c.id === id);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -86,6 +87,20 @@ const ClientDetail = () => {
   const [newDoc, setNewDoc] = useState<ClientDocument>({
     id: "", type: "passport", number: "", issuingCountry: "Brasil", issueDate: "", expiryDate: "",
   });
+
+  // Viajantes
+  const [travelerOpen, setTravelerOpen] = useState(false);
+  const emptyTraveler: Partial<Traveler> = {
+    name: "", document: "", birthDate: "", passportNumber: "", passportExpiry: "",
+    passportCountry: "Brasil", nationality: "Brasileira", relation: "", notes: "",
+  };
+  const [travelerForm, setTravelerForm] = useState<Partial<Traveler>>(emptyTraveler);
+  const [editingTravelerId, setEditingTravelerId] = useState<string | null>(null);
+
+  const clientTravelers = useMemo(
+    () => travelers.filter((t) => t.clientId === id),
+    [travelers, id],
+  );
 
   const clientPackages = useMemo(
     () => (client ? [...packages].filter((p) => p.clientId === client.id) : []),
@@ -139,6 +154,37 @@ const ClientDetail = () => {
   const removeDocument = (docId: string) => {
     updateClient({ ...client, documents: (client.documents || []).filter((d) => d.id !== docId) });
     toast.success("Documento removido");
+  };
+
+  // ----- Viajantes -----
+  const openNewTraveler = () => {
+    setEditingTravelerId(null);
+    setTravelerForm(emptyTraveler);
+    setTravelerOpen(true);
+  };
+  const openEditTraveler = (t: Traveler) => {
+    setEditingTravelerId(t.id);
+    setTravelerForm({ ...t });
+    setTravelerOpen(true);
+  };
+  const saveTraveler = async () => {
+    if (!travelerForm.name?.trim()) { toast.error("Nome do viajante é obrigatório"); return; }
+    try {
+      if (editingTravelerId) {
+        await updateTraveler({ ...(travelerForm as Traveler), id: editingTravelerId, clientId: client.id });
+        toast.success("Viajante atualizado");
+      } else {
+        await addTraveler({ ...(travelerForm as any), clientId: client.id });
+        toast.success("Viajante adicionado");
+      }
+      setTravelerOpen(false);
+    } catch {
+      toast.error("Erro ao salvar viajante");
+    }
+  };
+  const removeTraveler = async (tid: string) => {
+    await deleteTraveler(tid);
+    toast.success("Viajante removido");
   };
 
   return (
@@ -225,6 +271,7 @@ const ClientDetail = () => {
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
           <TabsTrigger value="profile">Perfil viajante</TabsTrigger>
+          <TabsTrigger value="travelers">Viajantes ({clientTravelers.length})</TabsTrigger>
           <TabsTrigger value="preferences">Preferências</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -305,6 +352,87 @@ const ClientDetail = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ---------- Travelers ---------- */}
+        <TabsContent value="travelers">
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Viajantes vinculados ({clientTravelers.length})
+              </CardTitle>
+              <Button size="sm" onClick={openNewTraveler}><Plus className="h-3.5 w-3.5" />Adicionar viajante</Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Cadastre todos os passageiros que viajarão com {client.name}. Esses dados serão reaproveitados automaticamente nas propostas e reservas.
+              </p>
+              {clientTravelers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum viajante adicional cadastrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clientTravelers.map((t) => {
+                    const passportSt = docExpiryStatus(t.passportExpiry);
+                    return (
+                      <div key={t.id} className="flex items-center justify-between rounded-lg border p-3 gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-navy">{t.name}</p>
+                            {t.relation && <span className="text-[11px] text-muted-foreground">· {t.relation}</span>}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground tabular-nums">
+                            {t.document && <>CPF {t.document} · </>}
+                            {t.birthDate && <>Nasc. {fmtDate(t.birthDate)} · </>}
+                            {t.passportNumber && <>Passaporte {t.passportNumber}</>}
+                            {t.passportExpiry && <> · vence {fmtDate(t.passportExpiry)}</>}
+                          </p>
+                        </div>
+                        {t.passportExpiry && (
+                          <span className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em]",
+                            passportSt.tone === "danger" && "bg-error-soft text-error-soft-foreground",
+                            passportSt.tone === "warning" && "bg-warning-soft text-warning-soft-foreground",
+                            passportSt.tone === "ok" && "bg-success-soft text-success-soft-foreground",
+                            passportSt.tone === "muted" && "bg-muted text-muted-foreground",
+                          )}>{passportSt.label}</span>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => openEditTraveler(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => removeTraveler(t.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Dialog open={travelerOpen} onOpenChange={setTravelerOpen}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{editingTravelerId ? "Editar viajante" : "Novo viajante"}</DialogTitle></DialogHeader>
+              <div className="grid gap-3 sm:grid-cols-2 pt-2">
+                <div className="sm:col-span-2"><Label className="label-caption">Nome completo *</Label>
+                  <Input className="mt-1.5" value={travelerForm.name || ""} onChange={(e) => setTravelerForm({ ...travelerForm, name: e.target.value })} /></div>
+                <div><Label className="label-caption">Relação</Label>
+                  <Input className="mt-1.5" placeholder="Esposo(a), filho(a)..." value={travelerForm.relation || ""} onChange={(e) => setTravelerForm({ ...travelerForm, relation: e.target.value })} /></div>
+                <div><Label className="label-caption">Nacionalidade</Label>
+                  <Input className="mt-1.5" value={travelerForm.nationality || ""} onChange={(e) => setTravelerForm({ ...travelerForm, nationality: e.target.value })} /></div>
+                <div><Label className="label-caption">CPF</Label>
+                  <Input className="mt-1.5 font-mono" placeholder="000.000.000-00" value={travelerForm.document || ""} onChange={(e) => setTravelerForm({ ...travelerForm, document: maskCPF(e.target.value) })} /></div>
+                <div><Label className="label-caption">Data de nascimento</Label>
+                  <Input type="date" className="mt-1.5" value={travelerForm.birthDate || ""} onChange={(e) => setTravelerForm({ ...travelerForm, birthDate: e.target.value })} /></div>
+                <div><Label className="label-caption">Nº passaporte</Label>
+                  <Input className="mt-1.5 font-mono" value={travelerForm.passportNumber || ""} onChange={(e) => setTravelerForm({ ...travelerForm, passportNumber: e.target.value })} /></div>
+                <div><Label className="label-caption">Validade passaporte</Label>
+                  <Input type="date" className="mt-1.5" value={travelerForm.passportExpiry || ""} onChange={(e) => setTravelerForm({ ...travelerForm, passportExpiry: e.target.value })} /></div>
+                <div className="sm:col-span-2"><Label className="label-caption">País emissor</Label>
+                  <Input className="mt-1.5" value={travelerForm.passportCountry || ""} onChange={(e) => setTravelerForm({ ...travelerForm, passportCountry: e.target.value })} /></div>
+                <div className="sm:col-span-2"><Label className="label-caption">Observações</Label>
+                  <Textarea className="mt-1.5" rows={2} value={travelerForm.notes || ""} onChange={(e) => setTravelerForm({ ...travelerForm, notes: e.target.value })} /></div>
+              </div>
+              <Button onClick={saveTraveler} className="mt-2">{editingTravelerId ? "Salvar alterações" : "Adicionar viajante"}</Button>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* ---------- Preferences ---------- */}
