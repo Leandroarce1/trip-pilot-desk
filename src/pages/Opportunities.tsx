@@ -33,8 +33,11 @@ const STAGE_TONES: Record<OpportunityStage, string> = {
 
 const emptyForm = {
   clientId: "", title: "", destination: "", estimatedValue: "",
-  probability: "50", expectedCloseDate: "", notes: "", stage: "new" as OpportunityStage,
+  probability: "50", expectedCloseDate: "", returnDate: "", travelersCount: "1",
+  leadSource: "", notes: "", stage: "new" as OpportunityStage,
 };
+
+const LEAD_SOURCES = ["Indicação", "Instagram", "Site", "WhatsApp", "Google", "Cliente recorrente", "Outro"];
 
 export default function Opportunities() {
   const navigate = useNavigate();
