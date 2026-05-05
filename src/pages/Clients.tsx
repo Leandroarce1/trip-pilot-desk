@@ -175,6 +175,15 @@ const Clients = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">Interesse de viagem (opcional)</p>
+                <p className="text-[11px] text-muted-foreground -mt-2">Se preenchido, gera automaticamente uma oportunidade no pipeline.</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div><Label className="text-xs">Destino</Label><Input placeholder="Ex: Cancún" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} /></div>
+                  <div><Label className="text-xs">Data prevista</Label><Input type="date" value={form.travelDate} onChange={(e) => setForm({ ...form, travelDate: e.target.value })} /></div>
+                  <div><Label className="text-xs">Orçamento (R$)</Label><Input type="number" placeholder="15000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></div>
+                </div>
+              </div>
               <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
               <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
             </div>
