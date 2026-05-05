@@ -24,7 +24,7 @@ const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", qu
 const Quotes = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { quotes, clients, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
+  const { quotes, clients, packages, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
