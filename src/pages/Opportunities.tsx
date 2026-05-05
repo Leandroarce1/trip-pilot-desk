@@ -195,20 +195,39 @@ export default function Opportunities() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Fechamento previsto</Label>
+                  <Label>Data ida (prevista)</Label>
                   <Input type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Etapa</Label>
-                  <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v as OpportunityStage })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Label>Data volta</Label>
+                  <Input type="date" value={form.returnDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Nº viajantes</Label>
+                  <Input type="number" min="1" value={form.travelersCount} onChange={(e) => setForm({ ...form, travelersCount: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Origem do contato</Label>
+                  <Select value={form.leadSource} onValueChange={(v) => setForm({ ...form, leadSource: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(STAGE_LABELS) as OpportunityStage[]).map((k) => (
-                        <SelectItem key={k} value={k}>{STAGE_LABELS[k]}</SelectItem>
-                      ))}
+                      {LEAD_SOURCES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <Label>Etapa</Label>
+                <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v as OpportunityStage })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(STAGE_LABELS) as OpportunityStage[]).map((k) => (
+                      <SelectItem key={k} value={k}>{STAGE_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Observações</Label>
