@@ -50,39 +50,31 @@ const Clients = () => {
   const handleAdd = async () => {
     if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
     try {
-      // Cria cliente
-      const created: any = await addClient({
+      const created = await addClient({
         name: form.name, phone: form.phone, email: form.email,
         document: form.document, notes: form.notes, status: form.status,
       } as any);
-      // Identifica id do cliente recém criado (lookup pelo nome+telefone como fallback)
-      const newClient = created?.id
-        ? created
-        : clients.find((c) => c.name === form.name && c.phone === form.phone);
 
-      // Auto-cria Oportunidade se algum dado de viagem foi informado
-      const hasTravel = form.destination || form.travelDate || form.budget;
-      if (hasTravel && form.status === "lead") {
-        // Aguarda próximo tick para o cliente aparecer na lista
-        setTimeout(async () => {
-          const c = newClient || [...clients].find((x) => x.name === form.name && x.phone === form.phone);
-          if (!c?.id) return;
-          await addOpportunity({
-            clientId: c.id,
-            title: `Oportunidade — ${form.name}`,
-            destination: form.destination,
-            estimatedValue: Number(form.budget) || 0,
-            probability: 50,
-            stage: "new",
-            position: Date.now(),
-            expectedCloseDate: form.travelDate || undefined,
-            notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}`,
-          });
-        }, 250);
+      const hasTravel = !!(form.destination || form.travelDate || form.budget);
+      if (hasTravel && form.status === "lead" && created?.id) {
+        await addOpportunity({
+          clientId: created.id,
+          title: `Oportunidade — ${form.name}`,
+          destination: form.destination,
+          estimatedValue: Number(form.budget) || 0,
+          probability: 50,
+          stage: "new",
+          position: Date.now(),
+          expectedCloseDate: form.travelDate || undefined,
+          notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}`,
+        });
       }
+
       setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead", destination: "", travelDate: "", budget: "" });
       setOpen(false);
-      toast.success(hasTravel ? "Lead criado + oportunidade gerada!" : "Cliente cadastrado!");
+      toast.success(hasTravel ? "Lead criado + oportunidade gerada!" : "Cliente cadastrado!", {
+        action: hasTravel ? { label: "Ver pipeline", onClick: () => navigate("/oportunidades") } : undefined,
+      });
     } catch {
       toast.error("Erro ao cadastrar");
     }
