@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SalesJourney } from "@/components/SalesJourney";
+import { BackButton } from "@/components/BackButton";
 import { FileText as FileTextIcon } from "lucide-react";
 
 // ------- Status helpers -------
