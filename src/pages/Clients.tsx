@@ -92,6 +92,7 @@ const Clients = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <SalesJourney current="lead" />
 
       {nextLead && (
