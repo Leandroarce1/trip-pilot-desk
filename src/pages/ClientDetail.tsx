@@ -156,6 +156,37 @@ const ClientDetail = () => {
     toast.success("Documento removido");
   };
 
+  // ----- Viajantes -----
+  const openNewTraveler = () => {
+    setEditingTravelerId(null);
+    setTravelerForm(emptyTraveler);
+    setTravelerOpen(true);
+  };
+  const openEditTraveler = (t: Traveler) => {
+    setEditingTravelerId(t.id);
+    setTravelerForm({ ...t });
+    setTravelerOpen(true);
+  };
+  const saveTraveler = async () => {
+    if (!travelerForm.name?.trim()) { toast.error("Nome do viajante é obrigatório"); return; }
+    try {
+      if (editingTravelerId) {
+        await updateTraveler({ ...(travelerForm as Traveler), id: editingTravelerId, clientId: client.id });
+        toast.success("Viajante atualizado");
+      } else {
+        await addTraveler({ ...(travelerForm as any), clientId: client.id });
+        toast.success("Viajante adicionado");
+      }
+      setTravelerOpen(false);
+    } catch {
+      toast.error("Erro ao salvar viajante");
+    }
+  };
+  const removeTraveler = async (tid: string) => {
+    await deleteTraveler(tid);
+    toast.success("Viajante removido");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
