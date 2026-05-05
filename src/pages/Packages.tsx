@@ -596,6 +596,42 @@ const Packages = () => {
                 </Select>
               </div>
 
+              <div className="sm:col-span-2 rounded-lg border border-dashed p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Informações de voo {editing ? "(visualização)" : "(opcional)"}</p>
+                </div>
+                {editing && (
+                  <p className="text-[11px] text-muted-foreground">Para adicionar/editar voos use a aba <span className="font-medium">Voos</span> ou abra os detalhes da reserva.</p>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label className="label-caption">Companhia</Label>
+                    <Input className="mt-1.5" value={form.flightAirline} onChange={(e) => setForm({ ...form, flightAirline: e.target.value })} placeholder="LATAM" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Nº do voo</Label>
+                    <Input className="mt-1.5 font-mono" value={form.flightNumber} onChange={(e) => setForm({ ...form, flightNumber: e.target.value })} placeholder="LA8084" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Origem</Label>
+                    <Input className="mt-1.5" value={form.flightOrigin} onChange={(e) => setForm({ ...form, flightOrigin: e.target.value })} placeholder="GRU" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Destino</Label>
+                    <Input className="mt-1.5" value={form.flightDestination} onChange={(e) => setForm({ ...form, flightDestination: e.target.value })} placeholder="MIA" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Data do voo</Label>
+                    <Input className="mt-1.5" type="date" value={form.flightDate} onChange={(e) => setForm({ ...form, flightDate: e.target.value })} disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Horário</Label>
+                    <Input className="mt-1.5" type="time" value={form.flightTime} onChange={(e) => setForm({ ...form, flightTime: e.target.value })} disabled={!!editing} />
+                  </div>
+                </div>
+              </div>
+
               <div className="sm:col-span-2">
                 <Label className="label-caption">Observações</Label>
                 <Textarea className="mt-1.5" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
