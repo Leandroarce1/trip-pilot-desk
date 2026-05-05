@@ -108,7 +108,7 @@ const PackageDetail = () => {
 
   /** Gera lançamento financeiro (income pendente) vinculado à reserva */
   const generateFinancial = () => {
-    const filterQuery = `?search=${encodeURIComponent(pkg.destinationCity)}`;
+    const filterQuery = `?packageId=${pkg.id}&tab=receivables`;
     if (pkgTransactions.length > 0) {
       toast.info("Financeiro já gerado", { description: "Abrindo lançamentos vinculados a esta reserva." });
       navigate(`/financeiro${filterQuery}`);
