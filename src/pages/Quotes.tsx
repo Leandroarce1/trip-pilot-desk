@@ -126,10 +126,21 @@ const Quotes = () => {
     if (initRef.current) return;
     if (editParam && quotes.length > 0) {
       const q = quotes.find((x) => x.id === editParam);
-      if (q) { openEdit(q); initRef.current = true; }
+      if (q) { openEdit(q); initRef.current = true; return; }
+    }
+    // Pré-preenchimento a partir de cliente (vindo de /clientes)
+    const clientParam = searchParams.get("client");
+    if (clientParam && clients.length > 0 && !editParam) {
+      const c = clients.find((x) => x.id === clientParam);
+      if (c) {
+        // Tenta pegar dados de uma oportunidade vinculada
+        setForm((prev) => ({ ...prev, clientId: c.id }));
+        setOpen(true);
+        initRef.current = true;
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editParam, quotes]);
+  }, [editParam, quotes, clients, searchParams]);
 
   const addItem = () => setItems((prev) => [...prev, newItem()]);
   const updateItem = (id: string, patch: Partial<QuoteItem>) =>
