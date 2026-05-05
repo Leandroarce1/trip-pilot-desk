@@ -110,11 +110,30 @@ export interface Opportunity {
   destination: string;
   estimatedValue: number;
   probability: number;
-  expectedCloseDate?: string;
+  expectedCloseDate?: string; // data de ida
+  returnDate?: string;        // data de volta
+  travelersCount?: number;    // nº de viajantes
+  leadSource?: string;        // origem do contato (Instagram, indicação...)
   stage: OpportunityStage;
   position: number;
   notes: string;
   createdAt: string;
+}
+
+// ---------- Travelers / Dependentes ----------
+export interface Traveler {
+  id: string;
+  clientId: string;
+  name: string;
+  document?: string;        // CPF
+  birthDate?: string;
+  passportNumber?: string;
+  passportExpiry?: string;
+  passportCountry?: string;
+  nationality?: string;
+  relation?: string;        // esposo(a), filho(a), amigo(a)...
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface Flight {
