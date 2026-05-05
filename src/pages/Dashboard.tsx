@@ -701,7 +701,9 @@ const Dashboard = () => {
                 actionLabel="Emitir docs" onAction={() => navigate("/pacotes")}
                 urgent={trips48h.length > 0} />
             </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* Agenda da Agência */}
       <section>
