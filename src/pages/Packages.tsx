@@ -174,6 +174,7 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
@@ -186,6 +187,7 @@ const Packages = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TravelPackage | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const autoOpenRef = useRef(false);
 
   const hasVoucherFor = (pkgId: string) => vouchers.some((v) => v.packageId === pkgId && v.issued);
 
