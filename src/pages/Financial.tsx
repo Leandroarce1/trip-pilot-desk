@@ -60,6 +60,17 @@ const Financial = () => {
 
   const clientFilter = searchParams.get("clientId") || "";
   const packageFilter = searchParams.get("packageId") || "";
+  const hasContextFilter = !!(clientFilter || packageFilter);
+
+  // Conjunto de transações a considerar (geral ou contextual)
+  const scopedTransactions = useMemo(() => {
+    if (!hasContextFilter) return transactions;
+    return transactions.filter((t) => {
+      if (clientFilter && t.clientId !== clientFilter) return false;
+      if (packageFilter && t.packageId !== packageFilter) return false;
+      return true;
+    });
+  }, [transactions, clientFilter, packageFilter, hasContextFilter]);
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -77,13 +88,21 @@ const Financial = () => {
     if (tabParam && tabMap[tabParam]) setTab(tabMap[tabParam]);
   }, [searchParams]);
 
-  // ---------- KPIs ----------
+  // ---------- KPIs (contextuais quando há filtro) ----------
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthTx = transactions.filter((t) => t.date.startsWith(currentMonth));
-  const monthIncome = monthTx.filter((t) => t.type === "income" && t.status === "paid").reduce((s, t) => s + t.value, 0);
-  const monthExpense = monthTx.filter((t) => t.type === "expense" && t.status === "paid").reduce((s, t) => s + t.value, 0);
+  const kpiSource = hasContextFilter ? scopedTransactions : transactions;
+  const monthTx = kpiSource.filter((t) => t.date.startsWith(currentMonth));
+  const monthIncome = (hasContextFilter ? scopedTransactions : monthTx)
+    .filter((t) => t.type === "income" && t.status === "paid")
+    .reduce((s, t) => s + t.value, 0);
+  const monthExpense = (hasContextFilter ? scopedTransactions : monthTx)
+    .filter((t) => t.type === "expense" && t.status === "paid")
+    .reduce((s, t) => s + t.value, 0);
   const monthProfit = monthIncome - monthExpense;
-  const overdueValue = transactions.filter(isOverdue).reduce((s, t) => s + (t.type === "income" ? t.value : 0), 0);
+  const overdueValue = kpiSource.filter(isOverdue).reduce((s, t) => s + (t.type === "income" ? t.value : 0), 0);
+  const totalReceivable = scopedTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+  const totalPending = scopedTransactions.filter((t) => t.type === "income" && t.status === "pending").reduce((s, t) => s + t.value, 0);
+  const totalReceived = scopedTransactions.filter((t) => t.type === "income" && t.status === "paid").reduce((s, t) => s + t.value, 0);
 
   // ---------- Comissões (a partir de packages) ----------
   const commissions = useMemo(() => {
