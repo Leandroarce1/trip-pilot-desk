@@ -420,6 +420,7 @@ const Packages = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <SalesJourney current="reservation" completed={["lead", "opportunity", "proposal"]} />
 
       {/* ---------- Page header ---------- */}
