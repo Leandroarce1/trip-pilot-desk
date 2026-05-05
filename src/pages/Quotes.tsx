@@ -300,45 +300,70 @@ const Quotes = () => {
               </TabsContent>
               <TabsContent value="items" className="space-y-3 mt-4">
                 <p className="text-xs text-muted-foreground">Detalhe os itens da proposta. O valor total e a margem são calculados automaticamente.</p>
-                {items.map((it) => (
-                  <div key={it.id} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input placeholder="Descrição (ex: Hotel 5 noites)" value={it.description} onChange={(e) => updateItem(it.id, { description: e.target.value })} className="flex-1" />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(it.id)}>
-                        <X className="h-4 w-4" />
-                      </Button>
+                {items.map((it) => {
+                  const subtotal = it.quantity * it.unitValue;
+                  const itemCommission = subtotal * ((it.commissionPercent ?? 0) / 100);
+                  return (
+                    <div key={it.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Select value={it.category ?? "other"} onValueChange={(v) => updateItem(it.id, { category: v as any })}>
+                          <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CATEGORY_LABEL).map(([k, v]) => (
+                              <SelectItem key={k} value={k}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input placeholder="Descrição (ex: Hotel 5 noites)" value={it.description} onChange={(e) => updateItem(it.id, { description: e.target.value })} className="flex-1" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(it.id)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Data</Label>
+                          <Input type="date" value={it.date ?? ""} onChange={(e) => updateItem(it.id, { date: e.target.value })} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Qtd</Label>
+                          <Input type="number" value={it.quantity} onChange={(e) => updateItem(it.id, { quantity: Number(e.target.value) || 0 })} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Valor unit.</Label>
+                          <Input type="number" value={it.unitValue} onChange={(e) => updateItem(it.id, { unitValue: Number(e.target.value) || 0 })} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Custo unit.</Label>
+                          <Input type="number" value={it.cost ?? 0} onChange={(e) => updateItem(it.id, { cost: Number(e.target.value) || 0 })} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Comissão %</Label>
+                          <Input type="number" value={it.commissionPercent ?? 0} onChange={(e) => updateItem(it.id, { commissionPercent: Number(e.target.value) || 0 })} />
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+                        <span>Comissão: <span className="font-semibold text-success">R$ {itemCommission.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</span></span>
+                        <span>Subtotal: <span className="font-semibold text-foreground">R$ {subtotal.toLocaleString("pt-BR")}</span></span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <Label className="text-[10px]">Qtd</Label>
-                        <Input type="number" value={it.quantity} onChange={(e) => updateItem(it.id, { quantity: Number(e.target.value) || 0 })} />
-                      </div>
-                      <div>
-                        <Label className="text-[10px]">Valor unit. (R$)</Label>
-                        <Input type="number" value={it.unitValue} onChange={(e) => updateItem(it.id, { unitValue: Number(e.target.value) || 0 })} />
-                      </div>
-                      <div>
-                        <Label className="text-[10px]">Custo unit. (R$)</Label>
-                        <Input type="number" value={it.cost ?? 0} onChange={(e) => updateItem(it.id, { cost: Number(e.target.value) || 0 })} />
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-right text-muted-foreground tabular-nums">
-                      Subtotal: R$ {(it.quantity * it.unitValue).toLocaleString("pt-BR")}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
                 <Button variant="outline" className="w-full" onClick={addItem}>
                   <Plus className="mr-2 h-4 w-4" />Adicionar item
                 </Button>
-                {items.length > 0 && (
-                  <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-3 gap-2 text-center">
+                {(items.length > 0 || airfareValue > 0) && (
+                  <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Itens + Aéreo</p>
-                      <p className="font-bold tabular-nums">R$ {effectiveValue.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">Aéreo</p>
+                      <p className="font-bold tabular-nums">R$ {airfareValue.toLocaleString("pt-BR")}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
-                      <p className="font-bold tabular-nums">R$ {itemsCost.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">Itens</p>
+                      <p className="font-bold tabular-nums">R$ {itemsTotal.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Total</p>
+                      <p className="font-bold tabular-nums text-primary">R$ {effectiveValue.toLocaleString("pt-BR")}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-muted-foreground">Margem</p>
