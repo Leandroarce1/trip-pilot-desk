@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
+import { BackButton } from "@/components/BackButton";
 import { NextStepBanner } from "@/components/NextStepBanner";
 import { ArrowRight, FileText as FileTextIcon } from "lucide-react";
 
