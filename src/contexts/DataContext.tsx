@@ -402,6 +402,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [travelers, setTravelers] = useState<Traveler[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getClientName = useCallback(
@@ -413,7 +414,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setClients([]); setQuotes([]); setFlights([]); setTransactions([]);
       setPackages([]); setNotifications([]); setSuppliers([]); setOpportunities([]);
-      setItineraries([]); setVouchers([]);
+      setItineraries([]); setVouchers([]); setTravelers([]);
       setLoading(false);
       return;
     }
