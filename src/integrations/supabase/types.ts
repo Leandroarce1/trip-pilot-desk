@@ -303,11 +303,14 @@ export type Database = {
           estimated_value: number | null
           expected_close_date: string | null
           id: string
+          lead_source: string | null
           notes: string | null
           position: number
           probability: number | null
+          return_date: string | null
           stage: Database["public"]["Enums"]["opportunity_stage"]
           title: string
+          travelers_count: number | null
           updated_at: string
           user_id: string
         }
@@ -318,11 +321,14 @@ export type Database = {
           estimated_value?: number | null
           expected_close_date?: string | null
           id?: string
+          lead_source?: string | null
           notes?: string | null
           position?: number
           probability?: number | null
+          return_date?: string | null
           stage?: Database["public"]["Enums"]["opportunity_stage"]
           title: string
+          travelers_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -333,11 +339,14 @@ export type Database = {
           estimated_value?: number | null
           expected_close_date?: string | null
           id?: string
+          lead_source?: string | null
           notes?: string | null
           position?: number
           probability?: number | null
+          return_date?: string | null
           stage?: Database["public"]["Enums"]["opportunity_stage"]
           title?: string
+          travelers_count?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -737,6 +746,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      travelers: {
+        Row: {
+          birth_date: string | null
+          client_id: string
+          created_at: string
+          document: string | null
+          id: string
+          name: string
+          nationality: string | null
+          notes: string | null
+          passport_country: string | null
+          passport_expiry: string | null
+          passport_number: string | null
+          relation: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          client_id: string
+          created_at?: string
+          document?: string | null
+          id?: string
+          name: string
+          nationality?: string | null
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          relation?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          client_id?: string
+          created_at?: string
+          document?: string | null
+          id?: string
+          name?: string
+          nationality?: string | null
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          relation?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       vouchers: {
         Row: {
