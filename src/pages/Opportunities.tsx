@@ -72,6 +72,9 @@ export default function Opportunities() {
         estimatedValue: Number(form.estimatedValue) || 0,
         probability: Number(form.probability) || 50,
         expectedCloseDate: form.expectedCloseDate || undefined,
+        returnDate: form.returnDate || undefined,
+        travelersCount: Number(form.travelersCount) || 1,
+        leadSource: form.leadSource || undefined,
         notes: form.notes,
         stage: form.stage,
         position: editing?.position ?? Date.now(),
@@ -99,7 +102,11 @@ export default function Opportunities() {
     setForm({
       clientId: o.clientId, title: o.title, destination: o.destination,
       estimatedValue: String(o.estimatedValue), probability: String(o.probability),
-      expectedCloseDate: o.expectedCloseDate ?? "", notes: o.notes, stage: o.stage,
+      expectedCloseDate: o.expectedCloseDate ?? "",
+      returnDate: o.returnDate ?? "",
+      travelersCount: String(o.travelersCount ?? 1),
+      leadSource: o.leadSource ?? "",
+      notes: o.notes, stage: o.stage,
     });
     setOpen(true);
   };
