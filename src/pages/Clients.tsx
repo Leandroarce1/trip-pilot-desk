@@ -58,7 +58,7 @@ const Clients = () => {
       const hasTravel = !!(form.destination || form.travelDate || form.budget);
       if (hasTravel && form.status === "lead" && created && (created as any).id) {
         await addOpportunity({
-          clientId: created.id,
+          clientId: (created as Client).id,
           title: `Oportunidade — ${form.name}`,
           destination: form.destination,
           estimatedValue: Number(form.budget) || 0,
