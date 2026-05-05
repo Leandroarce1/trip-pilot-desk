@@ -354,17 +354,38 @@ const Financial = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       {hasContextFilter && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-          <div className="text-sm">
-            <span className="text-muted-foreground">Financeiro filtrado por: </span>
-            <span className="font-semibold">
-              {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
-            </span>
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Financeiro filtrado por: </span>
+              <span className="font-semibold">
+                {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
+              Limpar filtro
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
-            Limpar filtro
-          </Button>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Total</p>
+              <p className="font-bold tabular-nums">{brl(totalReceivable)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Recebido</p>
+              <p className="font-bold tabular-nums text-success">{brl(totalReceived)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Pendente</p>
+              <p className="font-bold tabular-nums text-warning">{brl(totalPending)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Atrasado</p>
+              <p className="font-bold tabular-nums text-destructive">{brl(overdueValue)}</p>
+            </div>
+          </div>
         </div>
       )}
       <div className="flex items-center justify-between flex-wrap gap-3">
