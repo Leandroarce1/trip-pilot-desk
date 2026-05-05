@@ -350,6 +350,7 @@ interface DataContextType {
   opportunities: Opportunity[];
   itineraries: Itinerary[];
   vouchers: Voucher[];
+  travelers: Traveler[];
   addClient: (c: Omit<Client, "id" | "createdAt">) => Promise<Client | void>;
   updateClient: (c: Client) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -377,6 +378,9 @@ interface DataContextType {
   addVoucher: (v: Omit<Voucher, "id" | "createdAt">) => Promise<Voucher | void>;
   updateVoucher: (v: Voucher) => Promise<void>;
   deleteVoucher: (id: string) => Promise<void>;
+  addTraveler: (t: Omit<Traveler, "id" | "createdAt">) => Promise<Traveler | void>;
+  updateTraveler: (t: Traveler) => Promise<void>;
+  deleteTraveler: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   addNotification: (n: Omit<Notification, "id">) => Promise<void>;
   getClientName: (clientId: string) => string;
