@@ -2,14 +2,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, Phone, Mail, FileText, Plane, DollarSign, Edit2, Trash2,
-  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2,
+  User, Heart, ShieldCheck, Clock, Award, Plus, Sparkles, CheckCircle2, Users,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Client, ClientDocument, ClientDocType, FlightClass, Gender, OriginChannel,
-  SeatPreference, TravelStyle,
+  SeatPreference, TravelStyle, Traveler,
 } from "@/types/crm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
