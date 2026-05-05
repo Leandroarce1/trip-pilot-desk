@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
 import { NextStepBanner } from "@/components/NextStepBanner";
+import { BackButton } from "@/components/BackButton";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
