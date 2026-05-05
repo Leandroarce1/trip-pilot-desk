@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { BackButton } from "@/components/BackButton";
 
 type FormState = {
   type: Transaction["type"];
