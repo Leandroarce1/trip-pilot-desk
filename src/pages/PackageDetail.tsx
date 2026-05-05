@@ -459,16 +459,55 @@ const PackageDetail = () => {
 
       {/* ---------- Payments ---------- */}
       <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
+        <CardHeader className="pb-3 flex-row items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Pagamentos</CardTitle>
-          {pkg.paymentStatus !== "paid" && (
-            <span className={cn(
-              "rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em]",
-              pkg.paymentStatus === "partial" ? "bg-warning-soft text-warning-soft-foreground" : "bg-error-soft text-error-soft-foreground",
-            )}>
-              {pkg.paymentStatus === "partial" ? "Parcial" : "Pendente"}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {quote && (quote.items?.length ?? 0) > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[11px]"
+                onClick={async () => {
+                  const existingDescs = new Set(
+                    pkgTransactions.filter((t) => t.type === "expense").map((t) => t.description),
+                  );
+                  let created = 0;
+                  for (const item of (quote.items ?? [])) {
+                    const totalCost = (item.cost ?? 0) * item.quantity;
+                    if (totalCost <= 0) continue;
+                    const desc = `${item.description || "Item"} — fornecedor (${pkg.clientName})`;
+                    if (existingDescs.has(desc)) continue;
+                    try {
+                      await addTransaction({
+                        type: "expense",
+                        description: desc,
+                        value: totalCost,
+                        date: item.date || pkg.departureDate || new Date().toISOString().slice(0, 10),
+                        status: "pending",
+                        category: "supplier_payable",
+                        clientName: pkg.clientName,
+                        clientId: pkg.clientId,
+                        packageId: pkg.id,
+                      });
+                      created++;
+                    } catch (e) { console.warn(e); }
+                  }
+                  if (created > 0) toast.success(`${created} conta(s) a pagar geradas`);
+                  else toast.info("Nenhuma conta nova — já estavam vinculadas.");
+                }}
+              >
+                Sincronizar contas
+              </Button>
+            )}
+            {pkg.paymentStatus !== "paid" && (
+              <span className={cn(
+                "rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em]",
+                pkg.paymentStatus === "partial" ? "bg-warning-soft text-warning-soft-foreground" : "bg-error-soft text-error-soft-foreground",
+              )}>
+                {pkg.paymentStatus === "partial" ? "Parcial" : "Pendente"}
+              </span>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {pkgTransactions.length === 0 ? (
