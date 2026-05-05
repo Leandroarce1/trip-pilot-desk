@@ -701,7 +701,136 @@ const Dashboard = () => {
                 actionLabel="Emitir docs" onAction={() => navigate("/pacotes")}
                 urgent={trips48h.length > 0} />
             </div>
-          </section>
+      </section>
+
+      {/* Agenda da Agência */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-primary" />
+            <h2 className="text-[13px] font-bold tracking-tight text-navy uppercase">Agenda da Agência</h2>
+            <Badge variant="outline" className="text-[10px]">Próximos 7 dias</Badge>
+          </div>
+        </div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-5">
+          {/* Aniversariantes */}
+          <PanelCard title="Aniversariantes" icon={Sparkles}>
+            {birthdaysSoon.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">Nenhum nos próximos 7 dias</p>
+            ) : (
+              <ul className="space-y-2">
+                {birthdaysSoon.map(({ client, date, days }) => (
+                  <li key={client.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{client.name}</p>
+                      <p className="text-[10.5px] text-muted-foreground tabular-nums">{fmtDate(date)} · {days === 0 ? "hoje" : `em ${days}d`}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => navigate(`/clientes/${client.id}`)}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PanelCard>
+
+          {/* Contas a pagar */}
+          <PanelCard title="Contas a pagar" icon={CreditCard}>
+            {payablesDue.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">Sem vencimentos próximos</p>
+            ) : (
+              <ul className="space-y-2">
+                {payablesDue.map((t) => {
+                  const overdue = t.date < todayStr;
+                  return (
+                    <li key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate">{t.description}</p>
+                        <p className="text-[10.5px] text-muted-foreground tabular-nums">{fmtDate(t.date)} {overdue && <span className="text-destructive font-bold">· atrasado</span>}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[11px] font-bold tabular-nums text-destructive">{fmtCurrency(t.value)}</span>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => navigate(`/financeiro?tab=expense${t.packageId ? `&packageId=${t.packageId}` : ""}`)}>
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </PanelCard>
+
+          {/* Voos confirmados */}
+          <PanelCard title="Voos próximos" icon={Plane}>
+            {flightsSoon.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">Nenhum voo nos próximos 7 dias</p>
+            ) : (
+              <ul className="space-y-2">
+                {flightsSoon.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{f.clientName} · {f.flightNumber}</p>
+                      <p className="text-[10.5px] text-muted-foreground tabular-nums">{fmtDate(f.departureDate)} {f.departureTime} · {f.origin}→{f.destination}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => navigate("/voos")}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PanelCard>
+
+          {/* Contas a receber */}
+          <PanelCard title="Contas a receber" icon={DollarSign}>
+            {receivablesDue.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">Sem recebimentos próximos</p>
+            ) : (
+              <ul className="space-y-2">
+                {receivablesDue.map((t) => {
+                  const overdue = t.date < todayStr;
+                  return (
+                    <li key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate">{t.clientName || t.description}</p>
+                        <p className="text-[10.5px] text-muted-foreground tabular-nums">{fmtDate(t.date)} {overdue && <span className="text-destructive font-bold">· atrasado</span>}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[11px] font-bold tabular-nums text-success">{fmtCurrency(t.value)}</span>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => navigate(`/financeiro?tab=income${t.packageId ? `&packageId=${t.packageId}` : t.clientId ? `&clientId=${t.clientId}` : ""}`)}>
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </PanelCard>
+
+          {/* Viagens próximas */}
+          <PanelCard title="Viagens próximas" icon={CalendarClock}>
+            {tripsSoon.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">Nenhuma viagem nos próximos 7 dias</p>
+            ) : (
+              <ul className="space-y-2">
+                {tripsSoon.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{p.destinationFlag ?? "🌍"} {p.clientName}</p>
+                      <p className="text-[10.5px] text-muted-foreground tabular-nums">{fmtDate(p.departureDate)} · {p.destinationCity}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => navigate(`/pacotes/${p.id}`)}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PanelCard>
+        </div>
+      </section>
         );
       })()}
 
