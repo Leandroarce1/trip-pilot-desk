@@ -58,6 +58,9 @@ const Financial = () => {
   const [tab, setTab] = useState("overview");
   const [commissionModal, setCommissionModal] = useState<{ open: boolean; packageId: string; packageName: string; clientId: string; pending: number; value: string; date: string }>({ open: false, packageId: "", packageName: "", clientId: "", pending: 0, value: "", date: today() });
 
+  const clientFilter = searchParams.get("clientId") || "";
+  const packageFilter = searchParams.get("packageId") || "";
+
   useEffect(() => {
     const q = searchParams.get("search");
     if (q) setSearch(q);
