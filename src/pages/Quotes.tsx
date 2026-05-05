@@ -30,7 +30,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 const Quotes = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { quotes, clients, packages, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
+  const { quotes, clients, packages, addQuote, updateQuote, deleteQuote, addPackage, updateClient, travelers, addTransaction } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
