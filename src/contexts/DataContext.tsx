@@ -423,7 +423,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [
       clientsRes, suppliersRes, quotesRes, flightsRes,
       transactionsRes, packagesRes, notificationsRes, opportunitiesRes,
-      itinerariesRes, vouchersRes,
+      itinerariesRes, vouchersRes, travelersRes,
     ] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("suppliers").select("*").order("created_at", { ascending: false }),
@@ -435,6 +435,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
       supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
       supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
+      (supabase as any).from("travelers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -450,6 +451,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setOpportunities((opportunitiesRes.data ?? []).map((r: any) => mapOpportunity(r, nameById.get(r.client_id) ?? "")));
     setItineraries((itinerariesRes.data ?? []).map(mapItinerary));
     setVouchers((vouchersRes.data ?? []).map(mapVoucher));
+    setTravelers(((travelersRes as any).data ?? []).map(mapTraveler));
     setLoading(false);
   }, [user]);
 
