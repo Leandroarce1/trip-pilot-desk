@@ -131,6 +131,7 @@ export default function Opportunities() {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <SalesJourney current="opportunity" completed={["lead"]} />
 
       {nextOpp && (
