@@ -421,7 +421,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const { data, error } = await supabase.from("clients").insert(clientToRow(c, user.id)).select().single();
     if (error) throw error;
-    setClients((prev) => [mapClient(data), ...prev]);
+    const mapped = mapClient(data);
+    setClients((prev) => [mapped, ...prev]);
+    return mapped;
   };
   const updateClient = async (c: Client) => {
     if (!user) return;
