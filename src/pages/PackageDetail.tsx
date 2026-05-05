@@ -459,8 +459,16 @@ const PackageDetail = () => {
 
       {/* ---------- Payments ---------- */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Pagamentos</CardTitle>
+          {pkg.paymentStatus !== "paid" && (
+            <span className={cn(
+              "rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em]",
+              pkg.paymentStatus === "partial" ? "bg-warning-soft text-warning-soft-foreground" : "bg-error-soft text-error-soft-foreground",
+            )}>
+              {pkg.paymentStatus === "partial" ? "Parcial" : "Pendente"}
+            </span>
+          )}
         </CardHeader>
         <CardContent>
           {pkgTransactions.length === 0 ? (
@@ -469,16 +477,49 @@ const PackageDetail = () => {
             <div className="space-y-2">
               {pkgTransactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between rounded-lg border border-border/70 p-3">
-                  <div>
-                    <p className="text-sm font-medium text-navy">{t.description}</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">{fmtDate(t.date)}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-navy truncate">{t.description}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {fmtDate(t.date)} · {t.type === "income" ? "Receita" : "Despesa"}
+                    </p>
                   </div>
-                  <div className="text-right flex items-center gap-2">
-                    <p className="text-sm font-semibold tabular-nums">{fmtCurrency(t.value)}</p>
+                  <div className="text-right flex items-center gap-2 shrink-0">
+                    <p className={cn("text-sm font-semibold tabular-nums", t.type === "expense" && "text-destructive")}>
+                      {t.type === "expense" ? "−" : ""}{fmtCurrency(t.value)}
+                    </p>
                     <StatusBadge variant={t.status} />
+                    {t.status !== "paid" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={async () => {
+                          await updateTransaction({ ...t, status: "paid" });
+                          toast.success("Pagamento confirmado", { description: `${t.description} marcado como pago.` });
+                        }}
+                      >
+                        <CheckCircle2 className="h-3 w-3" /> Marcar pago
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={async () => {
+                          await updateTransaction({ ...t, status: "pending" });
+                          toast.info("Pagamento revertido para pendente.");
+                        }}
+                      >
+                        Reverter
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
+              <div className="mt-2 flex justify-between text-xs text-muted-foreground border-t pt-2">
+                <span>Total recebido</span>
+                <span className="font-semibold tabular-nums text-success-soft-foreground">{fmtCurrency(totalPaid)} / {fmtCurrency(totalValue)}</span>
+              </div>
             </div>
           )}
         </CardContent>
