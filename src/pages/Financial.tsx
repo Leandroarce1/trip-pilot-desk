@@ -176,6 +176,8 @@ const Financial = () => {
   const filterFor = (typeOnly?: Transaction["type"]) =>
     transactions.filter((t) => {
       if (typeOnly && t.type !== typeOnly) return false;
+      if (clientFilter && t.clientId !== clientFilter) return false;
+      if (packageFilter && t.packageId !== packageFilter) return false;
       const matchSearch = !search ||
         t.description.toLowerCase().includes(search.toLowerCase()) ||
         (t.clientName || "").toLowerCase().includes(search.toLowerCase());
