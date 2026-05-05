@@ -31,7 +31,7 @@ const Clients = () => {
   const [form, setForm] = useState({
     name: "", phone: "", email: "", document: "", notes: "",
     status: (urlStatus as Client["status"]) || "lead" as Client["status"],
-    destination: "", travelDate: "", budget: "",
+    destination: "", travelDate: "", returnDate: "", budget: "", travelersCount: "2", leadSource: "",
   });
 
   // Sync filter with URL ?status=
