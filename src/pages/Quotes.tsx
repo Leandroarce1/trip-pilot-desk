@@ -164,22 +164,29 @@ const Quotes = () => {
     setItinerary((prev) => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })));
   };
 
-  /** Aprova proposta + cria reserva + promove cliente para 'sold' */
-  const approveAndGenerateReservation = (q: Quote) => {
+  /** Aprova proposta + cria reserva + promove cliente para 'sold' + gera contas a pagar */
+  const approveAndGenerateReservation = async (q: Quote) => {
     const client = clients.find((c) => c.id === q.clientId);
     if (!client) { toast.error("Cliente não encontrado"); return; }
 
     // 1) Marca proposta como aprovada
-    updateQuote({ ...q, status: "approved" });
+    await updateQuote({ ...q, status: "approved" });
 
     // 2) Promove cliente para 'sold'
     if (client.status === "lead" || client.status === "negotiation") {
-      updateClient({ ...client, status: "sold" });
+      await updateClient({ ...client, status: "sold" });
     }
 
-    // 3) Cria reserva vinculada
+    // 3) Monta lista de passageiros (cliente + viajantes vinculados)
+    const linkedTravelers = travelers.filter((t) => t.clientId === client.id);
+    const passengers = [
+      { name: client.name, document: client.document },
+      ...linkedTravelers.map((t) => ({ name: t.name, document: t.document ?? "" })),
+    ];
+
+    // 4) Cria reserva vinculada
     const today = new Date().toISOString().slice(0, 10);
-    addPackage({
+    await addPackage({
       name: `Viagem para ${q.destination}`,
       clientId: q.clientId,
       destinationCity: q.destination.split(",")[0]?.trim() || q.destination,
@@ -191,8 +198,8 @@ const Quotes = () => {
       supplier: "",
       confirmationCode: "",
       totalValue: q.value,
-      commissionPercent: 10,
-      passengers: [{ name: client.name, document: client.document }],
+      commissionPercent: q.marginPercent ?? 10,
+      passengers,
       reservationStatus: "pending",
       paymentStatus: "pending",
       quoteId: q.id,
@@ -205,8 +212,30 @@ const Quotes = () => {
       notes: q.description,
     });
 
+    // 5) Gera contas a pagar para cada item da proposta com custo > 0
+    let payableCount = 0;
+    for (const item of (q.items ?? [])) {
+      const totalCost = (item.cost ?? 0) * item.quantity;
+      if (totalCost <= 0) continue;
+      try {
+        await addTransaction({
+          type: "expense",
+          description: `${CATEGORY_LABEL[item.category ?? "other"] ?? "Item"} — ${item.description} (${client.name})`,
+          value: totalCost,
+          date: item.date || q.startDate || today,
+          status: "pending",
+          category: "supplier_payable",
+          clientName: client.name,
+          clientId: client.id,
+        });
+        payableCount++;
+      } catch (e) {
+        console.warn("Falha ao gerar conta a pagar:", e);
+      }
+    }
+
     toast.success("Proposta aprovada — reserva criada", {
-      description: "Cliente promovido para ativo. Acesse a reserva para gerar financeiro.",
+      description: `${passengers.length} passageiro(s) · ${payableCount} conta(s) a pagar gerada(s).`,
       action: { label: "Ver reservas", onClick: () => navigate("/pacotes") },
     });
   };
