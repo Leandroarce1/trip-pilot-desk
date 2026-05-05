@@ -28,7 +28,11 @@ const Clients = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(urlStatus || "all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: (urlStatus as Client["status"]) || "lead" as Client["status"] });
+  const [form, setForm] = useState({
+    name: "", phone: "", email: "", document: "", notes: "",
+    status: (urlStatus as Client["status"]) || "lead" as Client["status"],
+    destination: "", travelDate: "", budget: "",
+  });
 
   // Sync filter with URL ?status=
   useEffect(() => {
@@ -43,12 +47,45 @@ const Clients = () => {
     return matchSearch && matchStatus;
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
-    addClient(form);
-    setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" });
-    setOpen(false);
-    toast.success("Cliente cadastrado!");
+    try {
+      // Cria cliente
+      const created: any = await addClient({
+        name: form.name, phone: form.phone, email: form.email,
+        document: form.document, notes: form.notes, status: form.status,
+      } as any);
+      // Identifica id do cliente recém criado (lookup pelo nome+telefone como fallback)
+      const newClient = created?.id
+        ? created
+        : clients.find((c) => c.name === form.name && c.phone === form.phone);
+
+      // Auto-cria Oportunidade se algum dado de viagem foi informado
+      const hasTravel = form.destination || form.travelDate || form.budget;
+      if (hasTravel && form.status === "lead") {
+        // Aguarda próximo tick para o cliente aparecer na lista
+        setTimeout(async () => {
+          const c = newClient || [...clients].find((x) => x.name === form.name && x.phone === form.phone);
+          if (!c?.id) return;
+          await addOpportunity({
+            clientId: c.id,
+            title: `Oportunidade — ${form.name}`,
+            destination: form.destination,
+            estimatedValue: Number(form.budget) || 0,
+            probability: 50,
+            stage: "new",
+            position: Date.now(),
+            expectedCloseDate: form.travelDate || undefined,
+            notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}`,
+          });
+        }, 250);
+      }
+      setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead", destination: "", travelDate: "", budget: "" });
+      setOpen(false);
+      toast.success(hasTravel ? "Lead criado + oportunidade gerada!" : "Cliente cadastrado!");
+    } catch {
+      toast.error("Erro ao cadastrar");
+    }
   };
 
   const convertToOpportunity = async (c: Client) => {
