@@ -174,10 +174,25 @@ const Clients = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
                 <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">Interesse de viagem (opcional)</p>
                 <p className="text-[11px] text-muted-foreground -mt-2">Se preenchido, gera automaticamente uma oportunidade no pipeline.</p>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div><Label className="text-xs">Destino</Label><Input placeholder="Ex: Cancún" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} /></div>
-                  <div><Label className="text-xs">Data prevista</Label><Input type="date" value={form.travelDate} onChange={(e) => setForm({ ...form, travelDate: e.target.value })} /></div>
-                  <div><Label className="text-xs">Orçamento (R$)</Label><Input type="number" placeholder="15000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div><Label className="text-xs">Destino desejado</Label><Input placeholder="Ex: Cancún, México" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} /></div>
+                  <div><Label className="text-xs">Origem do contato</Label>
+                    <Select value={form.leadSource} onValueChange={(v) => setForm({ ...form, leadSource: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="referral">Indicação</SelectItem>
+                        <SelectItem value="google">Google</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="in-person">Presencial</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label className="text-xs">Data de ida</Label><Input type="date" value={form.travelDate} onChange={(e) => setForm({ ...form, travelDate: e.target.value })} /></div>
+                  <div><Label className="text-xs">Data de volta</Label><Input type="date" value={form.returnDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} /></div>
+                  <div><Label className="text-xs">Nº viajantes</Label><Input type="number" min={1} value={form.travelersCount} onChange={(e) => setForm({ ...form, travelersCount: e.target.value })} /></div>
+                  <div><Label className="text-xs">Orçamento (R$)</Label><Input type="number" placeholder="18000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></div>
                 </div>
               </div>
               <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
