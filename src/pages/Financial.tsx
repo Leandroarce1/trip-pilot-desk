@@ -330,12 +330,29 @@ const Financial = () => {
     </div>
   );
 
+  const filterClient = clients.find((c) => c.id === clientFilter);
+  const filterPackage = packages.find((p) => p.id === packageFilter);
+  const hasContextFilter = !!(clientFilter || packageFilter);
+
   return (
     <div className="space-y-6">
+      {hasContextFilter && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Financeiro filtrado por: </span>
+            <span className="font-semibold">
+              {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); window.history.replaceState(null, "", `?${sp.toString()}`); window.location.reload(); }}>
+            Limpar filtro
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Financeiro</h1>
-          <p className="text-sm text-muted-foreground">Recebimentos, pagamentos, comissões e fluxo de caixa</p>
+          <p className="text-sm text-muted-foreground">{hasContextFilter ? "Visão filtrada por contexto" : "Recebimentos, pagamentos, comissões e fluxo de caixa"}</p>
         </div>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
