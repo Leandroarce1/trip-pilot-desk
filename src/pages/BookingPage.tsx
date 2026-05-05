@@ -13,6 +13,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 const BookingPage = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
+  const navigate = useNavigate();
   const { quotes, flights, transactions } = useData();
   const quote = quotes.find((q) => q.id === quoteId);
 
