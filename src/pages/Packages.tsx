@@ -151,6 +151,12 @@ type FormState = {
   passengersCount: string;
   notes: string;
   reservationStatus: ReservationStatus;
+  flightAirline: string;
+  flightNumber: string;
+  flightOrigin: string;
+  flightDestination: string;
+  flightDate: string;
+  flightTime: string;
 };
 
 const emptyForm: FormState = {
@@ -171,12 +177,18 @@ const emptyForm: FormState = {
   passengersCount: "1",
   notes: "",
   reservationStatus: "quoting",
+  flightAirline: "",
+  flightNumber: "",
+  flightOrigin: "",
+  flightDestination: "",
+  flightDate: "",
+  flightTime: "",
 };
 
 const Packages = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, addFlight, flights, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | OpStatus>("all");
@@ -289,6 +301,12 @@ const Packages = () => {
       passengersCount: String(Math.max(1, p.passengers.length)),
       notes: p.notes,
       reservationStatus: p.reservationStatus,
+      flightAirline: flights.find((f) => f.packageId === p.id)?.airline ?? "",
+      flightNumber: flights.find((f) => f.packageId === p.id)?.flightNumber ?? "",
+      flightOrigin: flights.find((f) => f.packageId === p.id)?.origin ?? "",
+      flightDestination: flights.find((f) => f.packageId === p.id)?.destination ?? "",
+      flightDate: flights.find((f) => f.packageId === p.id)?.departureDate ?? "",
+      flightTime: flights.find((f) => f.packageId === p.id)?.departureTime ?? "",
     });
     setOpen(true);
   };
@@ -395,6 +413,21 @@ const Packages = () => {
             category: "sale",
             clientId: form.clientId,
             clientName: client?.name,
+          });
+        } catch { /* non-fatal */ }
+      }
+      // Auto-create flight record if user filled it
+      if (form.flightNumber.trim()) {
+        try {
+          await addFlight({
+            clientId: form.clientId,
+            airline: form.flightAirline,
+            flightNumber: form.flightNumber,
+            origin: form.flightOrigin,
+            destination: form.flightDestination,
+            departureDate: form.flightDate || form.departureDate,
+            departureTime: form.flightTime,
+            checkinAlert: true,
           });
         } catch { /* non-fatal */ }
       }
@@ -561,6 +594,42 @@ const Packages = () => {
                     <SelectItem value="cancelled">Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="sm:col-span-2 rounded-lg border border-dashed p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Informações de voo {editing ? "(visualização)" : "(opcional)"}</p>
+                </div>
+                {editing && (
+                  <p className="text-[11px] text-muted-foreground">Para adicionar/editar voos use a aba <span className="font-medium">Voos</span> ou abra os detalhes da reserva.</p>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label className="label-caption">Companhia</Label>
+                    <Input className="mt-1.5" value={form.flightAirline} onChange={(e) => setForm({ ...form, flightAirline: e.target.value })} placeholder="LATAM" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Nº do voo</Label>
+                    <Input className="mt-1.5 font-mono" value={form.flightNumber} onChange={(e) => setForm({ ...form, flightNumber: e.target.value })} placeholder="LA8084" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Origem</Label>
+                    <Input className="mt-1.5" value={form.flightOrigin} onChange={(e) => setForm({ ...form, flightOrigin: e.target.value })} placeholder="GRU" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Destino</Label>
+                    <Input className="mt-1.5" value={form.flightDestination} onChange={(e) => setForm({ ...form, flightDestination: e.target.value })} placeholder="MIA" disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Data do voo</Label>
+                    <Input className="mt-1.5" type="date" value={form.flightDate} onChange={(e) => setForm({ ...form, flightDate: e.target.value })} disabled={!!editing} />
+                  </div>
+                  <div>
+                    <Label className="label-caption">Horário</Label>
+                    <Input className="mt-1.5" type="time" value={form.flightTime} onChange={(e) => setForm({ ...form, flightTime: e.target.value })} disabled={!!editing} />
+                  </div>
+                </div>
               </div>
 
               <div className="sm:col-span-2">

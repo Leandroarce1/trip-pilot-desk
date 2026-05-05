@@ -1,12 +1,19 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { MapPin, Calendar, DollarSign, CheckCircle, Clock, Plane } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Calendar, DollarSign, CheckCircle, Clock, Plane, ArrowLeft, Package as PackageIcon } from "lucide-react";
 import { fmtDate } from "@/lib/format";
+
+const CATEGORY_LABEL: Record<string, string> = {
+  flight: "✈️ Aéreo", hotel: "🏨 Hotel", transfer: "🚐 Translado",
+  tour: "🗺️ Passeio", insurance: "🛡️ Seguro", other: "📦 Outro",
+};
 
 const BookingPage = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
+  const navigate = useNavigate();
   const { quotes, flights, transactions } = useData();
   const quote = quotes.find((q) => q.id === quoteId);
 
@@ -28,11 +35,19 @@ const BookingPage = () => {
   const remaining = quote.value - totalPaid;
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR")}`;
 
+  const items = quote.items ?? [];
+  const itemsTotal = items.reduce((s, it) => s + it.quantity * it.unitValue, 0);
+  const airfareValue = Math.max(0, quote.value - itemsTotal);
+  const itemsCommission = items.reduce((s, it) => s + (it.quantity * it.unitValue) * ((it.commissionPercent ?? 0) / 100), 0);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card">
         <div className="max-w-3xl mx-auto p-6">
+          <Button variant="ghost" size="sm" className="-ml-2 mb-2 gap-1.5" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" /> Voltar
+          </Button>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Proposta de Viagem</p>
           <h1 className="text-2xl font-bold">{quote.destination}</h1>
           <p className="text-sm text-muted-foreground mt-1">Preparada para {quote.clientName}</p>
@@ -80,6 +95,61 @@ const BookingPage = () => {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Descrição do Pacote</CardTitle></CardHeader>
             <CardContent><p className="text-sm text-muted-foreground">{quote.description}</p></CardContent>
+          </Card>
+        )}
+
+        {/* Items breakdown */}
+        {(items.length > 0 || airfareValue > 0) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <PackageIcon className="h-4 w-4 text-primary" />Serviços incluídos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {airfareValue > 0 && (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="text-sm font-medium">✈️ Aéreo</p>
+                    <p className="text-xs text-muted-foreground">Passagem aérea</p>
+                  </div>
+                  <p className="text-sm font-semibold tabular-nums">{fmt(airfareValue)}</p>
+                </div>
+              )}
+              {items.map((it) => {
+                const sub = it.quantity * it.unitValue;
+                const com = sub * ((it.commissionPercent ?? 0) / 100);
+                return (
+                  <div key={it.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{CATEGORY_LABEL[it.category ?? "other"]} — {it.description || "Serviço"}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {it.date && <>📅 {fmtDate(it.date)} · </>}
+                          {it.quantity}× {fmt(it.unitValue)}
+                          {(it.commissionPercent ?? 0) > 0 && <> · Comissão {it.commissionPercent}% ({fmt(com)})</>}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold tabular-nums shrink-0">{fmt(sub)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t text-center">
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Aéreo</p>
+                  <p className="text-sm font-bold tabular-nums">{fmt(airfareValue)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Serviços</p>
+                  <p className="text-sm font-bold tabular-nums">{fmt(itemsTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Comissão est.</p>
+                  <p className="text-sm font-bold tabular-nums text-success">{fmt(itemsCommission)}</p>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         )}
 
