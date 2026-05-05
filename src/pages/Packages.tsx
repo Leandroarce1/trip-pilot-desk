@@ -416,6 +416,21 @@ const Packages = () => {
           });
         } catch { /* non-fatal */ }
       }
+      // Auto-create flight record if user filled it
+      if (form.flightNumber.trim()) {
+        try {
+          await addFlight({
+            clientId: form.clientId,
+            airline: form.flightAirline,
+            flightNumber: form.flightNumber,
+            origin: form.flightOrigin,
+            destination: form.flightDestination,
+            departureDate: form.flightDate || form.departureDate,
+            departureTime: form.flightTime,
+            checkinAlert: true,
+          });
+        } catch { /* non-fatal */ }
+      }
       toast.success("Reserva criada", { description: totalValue > 0 ? "Receita lançada no Financeiro." : undefined });
     }
     handleOpenChange(false);
