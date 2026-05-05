@@ -28,7 +28,11 @@ const Clients = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(urlStatus || "all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", document: "", notes: "", status: (urlStatus as Client["status"]) || "lead" as Client["status"] });
+  const [form, setForm] = useState({
+    name: "", phone: "", email: "", document: "", notes: "",
+    status: (urlStatus as Client["status"]) || "lead" as Client["status"],
+    destination: "", travelDate: "", budget: "",
+  });
 
   // Sync filter with URL ?status=
   useEffect(() => {
@@ -43,12 +47,37 @@ const Clients = () => {
     return matchSearch && matchStatus;
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
-    addClient(form);
-    setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead" });
-    setOpen(false);
-    toast.success("Cliente cadastrado!");
+    try {
+      const created = await addClient({
+        name: form.name, phone: form.phone, email: form.email,
+        document: form.document, notes: form.notes, status: form.status,
+      } as any);
+
+      const hasTravel = !!(form.destination || form.travelDate || form.budget);
+      if (hasTravel && form.status === "lead" && created && (created as any).id) {
+        await addOpportunity({
+          clientId: (created as Client).id,
+          title: `Oportunidade — ${form.name}`,
+          destination: form.destination,
+          estimatedValue: Number(form.budget) || 0,
+          probability: 50,
+          stage: "new",
+          position: Date.now(),
+          expectedCloseDate: form.travelDate || undefined,
+          notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}`,
+        });
+      }
+
+      setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead", destination: "", travelDate: "", budget: "" });
+      setOpen(false);
+      toast.success(hasTravel ? "Lead criado + oportunidade gerada!" : "Cliente cadastrado!", {
+        action: hasTravel ? { label: "Ver pipeline", onClick: () => navigate("/oportunidades") } : undefined,
+      });
+    } catch {
+      toast.error("Erro ao cadastrar");
+    }
   };
 
   const convertToOpportunity = async (c: Client) => {
@@ -137,6 +166,15 @@ const Clients = () => {
                     {clientStatusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">Interesse de viagem (opcional)</p>
+                <p className="text-[11px] text-muted-foreground -mt-2">Se preenchido, gera automaticamente uma oportunidade no pipeline.</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div><Label className="text-xs">Destino</Label><Input placeholder="Ex: Cancún" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} /></div>
+                  <div><Label className="text-xs">Data prevista</Label><Input type="date" value={form.travelDate} onChange={(e) => setForm({ ...form, travelDate: e.target.value })} /></div>
+                  <div><Label className="text-xs">Orçamento (R$)</Label><Input type="number" placeholder="15000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></div>
+                </div>
               </div>
               <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
               <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
