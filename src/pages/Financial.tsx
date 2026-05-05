@@ -99,7 +99,7 @@ const Financial = () => {
   const monthExpense = (hasContextFilter ? scopedTransactions : monthTx)
     .filter((t) => t.type === "expense" && t.status === "paid")
     .reduce((s, t) => s + t.value, 0);
-  const monthProfit = monthIncome - monthExpense;
+  // monthProfit antigo (receita-despesa) substituído por lucro baseado em comissão (calculado abaixo)
   const overdueValue = kpiSource.filter(isOverdue).reduce((s, t) => s + (t.type === "income" ? t.value : 0), 0);
   const totalReceivable = scopedTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
   const totalPending = scopedTransactions.filter((t) => t.type === "income" && t.status === "pending").reduce((s, t) => s + t.value, 0);
