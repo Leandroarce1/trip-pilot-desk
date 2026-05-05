@@ -98,6 +98,61 @@ const BookingPage = () => {
           </Card>
         )}
 
+        {/* Items breakdown */}
+        {(items.length > 0 || airfareValue > 0) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <PackageIcon className="h-4 w-4 text-primary" />Serviços incluídos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {airfareValue > 0 && (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="text-sm font-medium">✈️ Aéreo</p>
+                    <p className="text-xs text-muted-foreground">Passagem aérea</p>
+                  </div>
+                  <p className="text-sm font-semibold tabular-nums">{fmt(airfareValue)}</p>
+                </div>
+              )}
+              {items.map((it) => {
+                const sub = it.quantity * it.unitValue;
+                const com = sub * ((it.commissionPercent ?? 0) / 100);
+                return (
+                  <div key={it.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{CATEGORY_LABEL[it.category ?? "other"]} — {it.description || "Serviço"}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {it.date && <>📅 {fmtDate(it.date)} · </>}
+                          {it.quantity}× {fmt(it.unitValue)}
+                          {(it.commissionPercent ?? 0) > 0 && <> · Comissão {it.commissionPercent}% ({fmt(com)})</>}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold tabular-nums shrink-0">{fmt(sub)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t text-center">
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Aéreo</p>
+                  <p className="text-sm font-bold tabular-nums">{fmt(airfareValue)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Serviços</p>
+                  <p className="text-sm font-bold tabular-nums">{fmt(itemsTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Comissão est.</p>
+                  <p className="text-sm font-bold tabular-nums text-success">{fmt(itemsCommission)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Itinerary */}
         {quote.itinerary && quote.itinerary.length > 0 && (
           <Card>
