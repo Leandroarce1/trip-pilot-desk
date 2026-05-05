@@ -301,6 +301,12 @@ const Packages = () => {
       passengersCount: String(Math.max(1, p.passengers.length)),
       notes: p.notes,
       reservationStatus: p.reservationStatus,
+      flightAirline: flights.find((f) => f.packageId === p.id)?.airline ?? "",
+      flightNumber: flights.find((f) => f.packageId === p.id)?.flightNumber ?? "",
+      flightOrigin: flights.find((f) => f.packageId === p.id)?.origin ?? "",
+      flightDestination: flights.find((f) => f.packageId === p.id)?.destination ?? "",
+      flightDate: flights.find((f) => f.packageId === p.id)?.departureDate ?? "",
+      flightTime: flights.find((f) => f.packageId === p.id)?.departureTime ?? "",
     });
     setOpen(true);
   };
