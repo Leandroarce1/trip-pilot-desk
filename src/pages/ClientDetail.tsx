@@ -217,7 +217,7 @@ const ClientDetail = () => {
           title="Há pagamentos pendentes"
           description="Acompanhe o financeiro deste cliente"
           actionLabel="Ver financeiro"
-          onAction={() => navigate("/financeiro")}
+          onAction={() => navigate(`/financeiro?clientId=${client.id}`)}
         />
       )}
 
