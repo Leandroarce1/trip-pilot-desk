@@ -484,9 +484,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   const updateTransaction = async (t: Transaction) => {
     if (!user) return;
+    const previous = transactions.find((x) => x.id === t.id);
     const { data, error } = await supabase.from("transactions").update(transactionToRow(t, user.id)).eq("id", t.id).select().single();
     if (error) throw error;
-    setTransactions((prev) => prev.map((x) => (x.id === t.id ? mapTransaction(data, getClientName(data.client_id)) : x)));
+    const mapped = mapTransaction(data, getClientName(data.client_id));
+    setTransactions((prev) => prev.map((x) => (x.id === t.id ? mapped : x)));
+
+    // ---- Automação: ao quitar recebimento principal de uma reserva, marcar como paga + confirmar ----
+    const becamePaid = previous?.status !== "paid" && mapped.status === "paid";
+    if (becamePaid && mapped.type === "income" && mapped.packageId && mapped.category !== "commission") {
+      const pkg = packages.find((p) => p.id === mapped.packageId);
+      if (pkg) {
+        // soma de tudo já pago (income) para esta reserva, ignorando comissão
+        const totalPaid = transactions
+          .filter((x) => x.packageId === pkg.id && x.type === "income" && x.category !== "commission" && x.id !== mapped.id)
+          .reduce((s, x) => s + (x.status === "paid" ? x.value : 0), 0) + mapped.value;
+
+        const fullyPaid = totalPaid >= pkg.totalValue;
+        const newPayment = fullyPaid ? "paid" : "partial";
+        const newReservation = fullyPaid && pkg.reservationStatus !== "cancelled" ? "confirmed" : pkg.reservationStatus;
+
+        if (pkg.paymentStatus !== newPayment || pkg.reservationStatus !== newReservation) {
+          await updatePackage({
+            ...pkg,
+            paymentStatus: newPayment,
+            reservationStatus: newReservation,
+            history: [
+              ...pkg.history,
+              { date: new Date().toISOString(), action: fullyPaid ? "Pagamento total recebido — reserva confirmada" : "Pagamento parcial recebido" },
+            ],
+          });
+        }
+      }
+    }
   };
   const deleteTransaction = async (id: string) => {
     const { error } = await supabase.from("transactions").delete().eq("id", id);
@@ -499,7 +529,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const { data, error } = await supabase.from("packages").insert(packageToRow(p, user.id)).select().single();
     if (error) throw error;
-    setPackages((prev) => [mapPackage(data, getClientName(data.client_id)), ...prev]);
+    const mapped = mapPackage(data, getClientName(data.client_id));
+    setPackages((prev) => [mapped, ...prev]);
+
+    // ---- Automação: gerar conta a receber pendente vinculada à reserva ----
+    if (mapped.totalValue > 0 && mapped.clientId) {
+      try {
+        const receivable: Omit<Transaction, "id"> = {
+          type: "income",
+          description: `Recebimento — ${mapped.destinationCity || mapped.name} (${mapped.clientName})`,
+          value: mapped.totalValue,
+          date: mapped.departureDate || new Date().toISOString().slice(0, 10),
+          status: "pending",
+          category: "sale",
+          clientName: mapped.clientName,
+          clientId: mapped.clientId,
+          packageId: mapped.id,
+        };
+        const { data: txData, error: txErr } = await supabase
+          .from("transactions").insert(transactionToRow(receivable, user.id)).select().single();
+        if (!txErr && txData) {
+          setTransactions((prev) => [mapTransaction(txData, getClientName(txData.client_id)), ...prev]);
+        }
+      } catch (e) {
+        console.warn("Falha ao gerar conta a receber automática:", e);
+      }
+    }
   };
   const updatePackage = async (p: TravelPackage) => {
     if (!user) return;
