@@ -188,7 +188,7 @@ const emptyForm: FormState = {
 const Packages = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
+  const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, addFlight, flights, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | OpStatus>("all");
