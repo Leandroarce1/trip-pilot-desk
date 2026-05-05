@@ -77,7 +77,8 @@ const docExpiryStatus = (expiresAt?: string) => {
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { clients, packages, transactions, updateClient, deleteClient } = useData();
+  const { clients, packages, transactions, updateClient, deleteClient,
+    travelers, addTraveler, updateTraveler, deleteTraveler } = useData();
   const client = clients.find((c) => c.id === id);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -86,6 +87,20 @@ const ClientDetail = () => {
   const [newDoc, setNewDoc] = useState<ClientDocument>({
     id: "", type: "passport", number: "", issuingCountry: "Brasil", issueDate: "", expiryDate: "",
   });
+
+  // Viajantes
+  const [travelerOpen, setTravelerOpen] = useState(false);
+  const emptyTraveler: Partial<Traveler> = {
+    name: "", document: "", birthDate: "", passportNumber: "", passportExpiry: "",
+    passportCountry: "Brasil", nationality: "Brasileira", relation: "", notes: "",
+  };
+  const [travelerForm, setTravelerForm] = useState<Partial<Traveler>>(emptyTraveler);
+  const [editingTravelerId, setEditingTravelerId] = useState<string | null>(null);
+
+  const clientTravelers = useMemo(
+    () => travelers.filter((t) => t.clientId === id),
+    [travelers, id],
+  );
 
   const clientPackages = useMemo(
     () => (client ? [...packages].filter((p) => p.clientId === client.id) : []),
