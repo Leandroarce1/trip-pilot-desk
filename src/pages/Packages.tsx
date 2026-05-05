@@ -151,6 +151,12 @@ type FormState = {
   passengersCount: string;
   notes: string;
   reservationStatus: ReservationStatus;
+  flightAirline: string;
+  flightNumber: string;
+  flightOrigin: string;
+  flightDestination: string;
+  flightDate: string;
+  flightTime: string;
 };
 
 const emptyForm: FormState = {
