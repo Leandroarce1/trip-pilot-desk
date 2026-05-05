@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
+import { BackButton } from "@/components/BackButton";
 
 type FormState = {
   type: Transaction["type"];
@@ -60,6 +61,17 @@ const Financial = () => {
 
   const clientFilter = searchParams.get("clientId") || "";
   const packageFilter = searchParams.get("packageId") || "";
+  const hasContextFilter = !!(clientFilter || packageFilter);
+
+  // Conjunto de transações a considerar (geral ou contextual)
+  const scopedTransactions = useMemo(() => {
+    if (!hasContextFilter) return transactions;
+    return transactions.filter((t) => {
+      if (clientFilter && t.clientId !== clientFilter) return false;
+      if (packageFilter && t.packageId !== packageFilter) return false;
+      return true;
+    });
+  }, [transactions, clientFilter, packageFilter, hasContextFilter]);
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -77,13 +89,21 @@ const Financial = () => {
     if (tabParam && tabMap[tabParam]) setTab(tabMap[tabParam]);
   }, [searchParams]);
 
-  // ---------- KPIs ----------
+  // ---------- KPIs (contextuais quando há filtro) ----------
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthTx = transactions.filter((t) => t.date.startsWith(currentMonth));
-  const monthIncome = monthTx.filter((t) => t.type === "income" && t.status === "paid").reduce((s, t) => s + t.value, 0);
-  const monthExpense = monthTx.filter((t) => t.type === "expense" && t.status === "paid").reduce((s, t) => s + t.value, 0);
+  const kpiSource = hasContextFilter ? scopedTransactions : transactions;
+  const monthTx = kpiSource.filter((t) => t.date.startsWith(currentMonth));
+  const monthIncome = (hasContextFilter ? scopedTransactions : monthTx)
+    .filter((t) => t.type === "income" && t.status === "paid")
+    .reduce((s, t) => s + t.value, 0);
+  const monthExpense = (hasContextFilter ? scopedTransactions : monthTx)
+    .filter((t) => t.type === "expense" && t.status === "paid")
+    .reduce((s, t) => s + t.value, 0);
   const monthProfit = monthIncome - monthExpense;
-  const overdueValue = transactions.filter(isOverdue).reduce((s, t) => s + (t.type === "income" ? t.value : 0), 0);
+  const overdueValue = kpiSource.filter(isOverdue).reduce((s, t) => s + (t.type === "income" ? t.value : 0), 0);
+  const totalReceivable = scopedTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.value, 0);
+  const totalPending = scopedTransactions.filter((t) => t.type === "income" && t.status === "pending").reduce((s, t) => s + t.value, 0);
+  const totalReceived = scopedTransactions.filter((t) => t.type === "income" && t.status === "paid").reduce((s, t) => s + t.value, 0);
 
   // ---------- Comissões (a partir de packages) ----------
   const commissions = useMemo(() => {
@@ -332,21 +352,41 @@ const Financial = () => {
 
   const filterClient = clients.find((c) => c.id === clientFilter);
   const filterPackage = packages.find((p) => p.id === packageFilter);
-  const hasContextFilter = !!(clientFilter || packageFilter);
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       {hasContextFilter && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-          <div className="text-sm">
-            <span className="text-muted-foreground">Financeiro filtrado por: </span>
-            <span className="font-semibold">
-              {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
-            </span>
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Financeiro filtrado por: </span>
+              <span className="font-semibold">
+                {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
+              Limpar filtro
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
-            Limpar filtro
-          </Button>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Total</p>
+              <p className="font-bold tabular-nums">{brl(totalReceivable)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Recebido</p>
+              <p className="font-bold tabular-nums text-success">{brl(totalReceived)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Pendente</p>
+              <p className="font-bold tabular-nums text-warning">{brl(totalPending)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Atrasado</p>
+              <p className="font-bold tabular-nums text-destructive">{brl(overdueValue)}</p>
+            </div>
+          </div>
         </div>
       )}
       <div className="flex items-center justify-between flex-wrap gap-3">

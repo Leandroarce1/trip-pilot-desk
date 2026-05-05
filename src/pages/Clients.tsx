@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
+import { BackButton } from "@/components/BackButton";
 import { NextStepBanner } from "@/components/NextStepBanner";
 
 const Clients = () => {
@@ -92,6 +93,7 @@ const Clients = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <SalesJourney current="lead" />
 
       {nextLead && (

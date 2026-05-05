@@ -208,7 +208,7 @@ const PackageDetail = () => {
             <Wallet className="h-4 w-4" />
             {hasFinancial ? "Ver financeiro" : "Gerar financeiro"}
           </Button>
-          <Button variant="outline" onClick={() => navigate("/pacotes")}>
+          <Button variant="outline" onClick={() => navigate(`/pacotes?edit=${pkg.id}`)}>
             <Edit2 className="h-4 w-4" /> Editar reserva
           </Button>
         </div>

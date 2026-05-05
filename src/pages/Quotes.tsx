@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
 import { NextStepBanner } from "@/components/NextStepBanner";
+import { BackButton } from "@/components/BackButton";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
@@ -24,7 +25,7 @@ const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", qu
 const Quotes = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { quotes, clients, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
+  const { quotes, clients, packages, addQuote, updateQuote, deleteQuote, addPackage, updateClient } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
@@ -201,10 +202,12 @@ const Quotes = () => {
 
   return (
     <div className="space-y-6">
-      {fromParam && (
+      {fromParam ? (
         <Button variant="ghost" size="sm" className="gap-1.5 -ml-2" onClick={() => { setSearchParams({}); navigate(`/${fromParam}`); }}>
           <ArrowLeft className="h-4 w-4" /> Voltar para {fromParam === "oportunidades" ? "Oportunidades" : fromParam}
         </Button>
+      ) : (
+        <BackButton fallback="/" />
       )}
       <SalesJourney current="proposal" completed={["lead", "opportunity"]} />
 
@@ -424,16 +427,19 @@ const Quotes = () => {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar reserva
                 </Button>
               )}
-              {q.status === "approved" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full gap-1.5"
-                  onClick={() => navigate("/pacotes")}
-                >
-                  <PackageIcon className="h-3.5 w-3.5" /> Ver reservas geradas
-                </Button>
-              )}
+              {q.status === "approved" && (() => {
+                const linkedPkg = packages.find((p) => p.quoteId === q.id);
+                return (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5"
+                    onClick={() => linkedPkg ? navigate(`/pacotes/${linkedPkg.id}`) : navigate(`/pacotes?clientId=${q.clientId}`)}
+                  >
+                    <PackageIcon className="h-3.5 w-3.5" /> {linkedPkg ? "Ver reserva gerada" : "Ver reservas do cliente"}
+                  </Button>
+                );
+              })()}
             </div>
           </div>
         ))}

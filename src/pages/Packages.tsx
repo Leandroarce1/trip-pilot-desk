@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus, Search, Eye, Edit2, Trash2, Plane, Calendar as CalendarIcon,
   TrendingUp, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown,
@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SalesJourney } from "@/components/SalesJourney";
+import { BackButton } from "@/components/BackButton";
 import { FileText as FileTextIcon } from "lucide-react";
 
 // ------- Status helpers -------
@@ -174,6 +175,7 @@ const emptyForm: FormState = {
 
 const Packages = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { packages, clients, suppliers, addPackage, updatePackage, deletePackage, addTransaction, quotes, opportunities, vouchers } = useData();
 
   const [search, setSearch] = useState("");
@@ -186,6 +188,7 @@ const Packages = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TravelPackage | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const autoOpenRef = useRef(false);
 
   const hasVoucherFor = (pkgId: string) => vouchers.some((v) => v.packageId === pkgId && v.issued);
 
@@ -289,6 +292,23 @@ const Packages = () => {
     });
     setOpen(true);
   };
+
+  // Auto-abrir edição quando chega via ?edit=ID
+  useEffect(() => {
+    if (autoOpenRef.current) return;
+    const editId = searchParams.get("edit");
+    if (editId && packages.length > 0) {
+      const p = packages.find((x) => x.id === editId);
+      if (p) {
+        openEdit(p);
+        autoOpenRef.current = true;
+        const sp = new URLSearchParams(searchParams);
+        sp.delete("edit");
+        setSearchParams(sp, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, packages]);
 
   const handleSubmit = async () => {
     if (!form.clientId || !form.destinationCity || !form.departureDate || !form.returnDate) {
@@ -401,6 +421,7 @@ const Packages = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <SalesJourney current="reservation" completed={["lead", "opportunity", "proposal"]} />
 
       {/* ---------- Page header ---------- */}

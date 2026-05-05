@@ -10,6 +10,7 @@ import {
   paymentTermLabels, emptySupplierForm, SupplierFormState,
 } from "@/lib/suppliers";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/BackButton";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -106,6 +107,7 @@ const Suppliers = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="label-caption mb-1">Operação</p>

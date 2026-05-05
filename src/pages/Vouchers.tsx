@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Ticket, Trash2, Pencil, CheckCircle2, Clock, Building2, Bus, Camera, Hotel, MoreHorizontal, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { generateVoucherPdf } from "@/lib/voucherPdf";
+import { BackButton } from "@/components/BackButton";
 
 const TYPE_META: Record<VoucherType, { label: string; icon: any; color: string }> = {
   hotel: { label: "Hotel", icon: Hotel, color: "bg-blue-500/10 text-blue-600" },
@@ -77,6 +78,7 @@ export default function Vouchers() {
 
   return (
     <div className="space-y-6">
+      <BackButton fallback="/" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Vouchers</h1>
