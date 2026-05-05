@@ -50,7 +50,7 @@ const isOverdue = (t: Transaction) => t.status === "pending" && t.date < today()
 const Financial = () => {
   const { transactions, clients, packages, addTransaction, updateTransaction, deleteTransaction } = useData();
   const [search, setSearch] = useState("");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
