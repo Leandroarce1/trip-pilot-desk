@@ -53,6 +53,7 @@ const Clients = () => {
       const created = await addClient({
         name: form.name, phone: form.phone, email: form.email,
         document: form.document, notes: form.notes, status: form.status,
+        profile: form.leadSource ? { originChannel: form.leadSource as any } : undefined,
       } as any);
 
       const hasTravel = !!(form.destination || form.travelDate || form.budget);
@@ -66,11 +67,14 @@ const Clients = () => {
           stage: "new",
           position: Date.now(),
           expectedCloseDate: form.travelDate || undefined,
-          notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}`,
+          returnDate: form.returnDate || undefined,
+          travelersCount: Number(form.travelersCount) || 1,
+          leadSource: form.leadSource || undefined,
+          notes: `Originada do lead ${form.name}${form.travelDate ? ` · viagem em ${form.travelDate}` : ""}${form.leadSource ? ` · origem ${form.leadSource}` : ""}`,
         });
       }
 
-      setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead", destination: "", travelDate: "", budget: "" });
+      setForm({ name: "", phone: "", email: "", document: "", notes: "", status: "lead", destination: "", travelDate: "", returnDate: "", budget: "", travelersCount: "2", leadSource: "" });
       setOpen(false);
       toast.success(hasTravel ? "Lead criado + oportunidade gerada!" : "Cliente cadastrado!", {
         action: hasTravel ? { label: "Ver pipeline", onClick: () => navigate("/oportunidades") } : undefined,
