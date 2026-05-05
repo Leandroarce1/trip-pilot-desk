@@ -80,6 +80,9 @@ const mapOpportunity = (r: any, clientName: string): Opportunity => ({
   estimatedValue: Number(r.estimated_value ?? 0),
   probability: Number(r.probability ?? 50),
   expectedCloseDate: r.expected_close_date ?? undefined,
+  returnDate: r.return_date ?? undefined,
+  travelersCount: r.travelers_count ?? undefined,
+  leadSource: r.lead_source ?? undefined,
   stage: r.stage,
   position: Number(r.position ?? 0),
   notes: r.notes ?? "",
@@ -94,9 +97,42 @@ const opportunityToRow = (o: Partial<Opportunity>, userId: string) => ({
   estimated_value: o.estimatedValue ?? 0,
   probability: o.probability ?? 50,
   expected_close_date: o.expectedCloseDate || null,
+  return_date: o.returnDate || null,
+  travelers_count: o.travelersCount ?? 1,
+  lead_source: o.leadSource ?? "",
   stage: o.stage ?? "new",
   position: o.position ?? 0,
   notes: o.notes ?? "",
+});
+
+// ---------- Travelers mappers ----------
+const mapTraveler = (r: any): Traveler => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  name: r.name ?? "",
+  document: r.document ?? "",
+  birthDate: r.birth_date ?? undefined,
+  passportNumber: r.passport_number ?? "",
+  passportExpiry: r.passport_expiry ?? undefined,
+  passportCountry: r.passport_country ?? "",
+  nationality: r.nationality ?? "",
+  relation: r.relation ?? "",
+  notes: r.notes ?? "",
+  createdAt: r.created_at?.slice(0, 10) ?? "",
+});
+
+const travelerToRow = (t: Partial<Traveler>, userId: string) => ({
+  user_id: userId,
+  client_id: t.clientId!,
+  name: t.name!,
+  document: t.document ?? "",
+  birth_date: t.birthDate || null,
+  passport_number: t.passportNumber ?? "",
+  passport_expiry: t.passportExpiry || null,
+  passport_country: t.passportCountry ?? "",
+  nationality: t.nationality ?? "",
+  relation: t.relation ?? "",
+  notes: t.notes ?? "",
 });
 
 const mapFlight = (r: any, clientName: string): Flight => ({
