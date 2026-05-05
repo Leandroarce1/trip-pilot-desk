@@ -67,12 +67,17 @@ export interface ItineraryDay {
   description: string;
 }
 
+export type QuoteItemCategory = "flight" | "hotel" | "transfer" | "tour" | "insurance" | "other";
+
 export interface QuoteItem {
   id: string;
   description: string;
   quantity: number;
   unitValue: number;
   cost?: number;
+  category?: QuoteItemCategory;
+  date?: string;
+  commissionPercent?: number;
 }
 
 export type QuoteStatus = "draft" | "sent" | "approved" | "cancelled" | "lost";
