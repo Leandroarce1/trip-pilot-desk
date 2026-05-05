@@ -119,11 +119,25 @@ const Financial = () => {
           totalValue: p.totalValue, percent: p.commissionPercent,
           expected, received, pending: Math.max(0, expected - received),
           fullyReceived: received >= expected,
+          departureDate: p.departureDate,
         };
       });
   }, [packages, transactions]);
 
   const commissionPending = commissions.reduce((s, c) => s + c.pending, 0);
+
+  // ---------- Comissões do mês (baseado na data de embarque) ----------
+  const monthCommissions = useMemo(() => {
+    const inMonth = commissions.filter((c) => (c.departureDate || "").startsWith(currentMonth));
+    const total = inMonth.reduce((s, c) => s + c.expected, 0);
+    const paid = inMonth.reduce((s, c) => s + c.received, 0);
+    const pending = inMonth.reduce((s, c) => s + c.pending, 0);
+    return { total, paid, pending };
+  }, [commissions, currentMonth]);
+
+  // Lucro mês = comissão - despesa (estimado e realizado)
+  const profitEstimated = monthCommissions.total - monthExpense;
+  const profitRealized = monthCommissions.paid - monthExpense;
 
   // ---------- Gráfico mensal (últimos 6 meses) ----------
   const chartData = useMemo(() => {
