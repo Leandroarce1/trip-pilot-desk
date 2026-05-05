@@ -108,7 +108,7 @@ const PackageDetail = () => {
 
   /** Gera lançamento financeiro (income pendente) vinculado à reserva */
   const generateFinancial = () => {
-    const filterQuery = `?search=${encodeURIComponent(pkg.destinationCity)}`;
+    const filterQuery = `?packageId=${pkg.id}&tab=receivables`;
     if (pkgTransactions.length > 0) {
       toast.info("Financeiro já gerado", { description: "Abrindo lançamentos vinculados a esta reserva." });
       navigate(`/financeiro${filterQuery}`);
@@ -141,6 +141,27 @@ const PackageDetail = () => {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="breadcrumb">
+        <button onClick={() => navigate(`/clientes/${pkg.clientId}`)} className="hover:text-foreground transition-colors">
+          {pkg.clientName || "Cliente"}
+        </button>
+        <span>/</span>
+        {quote ? (
+          <button onClick={() => navigate(`/cotacoes?id=${quote.id}`)} className="hover:text-foreground transition-colors">
+            Proposta
+          </button>
+        ) : (
+          <span className="opacity-50">Proposta</span>
+        )}
+        <span>/</span>
+        <span className="font-semibold text-foreground">Reserva</span>
+        <span>/</span>
+        <button onClick={() => navigate(`/financeiro?packageId=${pkg.id}&tab=receivables`)} className="hover:text-foreground transition-colors">
+          Financeiro
+        </button>
+      </nav>
+
       {/* ---------- Header ---------- */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3 min-w-0">

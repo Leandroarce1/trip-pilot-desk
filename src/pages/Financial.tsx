@@ -50,13 +50,16 @@ const isOverdue = (t: Transaction) => t.status === "pending" && t.date < today()
 const Financial = () => {
   const { transactions, clients, packages, addTransaction, updateTransaction, deleteTransaction } = useData();
   const [search, setSearch] = useState("");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [tab, setTab] = useState("overview");
   const [commissionModal, setCommissionModal] = useState<{ open: boolean; packageId: string; packageName: string; clientId: string; pending: number; value: string; date: string }>({ open: false, packageId: "", packageName: "", clientId: "", pending: 0, value: "", date: today() });
+
+  const clientFilter = searchParams.get("clientId") || "";
+  const packageFilter = searchParams.get("packageId") || "";
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -173,6 +176,8 @@ const Financial = () => {
   const filterFor = (typeOnly?: Transaction["type"]) =>
     transactions.filter((t) => {
       if (typeOnly && t.type !== typeOnly) return false;
+      if (clientFilter && t.clientId !== clientFilter) return false;
+      if (packageFilter && t.packageId !== packageFilter) return false;
       const matchSearch = !search ||
         t.description.toLowerCase().includes(search.toLowerCase()) ||
         (t.clientName || "").toLowerCase().includes(search.toLowerCase());
@@ -325,12 +330,29 @@ const Financial = () => {
     </div>
   );
 
+  const filterClient = clients.find((c) => c.id === clientFilter);
+  const filterPackage = packages.find((p) => p.id === packageFilter);
+  const hasContextFilter = !!(clientFilter || packageFilter);
+
   return (
     <div className="space-y-6">
+      {hasContextFilter && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Financeiro filtrado por: </span>
+            <span className="font-semibold">
+              {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
+            Limpar filtro
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Financeiro</h1>
-          <p className="text-sm text-muted-foreground">Recebimentos, pagamentos, comissões e fluxo de caixa</p>
+          <p className="text-sm text-muted-foreground">{hasContextFilter ? "Visão filtrada por contexto" : "Recebimentos, pagamentos, comissões e fluxo de caixa"}</p>
         </div>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>

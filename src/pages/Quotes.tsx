@@ -35,7 +35,7 @@ const Quotes = () => {
   const [dirty, setDirty] = useState(false);
   const initRef = useRef(false);
   const fromParam = searchParams.get("from");
-  const editParam = searchParams.get("edit");
+  const editParam = searchParams.get("edit") || searchParams.get("id");
 
   // Track dirty
   useEffect(() => { if (open) setDirty(true); }, [form, itinerary, items]);

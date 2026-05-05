@@ -797,20 +797,20 @@ const Packages = () => {
                                 <FileText className="h-3.5 w-3.5" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Ver proposta</TooltipContent>
+                            <TooltipContent>Ver proposta vinculada</TooltipContent>
                           </Tooltip>
                         )}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => navigate(`/clientes/${p.clientId}`)} aria-label="Ver cliente">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/clientes/${p.clientId}`)} aria-label="Histórico do cliente">
                               <UserIcon className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Ver cliente</TooltipContent>
+                          <TooltipContent>Histórico do cliente</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => navigate("/vouchers")} aria-label="Voucher">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/vouchers?packageId=${p.id}`)} aria-label="Voucher">
                               <Ticket className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
@@ -818,11 +818,11 @@ const Packages = () => {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => navigate("/financeiro?tab=transactions")} aria-label="Financeiro">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/financeiro?packageId=${p.id}&tab=receivables`)} aria-label="Financeiro da reserva">
                               <DollarSign className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Abrir financeiro</TooltipContent>
+                          <TooltipContent>Financeiro desta reserva</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
