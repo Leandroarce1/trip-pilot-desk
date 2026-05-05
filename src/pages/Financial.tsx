@@ -344,7 +344,7 @@ const Financial = () => {
               {filterPackage ? `Reserva — ${filterPackage.name}` : `Cliente — ${filterClient?.name || "—"}`}
             </span>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); window.history.replaceState(null, "", `?${sp.toString()}`); window.location.reload(); }}>
+          <Button variant="ghost" size="sm" onClick={() => { const sp = new URLSearchParams(searchParams); sp.delete("clientId"); sp.delete("packageId"); setSearchParams(sp); }}>
             Limpar filtro
           </Button>
         </div>
