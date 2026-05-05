@@ -20,7 +20,12 @@ import { BackButton } from "@/components/BackButton";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
-const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", quantity: 1, unitValue: 0, cost: 0 });
+const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", quantity: 1, unitValue: 0, cost: 0, category: "other", date: "", commissionPercent: 10 });
+
+const CATEGORY_LABEL: Record<string, string> = {
+  flight: "✈️ Aéreo", hotel: "🏨 Hotel", transfer: "🚐 Translado",
+  tour: "🗺️ Passeio", insurance: "🛡️ Seguro", other: "📦 Outro",
+};
 
 const Quotes = () => {
   const navigate = useNavigate();
