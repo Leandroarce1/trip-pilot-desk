@@ -409,10 +409,30 @@ const Financial = () => {
           <h1 className="text-2xl font-black tracking-tight">Financeiro</h1>
           <p className="text-sm text-muted-foreground">{hasContextFilter ? "Visão filtrada por contexto" : "Recebimentos, pagamentos, comissões e fluxo de caixa"}</p>
         </div>
-        <Dialog open={open} onOpenChange={handleClose}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openNew()}><Plus className="mr-2 h-4 w-4" /> Novo Registro</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (scopedTransactions.length === 0) { toast.error("Nada para exportar"); return; }
+              exportCsv("financeiro", [
+                { header: "Data", value: (t) => fmtDate(t.date) },
+                { header: "Tipo", value: (t) => t.type === "income" ? "Receita" : "Despesa" },
+                { header: "Descrição", value: (t) => t.description },
+                { header: "Categoria", value: (t) => t.category },
+                { header: "Cliente", value: (t) => t.clientName ?? "" },
+                { header: "Status", value: (t) => t.status },
+                { header: "Valor (R$)", value: (t) => t.value },
+              ], scopedTransactions);
+              toast.success(`${scopedTransactions.length} registro(s) exportado(s)`);
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" /> Exportar
+          </Button>
+          <Dialog open={open} onOpenChange={handleClose}>
+            <DialogTrigger asChild>
+              <Button onClick={() => openNew()}><Plus className="mr-2 h-4 w-4" /> Novo Registro</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingTx ? "Editar Registro" : "Novo Registro Financeiro"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
