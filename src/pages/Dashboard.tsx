@@ -634,26 +634,96 @@ const Dashboard = () => {
         <div className="absolute bottom-0 right-1/3 h-[20rem] w-[20rem] rounded-full bg-[hsl(var(--primary-soft))]/5 blur-[100px]" />
       </div>
 
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="label-caption mb-1 flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" /> Command Center
-          </p>
-          <h1 className="text-3xl tracking-tight">Bom dia, Agente ✈️</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tudo que importa na sua agência, em uma tela.
-          </p>
+      {/* Premium hero header */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--primary))] p-7 text-navy-foreground shadow-[0_20px_60px_-20px_hsl(var(--navy)/0.5)]">
+        <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[hsl(var(--gold))]/25 blur-[100px]" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[hsl(var(--primary-soft))]/30 blur-[120px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="animate-fade-in">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.18em] border border-white/15">
+              <Sparkles className="h-3 w-3 text-[hsl(var(--gold))]" /> Command Center
+            </span>
+            <h1 className="mt-3 text-4xl md:text-5xl font-black tracking-tight leading-[1.05]">
+              Bom dia, <span className="bg-gradient-to-r from-[hsl(var(--gold))] via-white to-[hsl(var(--primary-soft))] bg-clip-text text-transparent">Agente</span> ✈️
+            </h1>
+            <p className="mt-2 text-sm text-navy-foreground/80 max-w-md">
+              Tudo que importa na sua agência, em uma tela elegante e premium.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            <p className="text-xs text-navy-foreground/70 tabular-nums hidden sm:block">
+              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" className="bg-white/10 hover:bg-white/20 text-navy-foreground border border-white/20 backdrop-blur gap-1.5"
+                onClick={() => navigate("/clientes")}>
+                <UserPlus className="h-4 w-4" /> Novo cliente
+              </Button>
+              <Button size="sm" className="bg-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/90 text-[hsl(var(--gold-foreground))] gap-1.5 shadow-lg shadow-[hsl(var(--gold))]/25"
+                onClick={() => navigate("/cotacoes")}>
+                <Plus className="h-4 w-4" /> Nova cotação
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground tabular-nums hidden sm:block">
-            {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-          <Button size="sm" onClick={() => navigate("/cotacoes")} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Nova cotação
-          </Button>
+
+        {/* Mini stats inline */}
+        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Receita do mês", value: fmtCurrency(monthRevenue), icon: DollarSign, color: "text-[hsl(var(--gold))]" },
+            { label: "Vendas", value: monthSales, icon: Ticket, color: "text-[hsl(var(--primary-soft))]" },
+            { label: "Clientes ativos", value: soldClients, icon: Users, color: "text-success" },
+            { label: "Conversão", value: `${conversion.toFixed(0)}%`, icon: Target, color: "text-[hsl(var(--gold))]" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl bg-white/[0.07] border border-white/10 backdrop-blur-md p-3 hover:bg-white/[0.12] transition-colors">
+              <div className="flex items-center gap-2">
+                <s.icon className={cn("h-4 w-4", s.color)} />
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-navy-foreground/70">{s.label}</p>
+              </div>
+              <p className="mt-1.5 text-2xl font-black tabular-nums">{s.value}</p>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Ações Rápidas */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-[hsl(var(--gold))]" />
+          <h2 className="text-[13px] font-bold tracking-tight text-navy uppercase">Ações Rápidas</h2>
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Nova cotação", icon: FileText, to: "/cotacoes", grad: "from-primary to-[hsl(var(--primary-soft))]" },
+            { label: "Novo cliente", icon: UserPlus, to: "/clientes", grad: "from-success to-[hsl(161_70%_50%)]" },
+            { label: "Nova reserva", icon: Plane, to: "/pacotes", grad: "from-[hsl(var(--gold))] to-[hsl(41_100%_60%)]" },
+            { label: "Lançar receita", icon: DollarSign, to: "/financeiro?tab=income", grad: "from-success to-primary" },
+            { label: "Lançar despesa", icon: CreditCard, to: "/financeiro?tab=expense", grad: "from-destructive to-warning" },
+            { label: "Pipeline", icon: Activity, to: "/pipeline", grad: "from-navy to-primary" },
+          ].map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              onClick={() => navigate(a.to)}
+              className={cn(
+                "group relative overflow-hidden rounded-2xl p-4 text-left text-white",
+                "bg-gradient-to-br shadow-lg transition-all duration-300",
+                "hover:-translate-y-1 hover:shadow-2xl hover:scale-[1.02]",
+                a.grad,
+              )}
+            >
+              <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/15 blur-2xl group-hover:bg-white/25 transition-colors" />
+              <div className="relative">
+                <div className="rounded-xl bg-white/20 backdrop-blur p-2 inline-flex">
+                  <a.icon className="h-5 w-5" strokeWidth={2.5} />
+                </div>
+                <p className="mt-3 text-sm font-bold leading-tight">{a.label}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* 1) AÇÃO HOJE — Central de comando operacional (TOPO, full width) */}
       {(() => {
