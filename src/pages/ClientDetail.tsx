@@ -78,7 +78,8 @@ const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { clients, packages, transactions, updateClient, deleteClient,
-    travelers, addTraveler, updateTraveler, deleteTraveler } = useData();
+    travelers, addTraveler, updateTraveler, deleteTraveler,
+    quotes, opportunities } = useData();
   const client = clients.find((c) => c.id === id);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -114,6 +115,36 @@ const ClientDetail = () => {
     () => [...clientPackages].sort((a, b) => b.departureDate.localeCompare(a.departureDate)),
     [clientPackages],
   );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const completedTrips = useMemo(
+    () => clientPackages.filter((p) => p.returnDate && p.returnDate < today).length,
+    [clientPackages, today],
+  );
+  const totalSpent = useMemo(
+    () => clientPackages.reduce((s, p) => s + (p.totalValue || 0), 0),
+    [clientPackages],
+  );
+
+  const interactions = useMemo(() => {
+    if (!client) return [] as { date: string; kind: string; title: string; meta?: string }[];
+    const items: { date: string; kind: string; title: string; meta?: string }[] = [];
+    items.push({ date: client.createdAt, kind: "Cadastro", title: "Cliente cadastrado" });
+    quotes.filter((q) => q.clientId === client.id).forEach((q) =>
+      items.push({ date: q.createdAt, kind: "Proposta", title: q.destination, meta: `${q.status} · ${fmtCurrency(q.value)}` })
+    );
+    opportunities.filter((o) => o.clientId === client.id).forEach((o) =>
+      items.push({ date: o.createdAt, kind: "Oportunidade", title: o.title, meta: `${o.stage} · ${fmtCurrency(o.estimatedValue)}` })
+    );
+    clientPackages.forEach((p) =>
+      items.push({ date: p.createdAt, kind: "Reserva", title: `${p.destinationCity}, ${p.destinationCountry}`, meta: `${p.reservationStatus} · ${fmtCurrency(p.totalValue)}` })
+    );
+    clientTransactions.forEach((t) =>
+      items.push({ date: t.date, kind: t.type === "income" ? "Recebimento" : "Pagamento", title: t.description, meta: `${t.status} · ${fmtCurrency(t.value)}` })
+    );
+    return items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [client, quotes, opportunities, clientPackages, clientTransactions]);
+
 
   if (!client) {
     return (
@@ -280,11 +311,15 @@ const ClientDetail = () => {
 
         {/* ---------- Overview ---------- */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card><CardContent className="p-4 flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Telefone</p><p className="text-sm font-medium">{client.phone}</p></div></CardContent></Card>
             <Card><CardContent className="p-4 flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">E-mail</p><p className="text-sm font-medium truncate">{client.email || "—"}</p></div></CardContent></Card>
             <Card><CardContent className="p-4 flex items-center gap-3"><FileText className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Documento</p><p className="text-sm font-medium font-mono">{client.document || "—"}</p></div></CardContent></Card>
-            <Card><CardContent className="p-4 flex items-center gap-3"><Plane className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Reservas</p><p className="text-sm font-medium tabular-nums">{clientPackages.length}</p></div></CardContent></Card>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card><CardContent className="p-4 flex items-center gap-3"><Plane className="h-4 w-4 text-primary" /><div><p className="label-caption">Reservas</p><p className="text-lg font-bold tabular-nums">{clientPackages.length}</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><CheckCircle2 className="h-4 w-4 text-success" /><div><p className="label-caption">Viagens realizadas</p><p className="text-lg font-bold tabular-nums">{completedTrips}</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><DollarSign className="h-4 w-4 text-primary" /><div><p className="label-caption">Total investido</p><p className="text-lg font-bold tabular-nums">{fmtCurrency(totalSpent)}</p></div></CardContent></Card>
           </div>
           {client.notes && (
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Observações</CardTitle></CardHeader><CardContent><p className="text-sm">{client.notes}</p></CardContent></Card>
@@ -312,9 +347,29 @@ const ClientDetail = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* ---------- Profile ---------- */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />Histórico de Interações</CardTitle></CardHeader>
+            <CardContent>
+              {interactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
+              ) : (
+                <ol className="space-y-2">
+                  {interactions.slice(0, 12).map((it, idx) => (
+                    <li key={idx} className="flex items-start gap-3 rounded-lg border p-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider rounded-full bg-muted px-2 py-0.5 mt-0.5 shrink-0">{it.kind}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{it.title}</p>
+                        {it.meta && <p className="text-[11px] text-muted-foreground">{it.meta}</p>}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground tabular-nums shrink-0">{fmtDate(it.date)}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="profile">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><User className="h-4 w-4 text-primary" />Perfil do Viajante</CardTitle></CardHeader>
@@ -479,6 +534,30 @@ const ClientDetail = () => {
                 <div>
                   <Label className="label-caption">Restrição alimentar</Label>
                   <Input className="mt-1.5" value={client.preferences?.dietaryRestrictions || ""} onChange={(e) => patchPreferences({ dietaryRestrictions: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="label-caption">Estilo de hospedagem</Label>
+                  <Select value={client.preferences?.accommodationStyle || "any"} onValueChange={(v) => patchPreferences({ accommodationStyle: v as any })}>
+                    <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="hotel">Hotel</SelectItem>
+                      <SelectItem value="resort">Resort (all inclusive)</SelectItem>
+                      <SelectItem value="apartment">Apartamento / Airbnb</SelectItem>
+                      <SelectItem value="boutique">Hotel boutique</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="label-caption">Flexibilidade de datas</Label>
+                  <Select value={client.preferences?.dateFlexibility || "any"} onValueChange={(v) => patchPreferences({ dateFlexibility: v as any })}>
+                    <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Não informado</SelectItem>
+                      <SelectItem value="fixed">Datas fixas</SelectItem>
+                      <SelectItem value="flexible">Datas flexíveis</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

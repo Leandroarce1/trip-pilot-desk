@@ -17,6 +17,9 @@ export interface TravelerProfile {
   originChannel?: OriginChannel;
 }
 
+export type AccommodationStyle = "hotel" | "resort" | "apartment" | "boutique" | "any";
+export type DateFlexibility = "fixed" | "flexible" | "any";
+
 export interface TravelPreferences {
   styles: TravelStyle[];
   flightClass?: FlightClass;
@@ -25,6 +28,8 @@ export interface TravelPreferences {
   dietaryRestrictions?: string;
   bucketList?: string;
   generalNotes?: string;
+  accommodationStyle?: AccommodationStyle;
+  dateFlexibility?: DateFlexibility;
 }
 
 export type ClientDocType = "passport" | "id" | "visa" | "insurance" | "other";
