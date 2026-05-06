@@ -78,7 +78,8 @@ const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { clients, packages, transactions, updateClient, deleteClient,
-    travelers, addTraveler, updateTraveler, deleteTraveler } = useData();
+    travelers, addTraveler, updateTraveler, deleteTraveler,
+    quotes, opportunities } = useData();
   const client = clients.find((c) => c.id === id);
 
   const [editOpen, setEditOpen] = useState(false);
