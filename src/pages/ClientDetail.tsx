@@ -108,9 +108,21 @@ const ClientDetail = () => {
     [packages, client],
   );
   const clientTransactions = useMemo(
-    () => (client ? transactions.filter((t) => t.clientName === client.name) : []),
+    () => (client ? transactions.filter((t) => t.clientId === client.id || t.clientName === client.name) : []),
     [transactions, client],
   );
+  const finance = useMemo(() => {
+    const income = clientTransactions.filter((t) => t.type === "income");
+    const expense = clientTransactions.filter((t) => t.type === "expense");
+    const totalIncome = income.reduce((s, t) => s + t.value, 0);
+    const totalReceived = income.filter((t) => t.status === "paid").reduce((s, t) => s + t.value, 0);
+    const totalExpense = expense.reduce((s, t) => s + t.value, 0);
+    const totalPaid = expense.filter((t) => t.status === "paid").reduce((s, t) => s + t.value, 0);
+    const pendingIn = totalIncome - totalReceived;
+    const pendingOut = totalExpense - totalPaid;
+    const commission = clientTransactions.filter((t) => (t.category || "").toLowerCase().includes("commission")).reduce((s, t) => s + t.value, 0);
+    return { totalIncome, totalReceived, pendingIn, totalExpense, totalPaid, pendingOut, commission, profit: totalIncome - totalExpense };
+  }, [clientTransactions]);
   const sortedPackages = useMemo(
     () => [...clientPackages].sort((a, b) => b.departureDate.localeCompare(a.departureDate)),
     [clientPackages],
