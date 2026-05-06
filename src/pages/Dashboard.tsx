@@ -1142,6 +1142,68 @@ const Dashboard = () => {
         </PanelCard>
       </section>
 
+      {/* Tendência + Top Clientes */}
+      <section className="grid gap-5 lg:grid-cols-12">
+        <PanelCard title="Tendência de vendas (6 meses)" icon={TrendingUp} className="lg:col-span-7">
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendChart} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="trendStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="hsl(var(--gold))" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={28} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => name === "Receita" ? [fmtCurrency(value), name] : [value, name]} />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                <Line yAxisId="left" type="monotone" dataKey="Vendas" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--card))" }} activeDot={{ r: 6 }} animationDuration={900} />
+                <Line yAxisId="right" type="monotone" dataKey="Receita" stroke="hsl(var(--gold))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--card))" }} activeDot={{ r: 6 }} animationDuration={1100} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </PanelCard>
+
+        <PanelCard title="Top clientes mais valiosos" icon={Trophy} className="lg:col-span-5"
+          action={<Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/clientes")}>Todos <ChevronRight className="h-3 w-3" /></Button>}
+        >
+          <div className="space-y-3">
+            {topClients.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas ainda.</p>}
+            {topClients.map((c, i) => {
+              const medal = ["from-[hsl(var(--gold))] to-[hsl(41_100%_60%)]", "from-[hsl(0_0%_70%)] to-[hsl(0_0%_85%)]", "from-[hsl(25_60%_50%)] to-[hsl(25_70%_65%)]"][i] || "from-primary to-[hsl(var(--primary-soft))]";
+              return (
+                <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
+                  className="group w-full text-left rounded-xl border border-border/60 p-3 hover:border-primary/40 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("h-10 w-10 rounded-full bg-gradient-to-br shadow flex items-center justify-center text-white font-black text-sm shrink-0", medal)}>
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate text-navy">{c.name}</p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">
+                        {c.trips} viagem{c.trips !== 1 ? "s" : ""}{c.lastTrip ? ` · última ${fmtDate(c.lastTrip)}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold tabular-nums text-navy">{fmtCurrency(c.revenue)}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Receita</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary via-[hsl(var(--primary-soft))] to-[hsl(var(--gold))] transition-all duration-700"
+                      style={{ width: `${(c.revenue / topClientsMax) * 100}%` }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </PanelCard>
+      </section>
+
       {/* 3) Secondary grid */}
       <section className="grid gap-5 lg:grid-cols-12">
         {/* Top destinos vendidos */}
