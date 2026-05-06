@@ -96,7 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return localStorage.getItem(COLLAPSED_KEY) === "1";
   });
   const location = useLocation();
-  const { notifications } = useData();
+  const { notifications, loading } = useData();
   const { user, signOut } = useAuth();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const userInitial = (user?.email?.[0] ?? "A").toUpperCase();
