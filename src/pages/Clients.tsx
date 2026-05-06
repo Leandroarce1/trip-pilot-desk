@@ -304,7 +304,7 @@ const Clients = () => {
                           <FileText className="h-3 w-3" /> Proposta
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
+                      <Button variant="ghost" size="sm" title="Ver detalhes" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
