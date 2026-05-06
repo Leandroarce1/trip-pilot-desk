@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -18,6 +18,7 @@ import {
   mapItinerary, itineraryToRow,
   mapVoucher, voucherToRow,
 } from "@/lib/mappers";
+import { buildClientSideNotifications } from "@/lib/automations";
 
 // ---------- Context ----------
 
