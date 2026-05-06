@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -18,6 +18,7 @@ import {
   mapItinerary, itineraryToRow,
   mapVoucher, voucherToRow,
 } from "@/lib/mappers";
+import { buildClientSideNotifications } from "@/lib/automations";
 
 // ---------- Context ----------
 
@@ -81,6 +82,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [packages, setPackages] = useState<TravelPackage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [autoReadIds, setAutoReadIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("autoNotifRead");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
@@ -415,6 +422,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const markNotificationRead = async (id: string) => {
+    if (id.startsWith("auto:")) {
+      setAutoReadIds((prev) => {
+        const next = new Set(prev); next.add(id);
+        try { localStorage.setItem("autoNotifRead", JSON.stringify([...next])); } catch {}
+        return next;
+      });
+      return;
+    }
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
     if (error) throw error;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -455,10 +470,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTravelers((prev) => prev.filter((x) => x.id !== id));
   };
 
+  const clientSideNotifications = useMemo<Notification[]>(() => {
+    const auto = buildClientSideNotifications({
+      clients: clients.map((c) => ({ id: c.id, name: c.name, status: c.status, createdAt: c.createdAt })),
+      opportunities: opportunities.map((o) => ({
+        id: o.id, title: o.title, clientName: o.clientName, stage: o.stage, createdAt: o.createdAt,
+      })),
+      quotes: quotes.map((q) => ({
+        id: q.id, clientName: q.clientName, destination: q.destination, status: q.status, createdAt: q.createdAt,
+      })),
+      packages: packages.map((p) => ({ clientId: p.clientId, returnDate: p.returnDate })),
+    });
+    return auto.map((n) => ({
+      id: n.relatedId,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      date: n.date,
+      read: autoReadIds.has(n.relatedId),
+      relatedId: n.relatedId,
+    }));
+  }, [clients, opportunities, quotes, packages, autoReadIds]);
+
+  const allNotifications = useMemo(
+    () => [...clientSideNotifications.filter((n) => !n.read), ...notifications, ...clientSideNotifications.filter((n) => n.read)],
+    [clientSideNotifications, notifications]
+  );
+
   return (
     <DataContext.Provider value={{
       loading,
-      clients, quotes, flights, transactions, packages, notifications, suppliers, opportunities,
+      clients, quotes, flights, transactions, packages, notifications: allNotifications, suppliers, opportunities,
       itineraries, vouchers, travelers,
       addClient, updateClient, deleteClient,
       addQuote, updateQuote, deleteQuote,
