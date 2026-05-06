@@ -35,6 +35,7 @@ const emptyForm = {
   expectedCloseDate: "",
   notes: "",
   stage: "new" as OpportunityStage,
+  owner: "",
 };
 
 function OpportunityCard({ op, onDelete }: { op: Opportunity; onDelete: () => void }) {
