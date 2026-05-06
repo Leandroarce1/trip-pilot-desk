@@ -535,6 +535,30 @@ const ClientDetail = () => {
                   <Label className="label-caption">Restrição alimentar</Label>
                   <Input className="mt-1.5" value={client.preferences?.dietaryRestrictions || ""} onChange={(e) => patchPreferences({ dietaryRestrictions: e.target.value })} />
                 </div>
+                <div>
+                  <Label className="label-caption">Estilo de hospedagem</Label>
+                  <Select value={client.preferences?.accommodationStyle || "any"} onValueChange={(v) => patchPreferences({ accommodationStyle: v as any })}>
+                    <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="hotel">Hotel</SelectItem>
+                      <SelectItem value="resort">Resort (all inclusive)</SelectItem>
+                      <SelectItem value="apartment">Apartamento / Airbnb</SelectItem>
+                      <SelectItem value="boutique">Hotel boutique</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="label-caption">Flexibilidade de datas</Label>
+                  <Select value={client.preferences?.dateFlexibility || "any"} onValueChange={(v) => patchPreferences({ dateFlexibility: v as any })}>
+                    <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Não informado</SelectItem>
+                      <SelectItem value="fixed">Datas fixas</SelectItem>
+                      <SelectItem value="flexible">Datas flexíveis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <Label className="label-caption">Bucket list</Label>
