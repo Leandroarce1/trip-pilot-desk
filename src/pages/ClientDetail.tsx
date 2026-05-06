@@ -317,6 +317,7 @@ const ClientDetail = () => {
           <TabsTrigger value="travelers">Viajantes ({clientTravelers.length})</TabsTrigger>
           <TabsTrigger value="preferences">Preferências</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="financial">Financeiro</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
           <TabsTrigger value="miles">Milhas</TabsTrigger>
         </TabsList>
