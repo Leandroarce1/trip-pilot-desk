@@ -1,92 +1,156 @@
-import { useState } from "react";
-import { Bell, Check, CreditCard, Plane, AlertTriangle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Bell, Check, CheckCheck, CreditCard, Plane, AlertTriangle, Search } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { fmtDate, fmtDateTime } from "@/lib/format";
+import { fmtDateTime } from "@/lib/format";
+import type { Notification } from "@/types/crm";
 
 const iconMap = {
   checkin: Plane,
   payment: CreditCard,
   departure: AlertTriangle,
   general: Bell,
-};
+} as const;
 
 const colorMap = {
   checkin: "bg-info/10 text-info",
   payment: "bg-warning/10 text-warning",
   departure: "bg-destructive/10 text-destructive",
   general: "bg-primary/10 text-primary",
+} as const;
+
+const typeLabel: Record<Notification["type"], string> = {
+  checkin: "Check-in",
+  payment: "Pagamento",
+  departure: "Embarque",
+  general: "Geral",
 };
 
 const Notifications = () => {
-  const { notifications, markNotificationRead, flights, transactions } = useData();
+  const { notifications, markNotificationRead } = useData();
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // all | unread | read
+  const [periodFilter, setPeriodFilter] = useState<string>("all"); // all | today | 7d | 30d
 
-  // Generate dynamic alerts
-  const now = new Date();
-  const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-
-  const checkinAlerts = flights.filter((f) => {
-    const dep = new Date(`${f.departureDate}T${f.departureTime || "00:00"}`);
-    return dep >= now && dep <= in48h;
-  });
-
-  const pendingPayments = transactions.filter((t) => t.status === "pending" && t.type === "income");
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const now = new Date();
+    const cutoff = (() => {
+      if (periodFilter === "today") return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      if (periodFilter === "7d") return now.getTime() - 7 * 86400000;
+      if (periodFilter === "30d") return now.getTime() - 30 * 86400000;
+      return 0;
+    })();
+    return notifications.filter((n) => {
+      if (typeFilter !== "all" && n.type !== typeFilter) return false;
+      if (statusFilter === "unread" && n.read) return false;
+      if (statusFilter === "read" && !n.read) return false;
+      if (cutoff && new Date(n.date).getTime() < cutoff) return false;
+      if (term && !(n.title.toLowerCase().includes(term) || n.message.toLowerCase().includes(term))) return false;
+      return true;
+    });
+  }, [notifications, q, typeFilter, statusFilter, periodFilter]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const counts = useMemo(() => {
+    const c = { checkin: 0, payment: 0, departure: 0, general: 0 } as Record<string, number>;
+    notifications.forEach((n) => { if (!n.read) c[n.type] = (c[n.type] ?? 0) + 1; });
+    return c;
+  }, [notifications]);
+
+  const markAllVisible = async () => {
+    for (const n of filtered) if (!n.read) await markNotificationRead(n.id);
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Notificações e Alertas</h1>
-        <p className="text-sm text-muted-foreground">{unreadCount} não lida(s)</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Alertas</h1>
+          <p className="text-sm text-muted-foreground">{unreadCount} não lida(s) · {notifications.length} no total</p>
+        </div>
+        {unreadCount > 0 && (
+          <Button variant="outline" size="sm" onClick={markAllVisible}>
+            <CheckCheck className="h-4 w-4 mr-1.5" />
+            Marcar visíveis como lidas
+          </Button>
+        )}
       </div>
 
-      {/* Auto-generated alerts */}
-      {(checkinAlerts.length > 0 || pendingPayments.length > 0) && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              Alertas Automáticos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {checkinAlerts.map((f) => (
-              <div key={`checkin-${f.id}`} className="flex items-center gap-3 rounded-lg border border-info/30 bg-info/5 p-3">
-                <div className="rounded-lg bg-info/15 p-2"><Plane className="h-4 w-4 text-info" /></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Check-in: {f.clientName}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">{f.flightNumber} · {f.origin} → {f.destination} · {fmtDate(f.departureDate)} {f.departureTime}</p>
-                </div>
-                <span className="text-[10px] font-semibold text-info bg-info/15 rounded-full px-2 py-0.5">48H</span>
+      {/* Resumo por tipo */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {(Object.keys(typeLabel) as Notification["type"][]).map((t) => {
+          const Icon = iconMap[t];
+          return (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(typeFilter === t ? "all" : t)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary/40",
+                typeFilter === t && "border-primary bg-primary/5",
+              )}
+            >
+              <div className={cn("rounded-lg p-2", colorMap[t])}><Icon className="h-4 w-4" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{typeLabel[t]}</p>
+                <p className="text-lg font-bold tabular-nums">{counts[t] ?? 0}</p>
               </div>
-            ))}
-            {pendingPayments.map((t) => (
-              <div key={`payment-${t.id}`} className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                <div className="rounded-lg bg-warning/15 p-2"><CreditCard className="h-4 w-4 text-warning" /></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Pagamento pendente</p>
-                  <p className="text-xs text-muted-foreground">{t.description} · R$ {t.value.toLocaleString("pt-BR")}</p>
-                </div>
-                <span className="text-[10px] font-semibold text-warning bg-warning/15 rounded-full px-2 py-0.5">PENDENTE</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Notification History */}
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar por título ou mensagem..."
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="unread">Não lidas</SelectItem>
+                <SelectItem value="read">Lidas</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={periodFilter} onValueChange={setPeriodFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Qualquer data</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Histórico de Notificações</CardTitle>
+          <CardTitle className="text-sm font-semibold">
+            {filtered.length} resultado(s)
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Nenhuma notificação</p>
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma notificação encontrada</p>
           ) : (
-            notifications.map((n) => {
+            filtered.map((n) => {
               const Icon = iconMap[n.type];
               return (
                 <div
@@ -98,12 +162,17 @@ const Notifications = () => {
                 >
                   <div className={cn("rounded-lg p-2", colorMap[n.type])}><Icon className="h-4 w-4" /></div>
                   <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm", !n.read ? "font-semibold" : "font-medium")}>{n.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className={cn("text-sm truncate", !n.read ? "font-semibold" : "font-medium")}>{n.title}</p>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted rounded-full px-1.5 py-0.5">
+                        {typeLabel[n.type]}
+                      </span>
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">{n.message}</p>
                     <p className="text-[10px] text-muted-foreground/70 mt-0.5 tabular-nums">{fmtDateTime(n.date)}</p>
                   </div>
                   {!n.read && (
-                    <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)} title="Marcar como lida">
                       <Check className="h-3.5 w-3.5" />
                     </Button>
                   )}
