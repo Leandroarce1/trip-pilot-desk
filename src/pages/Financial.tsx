@@ -512,7 +512,8 @@ const Financial = () => {
               <Button onClick={handleSubmit} className="w-full">{editingTx ? "Salvar" : "Adicionar"}</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* KPIs */}
