@@ -121,3 +121,25 @@ export function buildAutomationNotifications(opts: BuildOpts): AutomationNotific
 
   return out;
 }
+
+/** Aniversário em ≤ 7 dias (inclusive hoje). */
+export const isBirthdaySoon = (birthDateIso?: string, today: Date = new Date()): boolean => {
+  if (!birthDateIso) return false;
+  const days = daysUntilNextBirthday(birthDateIso, today);
+  return days >= 0 && days <= 7;
+};
+
+/** Embarque em ≤ 7 dias (inclusive hoje, exclui passado). */
+export const isDepartureSoon = (departureDateIso?: string, today: Date = new Date()): boolean => {
+  if (!departureDateIso) return false;
+  const days = daysBetween(new Date(departureDateIso), today);
+  return days >= 0 && days <= 7;
+};
+
+/** Check-in dentro de 48h antes do embarque. */
+export const checkInAlert = (departureDateIso?: string, now: Date = new Date()): boolean => {
+  if (!departureDateIso) return false;
+  const dep = new Date(departureDateIso).getTime();
+  const diffH = (dep - now.getTime()) / 3600000;
+  return diffH >= 0 && diffH <= 48;
+};
