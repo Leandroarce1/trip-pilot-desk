@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight, Download } from "lucide-react";
+import { exportCsv } from "@/lib/exportCsv";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
 import { useData } from "@/contexts/DataContext";
@@ -149,11 +150,31 @@ const Clients = () => {
               : `${clients.length} clientes cadastrados`}
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> {isLeadsView ? "Novo Lead" : "Novo Cliente"}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (filtered.length === 0) { toast.error("Nada para exportar"); return; }
+              exportCsv("clientes", [
+                { header: "Nome", value: (c) => c.name },
+                { header: "Telefone", value: (c) => c.phone },
+                { header: "E-mail", value: (c) => c.email },
+                { header: "Documento", value: (c) => c.document },
+                { header: "Status", value: (c) => c.status },
+                { header: "Cadastrado em", value: (c) => fmtDate(c.createdAt) },
+                { header: "Observações", value: (c) => c.notes },
+              ], filtered);
+              toast.success(`${filtered.length} cliente(s) exportado(s)`);
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" /> Exportar
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> {isLeadsView ? "Novo Lead" : "Novo Cliente"}</Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{isLeadsView ? "Novo Lead" : "Novo Cliente"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -199,7 +220,8 @@ const Clients = () => {
               <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search + Filter */}
