@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight, Download } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight, Download, Loader2 } from "lucide-react";
 import { exportCsv } from "@/lib/exportCsv";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
