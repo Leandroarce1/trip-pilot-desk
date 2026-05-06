@@ -33,6 +33,7 @@ const Clients = () => {
     name: "", phone: "", email: "", document: "", notes: "",
     status: (urlStatus as Client["status"]) || "lead" as Client["status"],
     destination: "", travelDate: "", returnDate: "", budget: "", travelersCount: "2", leadSource: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // Sync filter with URL ?status=
