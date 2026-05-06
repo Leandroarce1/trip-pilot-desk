@@ -82,6 +82,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [packages, setPackages] = useState<TravelPackage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [autoReadIds, setAutoReadIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("autoNotifRead");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
