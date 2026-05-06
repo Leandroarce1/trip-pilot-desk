@@ -596,6 +596,7 @@ const Dashboard = () => {
     { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", spark: series.pending, trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
     { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", spark: series.leads, deltaPct: pct(newLeads, prevLeads), onClick: () => navigate("/clientes") },
     { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", spark: series.sales, trend: conversion > 30 ? "up" : "neutral" },
+    { title: "Ticket médio", value: fmtCurrency(avgTicket), sub: `${monthConfirmed.length} reserva(s) confirmada(s)`, icon: Trophy, accent: "gold", spark: series.revenue, onClick: () => navigate("/pacotes") },
   ];
 
   return (
