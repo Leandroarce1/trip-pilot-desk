@@ -657,6 +657,49 @@ const ClientDetail = () => {
           </Card>
         </TabsContent>
 
+        {/* ---------- Financial ---------- */}
+        <TabsContent value="financial" className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Card><CardContent className="p-4"><p className="label-caption">Recebido</p><p className="text-lg font-bold tabular-nums text-success">{fmtCurrency(finance.totalReceived)}</p>{finance.pendingIn > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">+ {fmtCurrency(finance.pendingIn)} a receber</p>}</CardContent></Card>
+            <Card><CardContent className="p-4"><p className="label-caption">Pago a fornecedores</p><p className="text-lg font-bold tabular-nums text-destructive">{fmtCurrency(finance.totalPaid)}</p>{finance.pendingOut > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">+ {fmtCurrency(finance.pendingOut)} a pagar</p>}</CardContent></Card>
+            <Card><CardContent className="p-4"><p className="label-caption">Comissão</p><p className="text-lg font-bold tabular-nums text-primary">{fmtCurrency(finance.commission)}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="label-caption">Lucro líquido</p><p className={cn("text-lg font-bold tabular-nums", finance.profit >= 0 ? "text-success" : "text-destructive")}>{fmtCurrency(finance.profit)}</p></CardContent></Card>
+          </div>
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Transações ({clientTransactions.length})</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/financeiro?clientId=${client.id}`)}>Abrir no financeiro</Button>
+            </CardHeader>
+            <CardContent>
+              {clientTransactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma transação para este cliente.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clientTransactions
+                    .slice()
+                    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+                    .map((t) => (
+                      <div key={t.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{t.description}</p>
+                          <p className="text-[11px] text-muted-foreground tabular-nums">
+                            {fmtDate(t.date)}{t.category ? ` · ${t.category}` : ""}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <p className={cn("text-sm font-semibold tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
+                            {t.type === "income" ? "+" : "-"}{fmtCurrency(t.value)}
+                          </p>
+                          <StatusBadge variant={t.status} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ---------- History ---------- */}
         <TabsContent value="history">
           <Card>
