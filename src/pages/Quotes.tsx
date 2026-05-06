@@ -20,7 +20,7 @@ import { BackButton } from "@/components/BackButton";
 
 const emptyForm = { clientId: "", destination: "", startDate: "", endDate: "", value: "", description: "", status: "draft" as QuoteStatus, marginPercent: "20" };
 const emptyDay: ItineraryDay = { day: 1, title: "", description: "" };
-const newItem = (): QuoteItem => ({ id: crypto.randomUUID(), description: "", quantity: 1, unitValue: 0, cost: 0, category: "other", date: "", commissionPercent: 10 });
+const newItem = (category: QuoteItem["category"] = "other", description = ""): QuoteItem => ({ id: crypto.randomUUID(), description, quantity: 1, unitValue: 0, cost: 0, category, date: "", commissionPercent: 10 });
 
 const CATEGORY_LABEL: Record<string, string> = {
   flight: "✈️ Aéreo", hotel: "🏨 Hotel", transfer: "🚐 Translado",
@@ -147,10 +147,28 @@ const Quotes = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editParam, quotes, clients, searchParams]);
 
-  const addItem = () => setItems((prev) => [...prev, newItem()]);
+  const addItem = (category: QuoteItem["category"] = "other", description = "") =>
+    setItems((prev) => [...prev, newItem(category, description)]);
   const updateItem = (id: string, patch: Partial<QuoteItem>) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id));
+
+  const sendToClient = async (q: Quote) => {
+    const client = clients.find((c) => c.id === q.clientId);
+    const url = `${window.location.origin}/reserva/${q.id}`;
+    try { await navigator.clipboard.writeText(url); } catch {}
+    if (q.status === "draft") await updateQuote({ ...q, status: "sent" });
+    const phone = (client?.phone || "").replace(/\D/g, "");
+    const msg = encodeURIComponent(
+      `Olá ${client?.name || ""}! Segue sua proposta para ${q.destination}: ${url}`
+    );
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+      toast.success("Link copiado e WhatsApp aberto");
+    } else {
+      toast.success("Link da proposta copiado", { description: "Cole onde quiser enviar." });
+    }
+  };
 
   const addDay = () => {
     setItinerary((prev) => [...prev, { day: prev.length + 1, title: "", description: "" }]);
@@ -377,9 +395,14 @@ const Quotes = () => {
                     </div>
                   );
                 })}
-                <Button variant="outline" className="w-full" onClick={addItem}>
-                  <Plus className="mr-2 h-4 w-4" />Adicionar item
-                </Button>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => addItem("flight", "Passagem aérea")}>✈️ Aéreo</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("hotel", "Hospedagem")}>🏨 Hotel</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("transfer", "Translado")}>🚐 Translado</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("tour", "Passeio")}>🗺️ Passeio</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("insurance", "Seguro viagem")}>🛡️ Seguro</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("other", "")}>📦 Outro</Button>
+                </div>
                 {(items.length > 0 || airfareValue > 0) && (
                   <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div>
@@ -489,13 +512,18 @@ const Quotes = () => {
                 </div>
               </div>
               {(q.status === "sent" || q.status === "draft") && (
-                <Button
-                  size="sm"
-                  className="w-full bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
-                  onClick={() => approveAndGenerateReservation(q)}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar reserva
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => sendToClient(q)}>
+                    <Eye className="h-3.5 w-3.5" /> Enviar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
+                    onClick={() => approveAndGenerateReservation(q)}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar
+                  </Button>
+                </div>
               )}
               {q.status === "approved" && (() => {
                 const linkedPkg = packages.find((p) => p.quoteId === q.id);
