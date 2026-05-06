@@ -84,6 +84,8 @@ const Clients = () => {
       });
     } catch {
       toast.error("Erro ao cadastrar");
+    } finally {
+      setSubmitting(false);
     }
   };
 
