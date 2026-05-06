@@ -220,7 +220,8 @@ const Clients = () => {
               <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search + Filter */}
