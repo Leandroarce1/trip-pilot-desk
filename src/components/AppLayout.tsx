@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "@/components/Logo";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 type NavItem = {
@@ -95,7 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return localStorage.getItem(COLLAPSED_KEY) === "1";
   });
   const location = useLocation();
-  const { notifications } = useData();
+  const { notifications, loading } = useData();
   const { user, signOut } = useAuth();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const userInitial = (user?.email?.[0] ?? "A").toUpperCase();
@@ -304,44 +305,61 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/70 bg-card px-4 lg:px-6">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-muted-foreground hover:text-foreground"
-            aria-label="Abrir menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="hidden lg:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-          <div className="ml-auto flex items-center gap-3">
-            <NavLink
-              to="/alertas"
-              className="relative text-muted-foreground hover:text-primary transition-colors"
-              aria-label="Alertas"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
-                  {unreadCount}
-                </span>
-              )}
-            </NavLink>
-            <div className="h-8 w-8 rounded-full bg-navy flex items-center justify-center" title={user?.email ?? ""}>
-              <span className="text-xs font-bold text-navy-foreground">{userInitial}</span>
+          {loading && (
+            <div className="absolute left-0 top-0 h-0.5 w-full overflow-hidden bg-primary/10">
+              <div className="h-full w-1/3 animate-[shimmer_1.2s_ease-in-out_infinite] bg-primary" />
             </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
-              aria-label="Sair"
-              title="Sair"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground" aria-label="Abrir menu">
+                <Menu className="h-5 w-5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Abrir menu</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setCollapsed((c) => !c)}
+                className="hidden lg:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+              >
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{collapsed ? "Expandir menu" : "Recolher menu"}</TooltipContent>
+          </Tooltip>
+          <div className="ml-auto flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NavLink to="/alertas" className="relative text-muted-foreground hover:text-primary transition-colors" aria-label="Alertas">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                      {unreadCount}
+                    </span>
+                  )}
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent>{unreadCount > 0 ? `${unreadCount} alerta(s) não lido(s)` : "Alertas"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-8 w-8 rounded-full bg-navy flex items-center justify-center cursor-default">
+                  <span className="text-xs font-bold text-navy-foreground">{userInitial}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>{user?.email ?? "Conta"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleLogout} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors" aria-label="Sair">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Sair</TooltipContent>
+            </Tooltip>
           </div>
         </header>
 

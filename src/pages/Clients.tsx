@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight, Download } from "lucide-react";
+import { Plus, Search, Phone, Mail, Eye, Sparkles, FileText, ArrowRight, Download, Loader2 } from "lucide-react";
 import { exportCsv } from "@/lib/exportCsv";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBadge, clientStatusOptions } from "@/components/StatusBadge";
@@ -34,6 +34,7 @@ const Clients = () => {
     status: (urlStatus as Client["status"]) || "lead" as Client["status"],
     destination: "", travelDate: "", returnDate: "", budget: "", travelersCount: "2", leadSource: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
   // Sync filter with URL ?status=
   useEffect(() => {
@@ -50,6 +51,7 @@ const Clients = () => {
 
   const handleAdd = async () => {
     if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
+    setSubmitting(true);
     try {
       const created = await addClient({
         name: form.name, phone: form.phone, email: form.email,
@@ -82,6 +84,8 @@ const Clients = () => {
       });
     } catch {
       toast.error("Erro ao cadastrar");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -217,7 +221,10 @@ const Clients = () => {
                 </div>
               </div>
               <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-              <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
+              <Button onClick={handleAdd} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Cadastrando..." : "Cadastrar Cliente"}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>
@@ -297,7 +304,7 @@ const Clients = () => {
                           <FileText className="h-3 w-3" /> Proposta
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
+                      <Button variant="ghost" size="sm" title="Ver detalhes" onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${c.id}`); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
