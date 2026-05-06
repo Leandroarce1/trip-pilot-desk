@@ -1245,8 +1245,8 @@ const Dashboard = () => {
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
                   formatter={(value: number) => [fmtCurrency(value)]}
                 />
-                <Bar dataKey="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} animationDuration={900} />
+                <Bar dataKey="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} animationDuration={1100} />
               </BarChart>
             </ResponsiveContainer>
           </div>
