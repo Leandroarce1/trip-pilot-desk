@@ -4,7 +4,8 @@ import {
   useDroppable, useSensor, useSensors, closestCorners,
 } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
-import { Plus, MapPin, User, DollarSign, Calendar, Trash2 } from "lucide-react";
+import { Plus, MapPin, User, DollarSign, Calendar, Trash2, Download } from "lucide-react";
+import { exportCsv } from "@/lib/exportCsv";
 import { useData } from "@/contexts/DataContext";
 import { Opportunity, OpportunityStage } from "@/types/crm";
 import { Button } from "@/components/ui/button";
