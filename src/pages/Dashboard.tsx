@@ -400,9 +400,9 @@ const Dashboard = () => {
     return [...map.values()].sort((a, b) => b.value - a.value);
   }, [packages]);
 
-  // ----- Receitas x Despesas (4 meses) -----
-  const finChart = Array.from({ length: 4 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (3 - i), 1);
+  // ----- Receitas x Despesas (6 meses) -----
+  const finChart = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const key = d.toISOString().slice(0, 7);
     const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
     const Receitas = transactions.filter((t) => t.type === "income" && t.date.startsWith(key)).reduce((s, t) => s + t.value, 0);
