@@ -234,6 +234,7 @@ const Financial = () => {
       clientId: form.clientId || undefined, clientName,
       packageId: form.packageId || undefined,
     };
+    setSubmitting(true);
     try {
       if (editingTx) {
         await updateTransaction({ ...editingTx, ...payload });
@@ -244,6 +245,7 @@ const Financial = () => {
       }
       setForm(emptyForm); setEditingTx(null); setOpen(false);
     } catch (e: any) { toast.error("Erro", { description: e.message }); }
+    finally { setSubmitting(false); }
   };
 
   const openEdit = (t: Transaction) => {
