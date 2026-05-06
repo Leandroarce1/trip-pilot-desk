@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, formatDocument, formatPhone } from "@/lib/format";
 import { SalesJourney } from "@/components/SalesJourney";
 import { BackButton } from "@/components/BackButton";
 import { NextStepBanner } from "@/components/NextStepBanner";
