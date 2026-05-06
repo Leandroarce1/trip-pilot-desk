@@ -27,6 +27,8 @@ import Itineraries from "./pages/Itineraries";
 import ItineraryPublic from "./pages/ItineraryPublic";
 import Vouchers from "./pages/Vouchers";
 import NotFound from "./pages/NotFound";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ConnectionIndicator />
+      <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
           <Routes>
