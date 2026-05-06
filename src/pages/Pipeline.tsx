@@ -276,6 +276,10 @@ export default function Pipeline() {
                 </div>
               </div>
               <div>
+                <Label>Responsável</Label>
+                <Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="Ex: Ana, João..." />
+              </div>
+              <div>
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
