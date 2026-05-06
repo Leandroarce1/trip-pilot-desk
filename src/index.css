@@ -189,3 +189,8 @@
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
   }
 }
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
