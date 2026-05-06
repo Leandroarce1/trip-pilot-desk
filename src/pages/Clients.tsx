@@ -51,6 +51,7 @@ const Clients = () => {
 
   const handleAdd = async () => {
     if (!form.name || !form.phone) { toast.error("Nome e telefone são obrigatórios"); return; }
+    setSubmitting(true);
     try {
       const created = await addClient({
         name: form.name, phone: form.phone, email: form.email,
