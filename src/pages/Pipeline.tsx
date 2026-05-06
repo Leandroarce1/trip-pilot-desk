@@ -290,6 +290,27 @@ export default function Pipeline() {
         </div>
       </div>
 
+      {/* Busca + filtro responsável */}
+      {opportunities.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="7" strokeWidth="2" /><path strokeWidth="2" strokeLinecap="round" d="m20 20-3.5-3.5" /></svg>
+            <Input placeholder="Buscar por título, cliente, destino..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Responsável" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os responsáveis</SelectItem>
+              <SelectItem value="">Sem responsável</SelectItem>
+              {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(search || ownerFilter !== "all") && (
+            <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setOwnerFilter("all"); }}>Limpar</Button>
+          )}
+        </div>
+      )}
+
       {opportunities.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center">
           <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
