@@ -34,10 +34,14 @@ export const monthsBetween = (a: Date, b: Date): number =>
 
 /** Próximo aniversário a partir de `today`. Retorna nº de dias até a data. */
 export const daysUntilNextBirthday = (birthDateIso: string, today: Date): number => {
-  const b = new Date(birthDateIso);
-  const next = new Date(today.getFullYear(), b.getMonth(), b.getDate());
-  if (next < today) next.setFullYear(today.getFullYear() + 1);
-  return daysBetween(next, today);
+  // Parse ISO date (YYYY-MM-DD) sem fuso para evitar off-by-one.
+  const [, mStr, dStr] = birthDateIso.slice(0, 10).split("-");
+  const month = Number(mStr) - 1;
+  const day = Number(dStr);
+  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  let nextUtc = Date.UTC(today.getFullYear(), month, day);
+  if (nextUtc < todayUtc) nextUtc = Date.UTC(today.getFullYear() + 1, month, day);
+  return Math.round((nextUtc - todayUtc) / MS_DAY);
 };
 
 export interface BuildOpts {
