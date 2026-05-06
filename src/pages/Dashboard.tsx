@@ -586,6 +586,31 @@ const Dashboard = () => {
     .sort((a, b) => a.departureDate.localeCompare(b.departureDate))
     .slice(0, 5);
 
+  // ----- Top clientes mais valiosos -----
+  const topClients = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; revenue: number; trips: number; lastTrip?: string }>();
+    packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
+      const cur = map.get(p.clientId) || { id: p.clientId, name: p.clientName, revenue: 0, trips: 0, lastTrip: undefined as string | undefined };
+      cur.revenue += p.totalValue;
+      cur.trips += 1;
+      if (!cur.lastTrip || p.departureDate > cur.lastTrip) cur.lastTrip = p.departureDate;
+      map.set(p.clientId, cur);
+    });
+    return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [packages]);
+  const topClientsMax = Math.max(...topClients.map((c) => c.revenue), 1);
+
+  // ----- Tendência 6 meses (linha) -----
+  const trendChart = monthKeys.map((k, i) => {
+    const d = new Date(`${k}-01`);
+    const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    return {
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      Vendas: series.sales[i],
+      Receita: series.revenue[i],
+    };
+  });
+
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
     { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
