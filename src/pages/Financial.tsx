@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Plus, Search, TrendingUp, TrendingDown, DollarSign, Edit2, Trash2,
-  Wallet, AlertCircle, Percent, CheckCircle2,
+  Wallet, AlertCircle, Percent, CheckCircle2, Download,
 } from "lucide-react";
+import { exportCsv } from "@/lib/exportCsv";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   AreaChart, Area,
