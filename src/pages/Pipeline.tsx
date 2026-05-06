@@ -119,17 +119,39 @@ export default function Pipeline() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const owners = useMemo(() => {
+    const set = new Set<string>();
+    opportunities.forEach((o) => { if (o.owner && o.owner.trim()) set.add(o.owner.trim()); });
+    return [...set].sort();
+  }, [opportunities]);
+
+  const filteredOpps = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return opportunities.filter((o) => {
+      if (ownerFilter !== "all" && (o.owner ?? "") !== ownerFilter) return false;
+      if (!q) return true;
+      return (
+        o.title.toLowerCase().includes(q) ||
+        o.clientName.toLowerCase().includes(q) ||
+        o.destination.toLowerCase().includes(q) ||
+        (o.owner ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [opportunities, search, ownerFilter]);
 
   const grouped = useMemo(() => {
     const map: Record<OpportunityStage, Opportunity[]> = {
       new: [], contact: [], proposal: [], closed_won: [], closed_lost: [],
     };
-    opportunities.forEach((o) => map[o.stage].push(o));
+    filteredOpps.forEach((o) => map[o.stage].push(o));
     Object.values(map).forEach((arr) => arr.sort((a, b) => a.position - b.position));
     return map;
-  }, [opportunities]);
+  }, [filteredOpps]);
 
   const activeOp = activeId ? opportunities.find((o) => o.id === activeId) : null;
 
