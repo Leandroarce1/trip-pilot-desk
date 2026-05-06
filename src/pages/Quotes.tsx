@@ -147,10 +147,28 @@ const Quotes = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editParam, quotes, clients, searchParams]);
 
-  const addItem = () => setItems((prev) => [...prev, newItem()]);
+  const addItem = (category: QuoteItem["category"] = "other", description = "") =>
+    setItems((prev) => [...prev, newItem(category, description)]);
   const updateItem = (id: string, patch: Partial<QuoteItem>) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id));
+
+  const sendToClient = async (q: Quote) => {
+    const client = clients.find((c) => c.id === q.clientId);
+    const url = `${window.location.origin}/reserva/${q.id}`;
+    try { await navigator.clipboard.writeText(url); } catch {}
+    if (q.status === "draft") await updateQuote({ ...q, status: "sent" });
+    const phone = (client?.phone || "").replace(/\D/g, "");
+    const msg = encodeURIComponent(
+      `Olá ${client?.name || ""}! Segue sua proposta para ${q.destination}: ${url}`
+    );
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+      toast.success("Link copiado e WhatsApp aberto");
+    } else {
+      toast.success("Link da proposta copiado", { description: "Cole onde quiser enviar." });
+    }
+  };
 
   const addDay = () => {
     setItinerary((prev) => [...prev, { day: prev.length + 1, title: "", description: "" }]);
