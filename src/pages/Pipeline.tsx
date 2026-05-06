@@ -184,6 +184,7 @@ export default function Pipeline() {
         expectedCloseDate: form.expectedCloseDate || undefined,
         notes: form.notes,
         stage: form.stage,
+        owner: form.owner,
         position: Date.now(),
       });
       toast.success("Oportunidade criada");
