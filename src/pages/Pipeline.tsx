@@ -35,6 +35,7 @@ const emptyForm = {
   expectedCloseDate: "",
   notes: "",
   stage: "new" as OpportunityStage,
+  owner: "",
 };
 
 function OpportunityCard({ op, onDelete }: { op: Opportunity; onDelete: () => void }) {
@@ -65,6 +66,9 @@ function OpportunityCard({ op, onDelete }: { op: Opportunity; onDelete: () => vo
         {op.destination && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" />{op.destination}</p>}
         {op.expectedCloseDate && (
           <p className="flex items-center gap-1.5 tabular-nums"><Calendar className="h-3 w-3" />{fmtDate(op.expectedCloseDate)}</p>
+        )}
+        {op.owner && (
+          <p className="flex items-center gap-1.5"><span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold">{op.owner}</span></p>
         )}
       </div>
       <div className="mt-2 flex items-center justify-between border-t pt-2">
@@ -118,17 +122,39 @@ export default function Pipeline() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const owners = useMemo(() => {
+    const set = new Set<string>();
+    opportunities.forEach((o) => { if (o.owner && o.owner.trim()) set.add(o.owner.trim()); });
+    return [...set].sort();
+  }, [opportunities]);
+
+  const filteredOpps = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return opportunities.filter((o) => {
+      if (ownerFilter !== "all" && (o.owner || "__none__") !== ownerFilter) return false;
+      if (!q) return true;
+      return (
+        o.title.toLowerCase().includes(q) ||
+        o.clientName.toLowerCase().includes(q) ||
+        o.destination.toLowerCase().includes(q) ||
+        (o.owner ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [opportunities, search, ownerFilter]);
 
   const grouped = useMemo(() => {
     const map: Record<OpportunityStage, Opportunity[]> = {
       new: [], contact: [], proposal: [], closed_won: [], closed_lost: [],
     };
-    opportunities.forEach((o) => map[o.stage].push(o));
+    filteredOpps.forEach((o) => map[o.stage].push(o));
     Object.values(map).forEach((arr) => arr.sort((a, b) => a.position - b.position));
     return map;
-  }, [opportunities]);
+  }, [filteredOpps]);
 
   const activeOp = activeId ? opportunities.find((o) => o.id === activeId) : null;
 
@@ -161,6 +187,7 @@ export default function Pipeline() {
         expectedCloseDate: form.expectedCloseDate || undefined,
         notes: form.notes,
         stage: form.stage,
+        owner: form.owner,
         position: Date.now(),
       });
       toast.success("Oportunidade criada");
@@ -182,7 +209,7 @@ export default function Pipeline() {
         <div>
           <h1 className="text-2xl font-bold">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
-            {opportunities.length} oportunidade(s) · arraste os cards para mover de etapa
+            {filteredOpps.length} de {opportunities.length} oportunidade(s) · arraste os cards para mover de etapa
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -196,6 +223,7 @@ export default function Pipeline() {
                 { header: "Cliente", value: (o) => o.clientName },
                 { header: "Destino", value: (o) => o.destination },
                 { header: "Etapa", value: (o) => STAGES.find((s) => s.id === o.stage)?.label ?? o.stage },
+                { header: "Responsável", value: (o) => o.owner ?? "" },
                 { header: "Valor estimado (R$)", value: (o) => o.estimatedValue },
                 { header: "Probabilidade (%)", value: (o) => o.probability },
                 { header: "Fechamento previsto", value: (o) => o.expectedCloseDate ? fmtDate(o.expectedCloseDate) : "" },
@@ -252,6 +280,10 @@ export default function Pipeline() {
                 </div>
               </div>
               <div>
+                <Label>Responsável</Label>
+                <Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="Ex: Ana, João..." />
+              </div>
+              <div>
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
@@ -261,6 +293,27 @@ export default function Pipeline() {
           </Dialog>
         </div>
       </div>
+
+      {/* Busca + filtro responsável */}
+      {opportunities.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="7" strokeWidth="2" /><path strokeWidth="2" strokeLinecap="round" d="m20 20-3.5-3.5" /></svg>
+            <Input placeholder="Buscar por título, cliente, destino..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Responsável" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os responsáveis</SelectItem>
+              <SelectItem value="__none__">Sem responsável</SelectItem>
+              {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(search || ownerFilter !== "all") && (
+            <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setOwnerFilter("all"); }}>Limpar</Button>
+          )}
+        </div>
+      )}
 
       {opportunities.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center">

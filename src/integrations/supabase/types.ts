@@ -305,6 +305,7 @@ export type Database = {
           id: string
           lead_source: string | null
           notes: string | null
+          owner: string
           position: number
           probability: number | null
           return_date: string | null
@@ -323,6 +324,7 @@ export type Database = {
           id?: string
           lead_source?: string | null
           notes?: string | null
+          owner?: string
           position?: number
           probability?: number | null
           return_date?: string | null
@@ -341,6 +343,7 @@ export type Database = {
           id?: string
           lead_source?: string | null
           notes?: string | null
+          owner?: string
           position?: number
           probability?: number | null
           return_date?: string | null
