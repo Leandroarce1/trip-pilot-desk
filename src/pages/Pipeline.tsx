@@ -223,6 +223,7 @@ export default function Pipeline() {
                 { header: "Cliente", value: (o) => o.clientName },
                 { header: "Destino", value: (o) => o.destination },
                 { header: "Etapa", value: (o) => STAGES.find((s) => s.id === o.stage)?.label ?? o.stage },
+                { header: "Responsável", value: (o) => o.owner ?? "" },
                 { header: "Valor estimado (R$)", value: (o) => o.estimatedValue },
                 { header: "Probabilidade (%)", value: (o) => o.probability },
                 { header: "Fechamento previsto", value: (o) => o.expectedCloseDate ? fmtDate(o.expectedCloseDate) : "" },
