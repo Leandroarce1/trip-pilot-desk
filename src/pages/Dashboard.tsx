@@ -16,7 +16,7 @@ import { useData } from "@/contexts/DataContext";
 import { toast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, Legend, AreaChart, Area,
+  PieChart, Pie, Cell, Legend, AreaChart, Area, LineChart, Line,
 } from "recharts";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -586,6 +586,31 @@ const Dashboard = () => {
     .sort((a, b) => a.departureDate.localeCompare(b.departureDate))
     .slice(0, 5);
 
+  // ----- Top clientes mais valiosos -----
+  const topClients = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; revenue: number; trips: number; lastTrip?: string }>();
+    packages.filter((p) => p.reservationStatus !== "cancelled").forEach((p) => {
+      const cur = map.get(p.clientId) || { id: p.clientId, name: p.clientName, revenue: 0, trips: 0, lastTrip: undefined as string | undefined };
+      cur.revenue += p.totalValue;
+      cur.trips += 1;
+      if (!cur.lastTrip || p.departureDate > cur.lastTrip) cur.lastTrip = p.departureDate;
+      map.set(p.clientId, cur);
+    });
+    return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [packages]);
+  const topClientsMax = Math.max(...topClients.map((c) => c.revenue), 1);
+
+  // ----- Tendência 6 meses (linha) -----
+  const trendChart = monthKeys.map((k, i) => {
+    const d = new Date(`${k}-01`);
+    const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    return {
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      Vendas: series.sales[i],
+      Receita: series.revenue[i],
+    };
+  });
+
   // ----- KPI definitions -----
   const kpis: Array<Parameters<typeof KpiCard>[0]> = [
     { title: "Vendas do mês", value: monthSales, sub: `${monthPkgs.length} reservas criadas`, icon: Ticket, accent: "primary", spark: series.sales, deltaPct: pct(monthSales, prevSales), onClick: () => navigate("/pacotes") },
@@ -609,26 +634,96 @@ const Dashboard = () => {
         <div className="absolute bottom-0 right-1/3 h-[20rem] w-[20rem] rounded-full bg-[hsl(var(--primary-soft))]/5 blur-[100px]" />
       </div>
 
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="label-caption mb-1 flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" /> Command Center
-          </p>
-          <h1 className="text-3xl tracking-tight">Bom dia, Agente ✈️</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tudo que importa na sua agência, em uma tela.
-          </p>
+      {/* Premium hero header */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-navy via-[hsl(var(--navy-hover))] to-[hsl(var(--primary))] p-7 text-navy-foreground shadow-[0_20px_60px_-20px_hsl(var(--navy)/0.5)]">
+        <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[hsl(var(--gold))]/25 blur-[100px]" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[hsl(var(--primary-soft))]/30 blur-[120px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="animate-fade-in">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.18em] border border-white/15">
+              <Sparkles className="h-3 w-3 text-[hsl(var(--gold))]" /> Command Center
+            </span>
+            <h1 className="mt-3 text-4xl md:text-5xl font-black tracking-tight leading-[1.05]">
+              Bom dia, <span className="bg-gradient-to-r from-[hsl(var(--gold))] via-white to-[hsl(var(--primary-soft))] bg-clip-text text-transparent">Agente</span> ✈️
+            </h1>
+            <p className="mt-2 text-sm text-navy-foreground/80 max-w-md">
+              Tudo que importa na sua agência, em uma tela elegante e premium.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            <p className="text-xs text-navy-foreground/70 tabular-nums hidden sm:block">
+              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" className="bg-white/10 hover:bg-white/20 text-navy-foreground border border-white/20 backdrop-blur gap-1.5"
+                onClick={() => navigate("/clientes")}>
+                <UserPlus className="h-4 w-4" /> Novo cliente
+              </Button>
+              <Button size="sm" className="bg-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/90 text-[hsl(var(--gold-foreground))] gap-1.5 shadow-lg shadow-[hsl(var(--gold))]/25"
+                onClick={() => navigate("/cotacoes")}>
+                <Plus className="h-4 w-4" /> Nova cotação
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground tabular-nums hidden sm:block">
-            {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-          <Button size="sm" onClick={() => navigate("/cotacoes")} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Nova cotação
-          </Button>
+
+        {/* Mini stats inline */}
+        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Receita do mês", value: fmtCurrency(monthRevenue), icon: DollarSign, color: "text-[hsl(var(--gold))]" },
+            { label: "Vendas", value: monthSales, icon: Ticket, color: "text-[hsl(var(--primary-soft))]" },
+            { label: "Clientes ativos", value: soldClients, icon: Users, color: "text-success" },
+            { label: "Conversão", value: `${conversion.toFixed(0)}%`, icon: Target, color: "text-[hsl(var(--gold))]" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl bg-white/[0.07] border border-white/10 backdrop-blur-md p-3 hover:bg-white/[0.12] transition-colors">
+              <div className="flex items-center gap-2">
+                <s.icon className={cn("h-4 w-4", s.color)} />
+                <p className="text-[10.5px] font-bold uppercase tracking-wider text-navy-foreground/70">{s.label}</p>
+              </div>
+              <p className="mt-1.5 text-2xl font-black tabular-nums">{s.value}</p>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Ações Rápidas */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-[hsl(var(--gold))]" />
+          <h2 className="text-[13px] font-bold tracking-tight text-navy uppercase">Ações Rápidas</h2>
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Nova cotação", icon: FileText, to: "/cotacoes", grad: "from-primary to-[hsl(var(--primary-soft))]" },
+            { label: "Novo cliente", icon: UserPlus, to: "/clientes", grad: "from-success to-[hsl(161_70%_50%)]" },
+            { label: "Nova reserva", icon: Plane, to: "/pacotes", grad: "from-[hsl(var(--gold))] to-[hsl(41_100%_60%)]" },
+            { label: "Lançar receita", icon: DollarSign, to: "/financeiro?tab=income", grad: "from-success to-primary" },
+            { label: "Lançar despesa", icon: CreditCard, to: "/financeiro?tab=expense", grad: "from-destructive to-warning" },
+            { label: "Pipeline", icon: Activity, to: "/pipeline", grad: "from-navy to-primary" },
+          ].map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              onClick={() => navigate(a.to)}
+              className={cn(
+                "group relative overflow-hidden rounded-2xl p-4 text-left text-white",
+                "bg-gradient-to-br shadow-lg transition-all duration-300",
+                "hover:-translate-y-1 hover:shadow-2xl hover:scale-[1.02]",
+                a.grad,
+              )}
+            >
+              <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/15 blur-2xl group-hover:bg-white/25 transition-colors" />
+              <div className="relative">
+                <div className="rounded-xl bg-white/20 backdrop-blur p-2 inline-flex">
+                  <a.icon className="h-5 w-5" strokeWidth={2.5} />
+                </div>
+                <p className="mt-3 text-sm font-bold leading-tight">{a.label}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* 1) AÇÃO HOJE — Central de comando operacional (TOPO, full width) */}
       {(() => {
@@ -1047,6 +1142,68 @@ const Dashboard = () => {
         </PanelCard>
       </section>
 
+      {/* Tendência + Top Clientes */}
+      <section className="grid gap-5 lg:grid-cols-12">
+        <PanelCard title="Tendência de vendas (6 meses)" icon={TrendingUp} className="lg:col-span-7">
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendChart} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="trendStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="hsl(var(--gold))" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={28} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => name === "Receita" ? [fmtCurrency(value), name] : [value, name]} />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                <Line yAxisId="left" type="monotone" dataKey="Vendas" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--card))" }} activeDot={{ r: 6 }} animationDuration={900} />
+                <Line yAxisId="right" type="monotone" dataKey="Receita" stroke="hsl(var(--gold))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--card))" }} activeDot={{ r: 6 }} animationDuration={1100} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </PanelCard>
+
+        <PanelCard title="Top clientes mais valiosos" icon={Trophy} className="lg:col-span-5"
+          action={<Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/clientes")}>Todos <ChevronRight className="h-3 w-3" /></Button>}
+        >
+          <div className="space-y-3">
+            {topClients.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">Sem vendas registradas ainda.</p>}
+            {topClients.map((c, i) => {
+              const medal = ["from-[hsl(var(--gold))] to-[hsl(41_100%_60%)]", "from-[hsl(0_0%_70%)] to-[hsl(0_0%_85%)]", "from-[hsl(25_60%_50%)] to-[hsl(25_70%_65%)]"][i] || "from-primary to-[hsl(var(--primary-soft))]";
+              return (
+                <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
+                  className="group w-full text-left rounded-xl border border-border/60 p-3 hover:border-primary/40 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("h-10 w-10 rounded-full bg-gradient-to-br shadow flex items-center justify-center text-white font-black text-sm shrink-0", medal)}>
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate text-navy">{c.name}</p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">
+                        {c.trips} viagem{c.trips !== 1 ? "s" : ""}{c.lastTrip ? ` · última ${fmtDate(c.lastTrip)}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold tabular-nums text-navy">{fmtCurrency(c.revenue)}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Receita</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary via-[hsl(var(--primary-soft))] to-[hsl(var(--gold))] transition-all duration-700"
+                      style={{ width: `${(c.revenue / topClientsMax) * 100}%` }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </PanelCard>
+      </section>
+
       {/* 3) Secondary grid */}
       <section className="grid gap-5 lg:grid-cols-12">
         {/* Top destinos vendidos */}
@@ -1088,8 +1245,8 @@ const Dashboard = () => {
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
                   formatter={(value: number) => [fmtCurrency(value)]}
                 />
-                <Bar dataKey="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} animationDuration={900} />
+                <Bar dataKey="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} animationDuration={1100} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1103,7 +1260,7 @@ const Dashboard = () => {
             <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
+                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2} animationDuration={900}>
                     {categoryStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip
