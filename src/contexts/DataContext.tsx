@@ -422,6 +422,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const markNotificationRead = async (id: string) => {
+    if (id.startsWith("auto:")) {
+      setAutoReadIds((prev) => {
+        const next = new Set(prev); next.add(id);
+        try { localStorage.setItem("autoNotifRead", JSON.stringify([...next])); } catch {}
+        return next;
+      });
+      return;
+    }
     const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
     if (error) throw error;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
