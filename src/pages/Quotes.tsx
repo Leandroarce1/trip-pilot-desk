@@ -512,13 +512,18 @@ const Quotes = () => {
                 </div>
               </div>
               {(q.status === "sent" || q.status === "draft") && (
-                <Button
-                  size="sm"
-                  className="w-full bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
-                  onClick={() => approveAndGenerateReservation(q)}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar reserva
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => sendToClient(q)}>
+                    <Eye className="h-3.5 w-3.5" /> Enviar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-success hover:bg-success/90 text-white gap-1.5 font-semibold"
+                    onClick={() => approveAndGenerateReservation(q)}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar
+                  </Button>
+                </div>
               )}
               {q.status === "approved" && (() => {
                 const linkedPkg = packages.find((p) => p.quoteId === q.id);
