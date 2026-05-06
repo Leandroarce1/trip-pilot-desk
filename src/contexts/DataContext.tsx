@@ -118,7 +118,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
       supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
       supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
-      (supabase as any).from("travelers").select("*").order("created_at", { ascending: false }),
+      supabase.from("travelers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -142,110 +142,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!authLoading) loadAll();
   }, [authLoading, loadAll]);
 
-  // ---------- Etapa 5: automações pós-venda & recorrência ----------
-  // Roda após cada loadAll. Usa related_id como chave de deduplicação para nunca repetir o mesmo alerta.
-  useEffect(() => {
-    if (!user || loading) return;
-    const today = new Date();
-    const todayIso = today.toISOString().slice(0, 10);
-    const existingKeys = new Set(notifications.map((n) => n.relatedId).filter(Boolean) as string[]);
-
-    const toCreate: Omit<Notification, "id">[] = [];
-
-    // 1) Pós-viagem: pesquisa de satisfação 2 dias após o retorno
-    packages.forEach((p) => {
-      if (!p.returnDate) return;
-      const ret = new Date(p.returnDate);
-      const days = Math.floor((today.getTime() - ret.getTime()) / 86400000);
-      if (days >= 2 && days <= 30) {
-        const key = `postsale:${p.id}`;
-        if (!existingKeys.has(key)) {
-          toCreate.push({
-            type: "general",
-            title: "Pesquisa de satisfação pendente",
-            message: `${p.clientName} retornou de ${p.destinationCity}. Envie agradecimento e peça avaliação.`,
-            date: todayIso,
-            read: false,
-            relatedId: key,
-          });
-        }
-      }
-    });
-
-    // 2) Recorrência: 11 meses após o retorno → sugerir nova viagem
-    packages.forEach((p) => {
-      if (!p.returnDate) return;
-      const ret = new Date(p.returnDate);
-      const months = (today.getFullYear() - ret.getFullYear()) * 12 + (today.getMonth() - ret.getMonth());
-      if (months >= 11 && months <= 13) {
-        const key = `recurrence:${p.id}`;
-        if (!existingKeys.has(key)) {
-          toCreate.push({
-            type: "general",
-            title: "Hora de oferecer uma nova viagem",
-            message: `Faz quase 1 ano que ${p.clientName} viajou para ${p.destinationCity}. Reabra a oportunidade.`,
-            date: todayIso,
-            read: false,
-            relatedId: key,
-          });
-        }
-      }
-    });
-
-    // 3) Aniversários (clientes + viajantes) — janela de 7 dias
-    const birthdayCheck = (id: string, name: string, birthDate?: string, label = "cliente") => {
-      if (!birthDate) return;
-      const b = new Date(birthDate);
-      const next = new Date(today.getFullYear(), b.getMonth(), b.getDate());
-      if (next < today) next.setFullYear(today.getFullYear() + 1);
-      const days = Math.floor((next.getTime() - today.getTime()) / 86400000);
-      if (days <= 7) {
-        const key = `birthday:${id}:${today.getFullYear()}`;
-        if (!existingKeys.has(key)) {
-          toCreate.push({
-            type: "general",
-            title: `Aniversário próximo (${label})`,
-            message: `${name} faz aniversário em ${days === 0 ? "hoje" : `${days} dia(s)`}. Envie uma mensagem.`,
-            date: todayIso,
-            read: false,
-            relatedId: key,
-          });
-        }
-      }
-    };
-    clients.forEach((c) => birthdayCheck(c.id, c.name, c.profile?.birthDate, "cliente"));
-    travelers.forEach((t) => birthdayCheck(t.id, t.name, t.birthDate, "viajante"));
-
-    // 4) Embarque se aproximando (≤ 7 dias) — só se ainda não confirmado/pago
-    packages.forEach((p) => {
-      if (!p.departureDate) return;
-      const dep = new Date(p.departureDate);
-      const days = Math.floor((dep.getTime() - today.getTime()) / 86400000);
-      if (days >= 0 && days <= 7) {
-        const key = `departure:${p.id}`;
-        if (!existingKeys.has(key)) {
-          toCreate.push({
-            type: "departure",
-            title: `Embarque em ${days} dia(s)`,
-            message: `${p.clientName} embarca para ${p.destinationCity}. Confira documentos e vouchers.`,
-            date: todayIso,
-            read: false,
-            relatedId: key,
-          });
-        }
-      }
-    });
-
-    // dispara em background — sem bloquear render
-    if (toCreate.length > 0) {
-      (async () => {
-        for (const n of toCreate) {
-          try { await addNotification(n); } catch { /* ignore dedupe race */ }
-        }
-      })();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, packages, clients, travelers]);
+  // Automações de notificação migraram para a edge function `run-automations`,
+  // executada diariamente via pg_cron. Mantemos apenas o estado local aqui.
 
   // ---------- CRUD: Clients ----------
   const addClient = async (c: Omit<Client, "id" | "createdAt">) => {
@@ -539,7 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ---------- CRUD: Travelers ----------
   const addTraveler = async (t: Omit<Traveler, "id" | "createdAt">): Promise<Traveler | void> => {
     if (!user) return;
-    const { data, error } = await (supabase as any).from("travelers").insert(travelerToRow(t, user.id)).select().single();
+    const { data, error } = await supabase.from("travelers").insert(travelerToRow(t, user.id)).select().single();
     if (error) throw error;
     const mapped = mapTraveler(data);
     setTravelers((prev) => [mapped, ...prev]);
@@ -547,12 +445,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   const updateTraveler = async (t: Traveler) => {
     if (!user) return;
-    const { data, error } = await (supabase as any).from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
+    const { data, error } = await supabase.from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
     if (error) throw error;
     setTravelers((prev) => prev.map((x) => (x.id === t.id ? mapTraveler(data) : x)));
   };
   const deleteTraveler = async (id: string) => {
-    const { error } = await (supabase as any).from("travelers").delete().eq("id", id);
+    const { error } = await supabase.from("travelers").delete().eq("id", id);
     if (error) throw error;
     setTravelers((prev) => prev.filter((x) => x.id !== id));
   };
