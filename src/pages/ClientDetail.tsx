@@ -116,6 +116,36 @@ const ClientDetail = () => {
     [clientPackages],
   );
 
+  const today = new Date().toISOString().slice(0, 10);
+  const completedTrips = useMemo(
+    () => clientPackages.filter((p) => p.returnDate && p.returnDate < today).length,
+    [clientPackages, today],
+  );
+  const totalSpent = useMemo(
+    () => clientPackages.reduce((s, p) => s + (p.totalValue || 0), 0),
+    [clientPackages],
+  );
+
+  const interactions = useMemo(() => {
+    if (!client) return [] as { date: string; kind: string; title: string; meta?: string }[];
+    const items: { date: string; kind: string; title: string; meta?: string }[] = [];
+    items.push({ date: client.createdAt, kind: "Cadastro", title: "Cliente cadastrado" });
+    quotes.filter((q) => q.clientId === client.id).forEach((q) =>
+      items.push({ date: q.createdAt, kind: "Proposta", title: q.destination, meta: `${q.status} · ${fmtCurrency(q.value)}` })
+    );
+    opportunities.filter((o) => o.clientId === client.id).forEach((o) =>
+      items.push({ date: o.createdAt, kind: "Oportunidade", title: o.title, meta: `${o.stage} · ${fmtCurrency(o.estimatedValue)}` })
+    );
+    clientPackages.forEach((p) =>
+      items.push({ date: p.createdAt, kind: "Reserva", title: `${p.destinationCity}, ${p.destinationCountry}`, meta: `${p.reservationStatus} · ${fmtCurrency(p.totalValue)}` })
+    );
+    clientTransactions.forEach((t) =>
+      items.push({ date: t.date, kind: t.type === "income" ? "Recebimento" : "Pagamento", title: t.description, meta: `${t.status} · ${fmtCurrency(t.value)}` })
+    );
+    return items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [client, quotes, opportunities, clientPackages, clientTransactions]);
+
+
   if (!client) {
     return (
       <div className="space-y-4">
