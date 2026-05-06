@@ -26,7 +26,67 @@ export const fmtDateTime = (iso?: string): string => {
 };
 
 export const fmtCurrency = (v: number): string =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+  v.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const MESES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/** "15 de junho de 2024" */
+export const fmtDateLong = (iso?: string): string => {
+  if (!iso) return "—";
+  const datePart = iso.includes("T") ? iso.slice(0, 10) : iso;
+  const [y, m, d] = datePart.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return `${d} de ${MESES_PT[m - 1]} de ${y}`;
+};
+
+/** Formata telefone brasileiro. Aceita com/sem DDI 55. */
+export const formatPhone = (raw?: string): string => {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  // com DDI 55
+  if (digits.length === 13 && digits.startsWith("55")) {
+    const ddd = digits.slice(2, 4);
+    const p1 = digits.slice(4, 9);
+    const p2 = digits.slice(9, 13);
+    return `+55 (${ddd}) ${p1}-${p2}`;
+  }
+  if (digits.length === 12 && digits.startsWith("55")) {
+    const ddd = digits.slice(2, 4);
+    const p1 = digits.slice(4, 8);
+    const p2 = digits.slice(8, 12);
+    return `+55 (${ddd}) ${p1}-${p2}`;
+  }
+  // celular nacional 11 dígitos
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  // fixo nacional 10 dígitos
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return raw;
+};
+
+/** Formata CPF (11) ou CNPJ (14). */
+export const formatDocument = (raw?: string): string => {
+  if (!raw) return "";
+  const d = raw.replace(/\D/g, "");
+  if (d.length === 11) {
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  }
+  if (d.length === 14) {
+    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+  }
+  return raw;
+};
 
 export const fmtNumber = (v: number): string => v.toLocaleString("pt-BR");
 
