@@ -4,7 +4,7 @@ import {
   useDroppable, useSensor, useSensors, closestCorners,
 } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
-import { Plus, MapPin, User, DollarSign, Calendar, Trash2, Download } from "lucide-react";
+import { Plus, MapPin, User, DollarSign, Calendar, Trash2, Download, Loader2 } from "lucide-react";
 import { exportCsv } from "@/lib/exportCsv";
 import { useData } from "@/contexts/DataContext";
 import { Opportunity, OpportunityStage } from "@/types/crm";
@@ -124,6 +124,7 @@ export default function Pipeline() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [submitting, setSubmitting] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -177,6 +178,7 @@ export default function Pipeline() {
 
   const handleSubmit = async () => {
     if (!form.title) { toast.error("Informe um título"); return; }
+    setSubmitting(true);
     try {
       await addOpportunity({
         clientId: form.clientId,
@@ -195,6 +197,8 @@ export default function Pipeline() {
       setOpen(false);
     } catch {
       toast.error("Erro ao criar");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -287,7 +291,10 @@ export default function Pipeline() {
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
-              <Button onClick={handleSubmit} className="w-full">Criar</Button>
+              <Button onClick={handleSubmit} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Criando..." : "Criar"}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>

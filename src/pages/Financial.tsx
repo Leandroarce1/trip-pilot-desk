@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Plus, Search, TrendingUp, TrendingDown, DollarSign, Edit2, Trash2,
-  Wallet, AlertCircle, Percent, CheckCircle2, Download,
+  Wallet, AlertCircle, Percent, CheckCircle2, Download, Loader2,
 } from "lucide-react";
 import { exportCsv } from "@/lib/exportCsv";
 import {
@@ -57,6 +57,7 @@ const Financial = () => {
   const [open, setOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState("overview");
   const [commissionModal, setCommissionModal] = useState<{ open: boolean; packageId: string; packageName: string; clientId: string; pending: number; value: string; date: string }>({ open: false, packageId: "", packageName: "", clientId: "", pending: 0, value: "", date: today() });
 
@@ -233,6 +234,7 @@ const Financial = () => {
       clientId: form.clientId || undefined, clientName,
       packageId: form.packageId || undefined,
     };
+    setSubmitting(true);
     try {
       if (editingTx) {
         await updateTransaction({ ...editingTx, ...payload });
@@ -243,6 +245,7 @@ const Financial = () => {
       }
       setForm(emptyForm); setEditingTx(null); setOpen(false);
     } catch (e: any) { toast.error("Erro", { description: e.message }); }
+    finally { setSubmitting(false); }
   };
 
   const openEdit = (t: Transaction) => {
@@ -509,7 +512,10 @@ const Financial = () => {
                 </Select>
               </div>
 
-              <Button onClick={handleSubmit} className="w-full">{editingTx ? "Salvar" : "Adicionar"}</Button>
+              <Button onClick={handleSubmit} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? (editingTx ? "Salvando..." : "Adicionando...") : (editingTx ? "Salvar" : "Adicionar")}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>
