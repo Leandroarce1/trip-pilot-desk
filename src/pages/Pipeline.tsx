@@ -291,7 +291,10 @@ export default function Pipeline() {
                 <Label>Observações</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
-              <Button onClick={handleSubmit} className="w-full">Criar</Button>
+              <Button onClick={handleSubmit} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Criando..." : "Criar"}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>
