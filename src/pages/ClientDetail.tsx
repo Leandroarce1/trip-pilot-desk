@@ -347,9 +347,29 @@ const ClientDetail = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* ---------- Profile ---------- */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />Histórico de Interações</CardTitle></CardHeader>
+            <CardContent>
+              {interactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
+              ) : (
+                <ol className="space-y-2">
+                  {interactions.slice(0, 12).map((it, idx) => (
+                    <li key={idx} className="flex items-start gap-3 rounded-lg border p-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider rounded-full bg-muted px-2 py-0.5 mt-0.5 shrink-0">{it.kind}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{it.title}</p>
+                        {it.meta && <p className="text-[11px] text-muted-foreground">{it.meta}</p>}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground tabular-nums shrink-0">{fmtDate(it.date)}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="profile">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><User className="h-4 w-4 text-primary" />Perfil do Viajante</CardTitle></CardHeader>
