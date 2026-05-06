@@ -311,11 +311,15 @@ const ClientDetail = () => {
 
         {/* ---------- Overview ---------- */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card><CardContent className="p-4 flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Telefone</p><p className="text-sm font-medium">{client.phone}</p></div></CardContent></Card>
             <Card><CardContent className="p-4 flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">E-mail</p><p className="text-sm font-medium truncate">{client.email || "—"}</p></div></CardContent></Card>
             <Card><CardContent className="p-4 flex items-center gap-3"><FileText className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Documento</p><p className="text-sm font-medium font-mono">{client.document || "—"}</p></div></CardContent></Card>
-            <Card><CardContent className="p-4 flex items-center gap-3"><Plane className="h-4 w-4 text-muted-foreground" /><div><p className="label-caption">Reservas</p><p className="text-sm font-medium tabular-nums">{clientPackages.length}</p></div></CardContent></Card>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card><CardContent className="p-4 flex items-center gap-3"><Plane className="h-4 w-4 text-primary" /><div><p className="label-caption">Reservas</p><p className="text-lg font-bold tabular-nums">{clientPackages.length}</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><CheckCircle2 className="h-4 w-4 text-success" /><div><p className="label-caption">Viagens realizadas</p><p className="text-lg font-bold tabular-nums">{completedTrips}</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><DollarSign className="h-4 w-4 text-primary" /><div><p className="label-caption">Total investido</p><p className="text-lg font-bold tabular-nums">{fmtCurrency(totalSpent)}</p></div></CardContent></Card>
           </div>
           {client.notes && (
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Observações</CardTitle></CardHeader><CardContent><p className="text-sm">{client.notes}</p></CardContent></Card>
