@@ -57,6 +57,7 @@ const Financial = () => {
   const [open, setOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState("overview");
   const [commissionModal, setCommissionModal] = useState<{ open: boolean; packageId: string; packageName: string; clientId: string; pending: number; value: string; date: string }>({ open: false, packageId: "", packageName: "", clientId: "", pending: 0, value: "", date: today() });
 
