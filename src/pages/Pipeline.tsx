@@ -258,7 +258,8 @@ export default function Pipeline() {
               <Button onClick={handleSubmit} className="w-full">Criar</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {opportunities.length === 0 ? (
