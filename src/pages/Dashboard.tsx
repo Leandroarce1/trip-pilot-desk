@@ -292,6 +292,7 @@ const Dashboard = () => {
   const margin = monthRevenue > 0 ? (monthCommission / monthRevenue) * 100 : 0;
 
   const ticketsIssued = flights.filter((f) => f.departureDate.startsWith(currentMonth)).length;
+  const avgTicket = monthConfirmed.length > 0 ? monthRevenue / monthConfirmed.length : 0;
 
   const upcomingDepartures = packages.filter((p) => {
     if (p.reservationStatus === "cancelled") return false;
@@ -399,9 +400,9 @@ const Dashboard = () => {
     return [...map.values()].sort((a, b) => b.value - a.value);
   }, [packages]);
 
-  // ----- Receitas x Despesas (4 meses) -----
-  const finChart = Array.from({ length: 4 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (3 - i), 1);
+  // ----- Receitas x Despesas (6 meses) -----
+  const finChart = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const key = d.toISOString().slice(0, 7);
     const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
     const Receitas = transactions.filter((t) => t.type === "income" && t.date.startsWith(key)).reduce((s, t) => s + t.value, 0);
@@ -595,6 +596,7 @@ const Dashboard = () => {
     { title: "Pendências financeiras", value: fmtCurrency(pendingTotal), sub: `${pendingPayments.length} reserva(s)`, icon: CreditCard, accent: "warning", spark: series.pending, trend: pendingPayments.length > 0 ? "alert" : "neutral", onClick: () => navigate("/financeiro") },
     { title: "Leads novos", value: newLeads, sub: "Captados este mês", icon: UserPlus, accent: "info", spark: series.leads, deltaPct: pct(newLeads, prevLeads), onClick: () => navigate("/clientes") },
     { title: "Conversão", value: `${conversion.toFixed(0)}%`, sub: `${soldClients}/${totalLeads} clientes`, icon: Target, accent: "success", spark: series.sales, trend: conversion > 30 ? "up" : "neutral" },
+    { title: "Ticket médio", value: fmtCurrency(avgTicket), sub: `${monthConfirmed.length} reserva(s) confirmada(s)`, icon: Trophy, accent: "gold", spark: series.revenue, onClick: () => navigate("/pacotes") },
   ];
 
   return (
