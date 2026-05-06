@@ -153,7 +153,7 @@ const Clients = () => {
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" /> {isLeadsView ? "Novo Lead" : "Novo Cliente"}</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{isLeadsView ? "Novo Lead" : "Novo Cliente"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -244,11 +244,11 @@ const Clients = () => {
                   <td className="px-4 py-3 font-medium">{c.name}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <div className="flex flex-col gap-1">
-                      <span className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" />{c.phone}</span>
+                      <span className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" />{formatPhone(c.phone)}</span>
                       <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" />{c.email}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.document}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{formatDocument(c.document)}</td>
                   <td className="px-4 py-3"><StatusBadge variant={c.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell tabular-nums">{fmtDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
