@@ -292,6 +292,7 @@ const Dashboard = () => {
   const margin = monthRevenue > 0 ? (monthCommission / monthRevenue) * 100 : 0;
 
   const ticketsIssued = flights.filter((f) => f.departureDate.startsWith(currentMonth)).length;
+  const avgTicket = monthConfirmed.length > 0 ? monthRevenue / monthConfirmed.length : 0;
 
   const upcomingDepartures = packages.filter((p) => {
     if (p.reservationStatus === "cancelled") return false;
