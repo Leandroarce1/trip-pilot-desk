@@ -67,6 +67,9 @@ function OpportunityCard({ op, onDelete }: { op: Opportunity; onDelete: () => vo
         {op.expectedCloseDate && (
           <p className="flex items-center gap-1.5 tabular-nums"><Calendar className="h-3 w-3" />{fmtDate(op.expectedCloseDate)}</p>
         )}
+        {op.owner && (
+          <p className="flex items-center gap-1.5"><span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold">{op.owner}</span></p>
+        )}
       </div>
       <div className="mt-2 flex items-center justify-between border-t pt-2">
         <span className="text-sm font-bold text-foreground tabular-nums">
