@@ -395,9 +395,14 @@ const Quotes = () => {
                     </div>
                   );
                 })}
-                <Button variant="outline" className="w-full" onClick={addItem}>
-                  <Plus className="mr-2 h-4 w-4" />Adicionar item
-                </Button>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => addItem("flight", "Passagem aérea")}>✈️ Aéreo</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("hotel", "Hospedagem")}>🏨 Hotel</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("transfer", "Translado")}>🚐 Translado</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("tour", "Passeio")}>🗺️ Passeio</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("insurance", "Seguro viagem")}>🛡️ Seguro</Button>
+                  <Button variant="outline" size="sm" onClick={() => addItem("other", "")}>📦 Outro</Button>
+                </div>
                 {(items.length > 0 || airfareValue > 0) && (
                   <div className="rounded-lg bg-muted/50 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div>
