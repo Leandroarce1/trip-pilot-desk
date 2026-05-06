@@ -512,7 +512,10 @@ const Financial = () => {
                 </Select>
               </div>
 
-              <Button onClick={handleSubmit} className="w-full">{editingTx ? "Salvar" : "Adicionar"}</Button>
+              <Button onClick={handleSubmit} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? (editingTx ? "Salvando..." : "Adicionando...") : (editingTx ? "Salvar" : "Adicionar")}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>
