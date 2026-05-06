@@ -178,6 +178,7 @@ export default function Pipeline() {
 
   const handleSubmit = async () => {
     if (!form.title) { toast.error("Informe um título"); return; }
+    setSubmitting(true);
     try {
       await addOpportunity({
         clientId: form.clientId,
@@ -196,6 +197,8 @@ export default function Pipeline() {
       setOpen(false);
     } catch {
       toast.error("Erro ao criar");
+    } finally {
+      setSubmitting(false);
     }
   };
 
