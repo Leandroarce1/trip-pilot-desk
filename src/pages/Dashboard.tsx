@@ -1260,7 +1260,7 @@ const Dashboard = () => {
             <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2}>
+                  <Pie data={categoryStats} dataKey="value" nameKey="name" cx="40%" cy="50%" innerRadius={32} outerRadius={62} paddingAngle={2} animationDuration={900}>
                     {categoryStats.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip
