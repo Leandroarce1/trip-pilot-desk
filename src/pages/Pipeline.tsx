@@ -133,7 +133,7 @@ export default function Pipeline() {
   const filteredOpps = useMemo(() => {
     const q = search.trim().toLowerCase();
     return opportunities.filter((o) => {
-      if (ownerFilter !== "all" && (o.owner ?? "") !== ownerFilter) return false;
+      if (ownerFilter !== "all" && (o.owner || "__none__") !== ownerFilter) return false;
       if (!q) return true;
       return (
         o.title.toLowerCase().includes(q) ||
@@ -301,7 +301,7 @@ export default function Pipeline() {
             <SelectTrigger className="w-[200px]"><SelectValue placeholder="Responsável" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os responsáveis</SelectItem>
-              <SelectItem value="">Sem responsável</SelectItem>
+              <SelectItem value="__none__">Sem responsável</SelectItem>
               {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
