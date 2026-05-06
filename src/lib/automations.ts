@@ -147,3 +147,118 @@ export const checkInAlert = (departureDateIso?: string, now: Date = new Date()):
   const diffH = (dep - now.getTime()) / 3600000;
   return diffH >= 0 && diffH <= 48;
 };
+
+// ============= Automações 100% client-side =============
+// Geram notificações sintéticas (não persistidas) com id prefixado por "auto:".
+
+export interface ClientSideClient {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+}
+export interface ClientSideOpportunity {
+  id: string;
+  title: string;
+  clientName: string;
+  stage: string;
+  createdAt: string;
+}
+export interface ClientSideQuote {
+  id: string;
+  clientName: string;
+  destination: string;
+  status: string;
+  createdAt: string;
+}
+export interface ClientSidePackage {
+  clientId: string;
+  returnDate?: string;
+}
+
+export interface ClientSideOpts {
+  clients: ClientSideClient[];
+  opportunities: ClientSideOpportunity[];
+  quotes: ClientSideQuote[];
+  packages: ClientSidePackage[];
+  today?: Date;
+}
+
+/** Cliente sold/postSale/recurring sem viagem há +30 dias (e cadastrado há +30d). */
+export function inactiveClientNotifications(opts: ClientSideOpts): AutomationNotification[] {
+  const today = opts.today ?? new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const lastTrip = new Map<string, Date>();
+  for (const p of opts.packages) {
+    if (!p.returnDate) continue;
+    const d = new Date(p.returnDate);
+    const cur = lastTrip.get(p.clientId);
+    if (!cur || d > cur) lastTrip.set(p.clientId, d);
+  }
+  const out: AutomationNotification[] = [];
+  for (const c of opts.clients) {
+    if (!["sold", "postSale", "recurring"].includes(c.status)) continue;
+    const ref = lastTrip.get(c.id) ?? new Date(c.createdAt);
+    const days = daysBetween(today, ref);
+    if (days >= 30) {
+      out.push({
+        type: "general",
+        title: "Cliente inativo há 30+ dias",
+        message: `${c.name} não tem interação registrada há ${days} dias. Que tal um follow-up?`,
+        date: todayIso, read: false,
+        relatedId: `auto:inactive:${c.id}`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Oportunidade aberta parada (sem update) há 7+ dias. */
+export function stalledOpportunityNotifications(opts: ClientSideOpts): AutomationNotification[] {
+  const today = opts.today ?? new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const out: AutomationNotification[] = [];
+  for (const o of opts.opportunities) {
+    if (o.stage === "closed_won" || o.stage === "closed_lost") continue;
+    const days = daysBetween(today, new Date(o.createdAt));
+    if (days >= 7) {
+      out.push({
+        type: "general",
+        title: "Oportunidade parada há 7+ dias",
+        message: `"${o.title}" (${o.clientName}) está sem movimento há ${days} dias.`,
+        date: todayIso, read: false,
+        relatedId: `auto:stalled:${o.id}`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Orçamento enviado sem resposta há 3+ dias = lembrete de follow-up. */
+export function followUpQuoteNotifications(opts: ClientSideOpts): AutomationNotification[] {
+  const today = opts.today ?? new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const out: AutomationNotification[] = [];
+  for (const q of opts.quotes) {
+    if (q.status !== "sent") continue;
+    const days = daysBetween(today, new Date(q.createdAt));
+    if (days >= 3) {
+      out.push({
+        type: "general",
+        title: "Follow-up de orçamento",
+        message: `Orçamento de ${q.destination} para ${q.clientName} foi enviado há ${days} dias sem retorno.`,
+        date: todayIso, read: false,
+        relatedId: `auto:followup:${q.id}`,
+      });
+    }
+  }
+  return out;
+}
+
+export function buildClientSideNotifications(opts: ClientSideOpts): AutomationNotification[] {
+  return [
+    ...inactiveClientNotifications(opts),
+    ...stalledOpportunityNotifications(opts),
+    ...followUpQuoteNotifications(opts),
+  ];
+}
