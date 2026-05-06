@@ -209,7 +209,7 @@ export default function Pipeline() {
         <div>
           <h1 className="text-2xl font-bold">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
-            {opportunities.length} oportunidade(s) · arraste os cards para mover de etapa
+            {filteredOpps.length} de {opportunities.length} oportunidade(s) · arraste os cards para mover de etapa
           </p>
         </div>
         <div className="flex items-center gap-2">
