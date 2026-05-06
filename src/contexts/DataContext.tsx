@@ -118,7 +118,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from("opportunities").select("*").order("position", { ascending: true }),
       supabase.from("itineraries").select("*").order("created_at", { ascending: false }),
       supabase.from("vouchers").select("*").order("created_at", { ascending: false }),
-      (supabase as any).from("travelers").select("*").order("created_at", { ascending: false }),
+      supabase.from("travelers").select("*").order("created_at", { ascending: false }),
     ]);
 
     const clientsData = (clientsRes.data ?? []).map(mapClient);
@@ -437,7 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ---------- CRUD: Travelers ----------
   const addTraveler = async (t: Omit<Traveler, "id" | "createdAt">): Promise<Traveler | void> => {
     if (!user) return;
-    const { data, error } = await (supabase as any).from("travelers").insert(travelerToRow(t, user.id)).select().single();
+    const { data, error } = await supabase.from("travelers").insert(travelerToRow(t, user.id)).select().single();
     if (error) throw error;
     const mapped = mapTraveler(data);
     setTravelers((prev) => [mapped, ...prev]);
@@ -445,12 +445,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   const updateTraveler = async (t: Traveler) => {
     if (!user) return;
-    const { data, error } = await (supabase as any).from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
+    const { data, error } = await supabase.from("travelers").update(travelerToRow(t, user.id)).eq("id", t.id).select().single();
     if (error) throw error;
     setTravelers((prev) => prev.map((x) => (x.id === t.id ? mapTraveler(data) : x)));
   };
   const deleteTraveler = async (id: string) => {
-    const { error } = await (supabase as any).from("travelers").delete().eq("id", id);
+    const { error } = await supabase.from("travelers").delete().eq("id", id);
     if (error) throw error;
     setTravelers((prev) => prev.filter((x) => x.id !== id));
   };
