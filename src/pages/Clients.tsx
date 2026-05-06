@@ -221,7 +221,10 @@ const Clients = () => {
                 </div>
               </div>
               <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-              <Button onClick={handleAdd} className="w-full">Cadastrar Cliente</Button>
+              <Button onClick={handleAdd} className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Cadastrando..." : "Cadastrar Cliente"}
+              </Button>
             </div>
           </DialogContent>
           </Dialog>
