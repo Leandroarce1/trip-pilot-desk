@@ -114,6 +114,7 @@ export interface Opportunity {
   returnDate?: string;        // data de volta
   travelersCount?: number;    // nº de viajantes
   leadSource?: string;        // origem do contato (Instagram, indicação...)
+  owner?: string;             // responsável (texto livre)
   stage: OpportunityStage;
   position: number;
   notes: string;
